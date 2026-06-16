@@ -26,6 +26,57 @@
   --color-success: #00b473;
 
   --radius-feature: 32px;
+
+  --animate-marquee: marquee 25s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-22px); }
+}
+.animate-float { animation: float 7s ease-in-out infinite; }
+
+@keyframes wave {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-0.22em); }
+}
+.wave-letter {
+  display: inline-block;
+  animation: wave 2.4s ease-in-out infinite;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-fade-up,
+  .animate-float,
+  .wave-letter { animation: none; }
+  .animate-fade-up { opacity: 1; }
+  .reveal { opacity: 1; transform: none; transition: none; }
 }
 
 html {
