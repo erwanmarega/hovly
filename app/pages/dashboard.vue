@@ -17,7 +17,7 @@ useAsyncData('alertes', () => refreshAlertes(), { server: false })
 
 async function logout() {
   await supabase.auth.signOut()
-  await navigateTo('/login')
+  await navigateTo('/')
 }
 
 const filtreStatut = ref<Statut | 'tous'>('tous')
