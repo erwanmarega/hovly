@@ -78,8 +78,13 @@ const vReveal = {
       </nav>
     </header>
 
-    <section class="relative bg-brand overflow-hidden">
-      <div class="mx-auto max-w-6xl px-6 pt-20 pb-24 md:pt-28 md:pb-32 text-center">
+    <section class="relative flex items-center h-[600px] bg-brand overflow-hidden">
+      <img
+        src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=2400&q=90&auto=format&fit=crop"
+        alt=""
+        class="absolute inset-0 size-full object-cover"
+      />
+      <div class="relative ml-32 w-full bg-white max-w-2xl py-12 text-center">
         <h1 class="animate-fade-up mx-auto max-w-3xl text-5xl md:text-7xl font-light tracking-tight leading-[1.05] text-ink-deep">
           Tous tes biens.<br>
           <span class="relative inline-block">
@@ -111,7 +116,6 @@ const vReveal = {
             Ajouter le bien →
           </button>
         </div>
-        <p class="animate-fade-up mt-3 text-xs text-ink" style="animation-delay: 0.36s">Gratuit. Sans carte bancaire.</p>
       </div>
 
       <div class="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-teal/40 blur-3xl animate-float"></div>
