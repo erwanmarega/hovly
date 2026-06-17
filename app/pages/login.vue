@@ -1,6 +1,13 @@
 <script setup lang="ts">
 useHead({ title: 'Connexion — Hovly' })
 
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
+
+watchEffect(() => {
+  if (user.value) navigateTo('/dashboard')
+})
+
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -13,21 +20,34 @@ async function handleLogin() {
     return
   }
   loading.value = true
-  await new Promise((r) => setTimeout(r, 600))
+  const { error: err } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value
+  })
   loading.value = false
-  await navigateTo('/')
+  if (err) {
+    error.value = 'Email ou mot de passe incorrect.'
+    return
+  }
+  await navigateTo('/dashboard')
 }
 
-function handleGoogle() {
+async function handleGoogle() {
+  error.value = ''
+  const { error: err } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/confirm` }
+  })
+  if (err) error.value = 'Connexion Google impossible.'
 }
 </script>
 
 <template>
   <div class="min-h-screen flex bg-white text-ink antialiased">
-    <!-- Colonne form -->
+
     <div class="flex w-full lg:w-1/2 flex-col px-6 py-8">
       <header class="mx-auto w-full max-w-sm">
-        <NuxtLink to="/" class="text-xl font-bold tracking-tight">Hovly</NuxtLink>
+        <HovlyLink />
       </header>
 
       <div class="flex flex-1 items-center justify-center">
@@ -102,7 +122,7 @@ function handleGoogle() {
     </div>
 
     <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-brand relative overflow-hidden">
-     
+
     </div>
   </div>
 </template>

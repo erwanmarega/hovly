@@ -10,8 +10,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@nuxtjs/supabase": "^2.0.9",
     "@tailwindcss/vite": "^4.3.1",
     "nuxt": "^4.4.8",
+    "playwright": "^1.61.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "tailwindcss": "^4.3.1",
     "vue": "^3.5.35",
     "vue-router": "^5.1.0"

@@ -41,7 +41,6 @@ const steps = [
   { n: '3', title: 'Compare et décide', text: 'Tout dans un tableau. Note, filtre, suis les prix.' }
 ]
 
-// Reveal au scroll : ajoute .is-visible quand l'élément entre dans le viewport
 const vReveal = {
   mounted(el: HTMLElement, binding: { value?: string }) {
     el.classList.add('reveal')
@@ -64,7 +63,7 @@ const vReveal = {
   <div class="min-h-screen bg-white text-ink antialiased">
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-hairline-soft">
       <nav class="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
-        <a href="#" class="text-xl font-bold tracking-tight">Hovly</a>
+        <HovlyLink />
         <div class="hidden md:flex items-center gap-8 text-sm text-slate">
           <a href="#features" class="hover:text-ink transition">Fonctionnalités</a>
           <a href="#how" class="hover:text-ink transition">Comment ça marche</a>
@@ -138,7 +137,7 @@ const vReveal = {
 
     <section id="features" class="mx-auto max-w-6xl px-6 py-24">
       <div v-reveal class="max-w-2xl mb-14">
-        <h2 class="text-4xl md:text-5xl font-bold tracking-tight text-ink-deep">
+        <h2 class="text-4xl md:text-5xl font-light tracking-tight text-ink-deep">
           Tout ce qu'il faut pour choisir
         </h2>
         <p class="mt-4 text-lg text-slate">
@@ -163,7 +162,7 @@ const vReveal = {
 
     <section id="how" class="bg-surface">
       <div class="mx-auto max-w-6xl px-6 py-24">
-        <h2 v-reveal class="text-center text-4xl md:text-5xl font-bold tracking-tight text-ink-deep mb-16">
+        <h2 v-reveal class="text-center text-4xl md:text-5xl font-light tracking-tight text-ink-deep mb-16">
           Trois étapes, c'est tout
         </h2>
         <div class="grid md:grid-cols-3 gap-8">
@@ -171,7 +170,7 @@ const vReveal = {
             <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-ink text-white text-lg font-bold">
               {{ s.n }}
             </div>
-            <h3 class="mt-5 text-xl font-bold text-ink-deep">{{ s.title }}</h3>
+            <h3 class="mt-5 text-xl font-light text-ink-deep">{{ s.title }}</h3>
             <p class="mt-2 text-slate">{{ s.text }}</p>
           </div>
         </div>
@@ -180,7 +179,7 @@ const vReveal = {
 
     <section class="mx-auto max-w-6xl px-6 py-24">
       <div v-reveal class="relative overflow-hidden rounded-feature bg-brand px-8 py-16 md:py-20 text-center">
-        <h2 class="mx-auto max-w-2xl text-4xl md:text-5xl font-bold tracking-tight text-ink">
+        <h2 class="mx-auto max-w-2xl text-4xl md:text-5xl font-light tracking-tight text-ink">
           Arrête de jongler. Commence à comparer.
         </h2>
         <p class="mx-auto mt-4 max-w-lg text-ink/70 text-lg">
@@ -196,7 +195,7 @@ const vReveal = {
       <div class="mx-auto max-w-6xl px-6 py-14">
         <div class="flex flex-col md:flex-row justify-between gap-8">
           <div>
-            <p class="text-xl font-bold">🏠 Hovly</p>
+            <p class="text-xl font-bold">Hovly</p>
             <p class="mt-2 text-sm text-stone max-w-xs">
               L'agrégateur de biens immobiliers. Tous tes favoris, un seul tableau.
             </p>

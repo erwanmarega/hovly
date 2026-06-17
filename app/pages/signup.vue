@@ -1,24 +1,59 @@
 <script setup lang="ts">
-useHead({ title: 'Connexion — Hovly' })
+useHead({ title: 'Créer un compte — Hovly' })
 
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
+
+watchEffect(() => {
+  if (user.value) navigateTo('/dashboard')
+})
+
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
+const info = ref('')
 
-async function handleLogin() {
+async function handleSignup() {
   error.value = ''
+  info.value = ''
   if (!email.value || !password.value) {
     error.value = 'Renseigne ton email et ton mot de passe.'
     return
   }
+  if (password.value.length < 6) {
+    error.value = 'Mot de passe : 6 caractères minimum.'
+    return
+  }
   loading.value = true
-  await new Promise((r) => setTimeout(r, 600))
+  const { data, error: err } = await supabase.auth.signUp({
+    email: email.value,
+    password: password.value,
+    options: {
+      data: { full_name: name.value },
+      emailRedirectTo: `${window.location.origin}/confirm`
+    }
+  })
   loading.value = false
-  await navigateTo('/')
+  if (err) {
+    error.value = err.message
+    return
+  }
+  if (data.session) {
+    await navigateTo('/dashboard')
+  } else {
+    info.value = 'Vérifie ta boîte mail pour confirmer ton compte.'
+  }
 }
 
-function handleGoogle() {
+async function handleGoogle() {
+  error.value = ''
+  const { error: err } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/confirm` }
+  })
+  if (err) error.value = 'Connexion Google impossible.'
 }
 </script>
 
@@ -26,13 +61,13 @@ function handleGoogle() {
   <div class="min-h-screen flex bg-white text-ink antialiased">
     <div class="flex w-full lg:w-1/2 flex-col px-6 py-8">
       <header class="mx-auto w-full max-w-sm">
-        <NuxtLink to="/" class="text-xl font-bold tracking-tight">Hovly</NuxtLink>
+        <HovlyLink />
       </header>
 
       <div class="flex flex-1 items-center justify-center">
         <div class="w-full max-w-sm">
-          <h1 class="text-3xl font-bold tracking-tight text-ink-deep">Bienvenue !</h1>
-          <p class="mt-2 text-slate">Connecte-toi pour retrouver tes biens.</p>
+          <h1 class="text-3xl font-bold tracking-tight text-ink-deep">Crée ton compte</h1>
+          <p class="mt-2 text-slate">Centralise tous tes biens en un seul endroit.</p>
 
           <button
             type="button"
@@ -54,13 +89,13 @@ function handleGoogle() {
             <span class="h-px flex-1 bg-hairline"></span>
           </div>
 
-          <form @submit.prevent="handleLogin" class="space-y-4">
+          <form @submit.prevent="handleSignup" class="space-y-4">
             <div>
               <label for="name" class="block text-sm font-medium text-ink mb-1.5">Prénom et Nom</label>
               <input
                 id="name"
                 v-model="name"
-                type="name"
+                type="text"
                 autocomplete="name"
                 placeholder="Ousmane Dembélé"
                 class="h-11 w-full rounded-lg border border-hairline-strong bg-white px-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
@@ -78,40 +113,38 @@ function handleGoogle() {
               />
             </div>
             <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="password" class="block text-sm font-medium text-ink">Mot de passe</label>
-              </div>
+              <label for="password" class="block text-sm font-medium text-ink mb-1.5">Mot de passe</label>
               <input
                 id="password"
                 v-model="password"
                 type="password"
-                autocomplete="current-password"
+                autocomplete="new-password"
                 placeholder="••••••••"
                 class="h-11 w-full rounded-lg border border-hairline-strong bg-white px-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
               />
             </div>
 
             <p v-if="error" class="text-sm text-coral-soft font-medium">{{ error }}</p>
+            <p v-if="info" class="text-sm text-success font-medium">{{ info }}</p>
 
             <button
               type="submit"
               :disabled="loading"
               class="h-11 w-full rounded-full bg-ink text-white text-sm font-medium hover:bg-black transition disabled:opacity-60"
             >
-              {{ loading ? 'Connexion…' : 'Se connecter' }}
+              {{ loading ? 'Création…' : 'Créer mon compte' }}
             </button>
           </form>
 
           <p class="mt-6 text-center text-sm text-slate">
-           Tu as déjà un compte ?
-            <NuxtLink to="/signup" class="font-medium text-blue hover:underline">Connecte-toi</NuxtLink>
+            Tu as déjà un compte ?
+            <NuxtLink to="/login" class="font-medium text-blue hover:underline">Se connecter</NuxtLink>
           </p>
         </div>
       </div>
     </div>
 
     <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-brand relative overflow-hidden">
-     
     </div>
   </div>
 </template>
