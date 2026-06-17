@@ -78,18 +78,18 @@ const vReveal = {
       </nav>
     </header>
 
-    <section class="relative flex items-center h-[600px] bg-brand overflow-hidden">
+    <section class="relative flex items-center min-h-[80vh] md:h-[600px] bg-brand overflow-hidden px-4 sm:px-6 py-16 md:py-0">
       <img
         src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=2400&q=90&auto=format&fit=crop"
         alt=""
         class="absolute inset-0 size-full object-cover"
       />
-      <div class="relative ml-32 w-full bg-white max-w-2xl py-12 text-center">
-        <h1 class="animate-fade-up mx-auto max-w-3xl text-5xl md:text-7xl font-light tracking-tight leading-[1.05] text-ink-deep">
+      <div class="relative mx-auto md:ml-32 md:mr-0 w-full max-w-2xl bg-white rounded-2xl md:rounded-none px-6 py-10 md:py-12 text-center">
+        <h1 class="animate-fade-up mx-auto max-w-3xl text-4xl sm:text-5xl md:text-7xl font-light tracking-tight leading-[1.05] text-ink-deep">
           Tous tes biens.<br>
           <span class="relative inline-block">
             <span class="relative z-10">Un seul</span>{{ ' ' }}
-            <span class="relative z-10 text-white" aria-label="endroit.">
+            <span class="relative z-10 text-ink-deep md:text-white" aria-label="endroit.">
               <span
                 v-for="(c, i) in 'endroit.'.split('')"
                 :key="i"
@@ -98,7 +98,7 @@ const vReveal = {
                 aria-hidden="true"
               >{{ c }}</span>
             </span>
-            <span class="absolute inset-x-56 top-2 right-2 h-16 bg-black z-0 -skew-y-1 -skew-x-2"></span>
+            <span class="hidden md:block absolute inset-x-56 top-2 right-2 h-16 bg-black z-0 -skew-y-1 -skew-x-2"></span>
           </span>
         </h1>
         <p class="animate-fade-up mx-auto mt-6 max-w-xl text-lg text-slate leading-relaxed" style="animation-delay: 0.12s">
