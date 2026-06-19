@@ -30,7 +30,7 @@ const features = [
   {
     tint: 'bg-rose',
     emoji: '',
-    title: 'Analyse IA',
+    title: 'Analyse IA - (prochainement)',
     text: 'Une synthèse par l\'IA sur chaque bien : points forts, points faibles, cohérence du prix.'
   }
 ]
@@ -71,19 +71,20 @@ const vReveal = {
         </div>
         <div class="flex items-center gap-3">
           <a href="/login" class="hidden sm:inline text-sm font-medium hover:text-slate transition">Se connecter</a>
-          <a href="#" class="rounded-full bg-ink text-white text-sm font-medium px-5 py-2.5 hover:bg-black transition">
-            Commencer
-          </a>
+         
         </div>
       </nav>
     </header>
 
     <section class="relative flex items-center min-h-[80vh] md:h-[600px] bg-brand overflow-hidden px-4 sm:px-6 py-16 md:py-0">
-      <img
-        src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=2400&q=90&auto=format&fit=crop"
-        alt=""
+      <video
+        src="/fait_bouger_les_feuilles_et_le.mp4"
+        autoplay
+        muted
+        loop
+        playsinline
         class="absolute inset-0 size-full object-cover"
-      />
+      ></video>
       <div class="relative mx-auto md:ml-32 md:mr-0 w-full max-w-2xl bg-white rounded-2xl md:rounded-none px-6 py-10 md:py-12 text-center">
         <h1 class="animate-fade-up mx-auto max-w-3xl text-4xl sm:text-5xl md:text-7xl font-light tracking-tight leading-[1.05] text-ink-deep">
           Tous tes biens.<br>
@@ -189,7 +190,7 @@ const vReveal = {
         <p class="mx-auto mt-4 max-w-lg text-ink/70 text-lg">
           Crée ton tableau de bord immobilier en moins d'une minute.
         </p>
-        <a href="#" class="mt-8 inline-block rounded-full bg-ink text-white font-medium px-8 py-3.5 hover:bg-black hover:scale-[1.03] active:scale-95 transition">
+        <a href="/login" class="mt-8 inline-block rounded-full bg-ink text-white font-medium px-8 py-3.5 hover:bg-black hover:scale-[1.03] active:scale-95 transition">
           Commencer gratuitement
         </a>
       </div>

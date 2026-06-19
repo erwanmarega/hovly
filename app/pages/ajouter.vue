@@ -185,7 +185,10 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
       <div v-else class="mt-8">
         <div class="rounded-2xl border border-hairline bg-white p-6">
           <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold uppercase tracking-wide text-success">
+            <p v-if="error" class="text-xs font-semibold uppercase tracking-wide text-coral-soft">
+              ⚠ Extraction impossible — saisis à la main
+            </p>
+            <p v-else class="text-xs font-semibold uppercase tracking-wide text-success">
               ✓ Annonce extraite — vérifie et complète
             </p>
             <button
@@ -195,6 +198,10 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
               Changer d'URL
             </button>
           </div>
+
+          <p v-if="error" class="mt-3 rounded-lg bg-coral/30 px-4 py-2.5 text-sm text-[#600000]">
+            {{ error }}
+          </p>
 
           <div class="mt-5 flex gap-4">
             <img

@@ -15,7 +15,9 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
+    scrapingbeeKey: process.env.SCRAPINGBEE_API_KEY,
+    cronSecret: process.env.CRON_SECRET
   },
   nitro: {
     externals: {
