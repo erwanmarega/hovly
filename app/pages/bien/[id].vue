@@ -11,6 +11,12 @@ const { data: bien, pending, error } = await useAsyncData(
   { server: false }
 )
 
+const { data: historique } = await useAsyncData(
+  `historique-${id}`,
+  () => $fetch<{ prix: number; controle_le: string }[]>(`/api/biens/${id}/historique`),
+  { server: false, default: () => [] }
+)
+
 useHead({ title: () => (bien.value ? `${bien.value.titre} — Hovly` : 'Bien — Hovly') })
 
 const sourceLabels: Record<string, string> = {
@@ -197,6 +203,8 @@ async function supprimer() {
                 </div>
               </div>
             </div>
+
+            <PrixHistorique :points="historique" />
 
             <div class="rounded-2xl border border-hairline bg-white p-6">
               <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Statut</h2>

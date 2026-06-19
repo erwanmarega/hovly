@@ -23,5 +23,10 @@ export default defineEventHandler(async (event) => {
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
+
+  if (data?.prix != null) {
+    await client.from('prix_historique').insert({ bien_id: data.id, prix: data.prix })
+  }
+
   return data
 })
