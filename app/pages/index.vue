@@ -61,36 +61,24 @@ const vReveal = {
 
 <template>
   <div class="min-h-screen bg-white text-ink antialiased">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-hairline-soft">
-      <nav class="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
-        <HovlyLink />
-        <div class="hidden md:flex items-center gap-8 text-sm text-slate">
-          <a href="#features" class="hover:text-ink transition">Fonctionnalités</a>
-          <a href="#how" class="hover:text-ink transition">Comment ça marche</a>
-          <a href="#sources" class="hover:text-ink transition">Sources</a>
-        </div>
-        <div class="flex items-center gap-3">
-          <a href="/login" class="hidden sm:inline text-sm font-medium hover:text-slate transition">Se connecter</a>
-         
-        </div>
-      </nav>
-    </header>
+    <TheNavbar show-links />
 
     <section class="relative flex items-center min-h-[80vh] md:h-[600px] bg-brand overflow-hidden px-4 sm:px-6 py-16 md:py-0">
-      <video
-        src="/fait_bouger_les_feuilles_et_le.mp4"
-        autoplay
-        muted
-        loop
-        playsinline
+      <img
+        src="https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=1920&q=80"
+        alt=""
         class="absolute inset-0 size-full object-cover"
-      ></video>
-      <div class="relative mx-auto md:ml-32 md:mr-0 w-full max-w-2xl bg-white rounded-2xl md:rounded-none px-6 py-10 md:py-12 text-center">
-        <h1 class="animate-fade-up mx-auto max-w-3xl text-4xl sm:text-5xl md:text-7xl font-light tracking-tight leading-[1.05] text-ink-deep">
+      />
+      <div class="relative mx-auto w-full max-w-xl bg-white/95 backdrop-blur-md rounded-3xl px-8 py-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
+        <div class="animate-fade-up inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1 text-xs font-semibold text-ink-deep mb-7">
+          <span>✦</span> 
+        </div>
+
+        <h1 class="animate-fade-up mx-auto max-w-lg text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.08] text-ink-deep" style="animation-delay: 0.04s">
           Tous tes biens.<br>
           <span class="relative inline-block">
-            <span class="relative z-10">Un seul</span>{{ ' ' }}
-            <span class="relative z-10 text-ink-deep md:text-white" aria-label="endroit.">
+            Un seul{{ ' ' }}
+            <span class="relative" aria-label="endroit.">
               <span
                 v-for="(c, i) in 'endroit.'.split('')"
                 :key="i"
@@ -98,24 +86,33 @@ const vReveal = {
                 :style="{ animationDelay: `${i * 0.08}s` }"
                 aria-hidden="true"
               >{{ c }}</span>
+              <span class="absolute -bottom-1 left-0 right-0 h-[3px] bg-brand rounded-full"></span>
             </span>
-            <span class="hidden md:block absolute inset-x-56 top-2 right-2 h-16 bg-black z-0 -skew-y-1 -skew-x-2"></span>
           </span>
         </h1>
-        <p class="animate-fade-up mx-auto mt-6 max-w-xl text-lg text-slate leading-relaxed" style="animation-delay: 0.12s">
-          Fini de jongler entre SeLoger, Leboncoin et PAP. Colle une URL, Hovly extrait tout
-          et l'ajoute à ton tableau de bord. Compare, suis les prix, décide.
+
+        <p class="animate-fade-up mx-auto mt-5 max-w-sm text-base text-slate leading-relaxed" style="animation-delay: 0.12s">
+          Colle une URL d'annonce, Hovly extrait tout automatiquement. Compare, suis les prix, décide.
         </p>
 
-        <div class="animate-fade-up mx-auto mt-10 flex max-w-xl flex-col sm:flex-row gap-3" style="animation-delay: 0.24s">
-          <input
-            type="text"
-            placeholder="https://www.seloger.com/annonces/..."
-            class="flex-1 h-12 rounded-full border border-hairline-strong bg-white px-5 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-          />
-          <button class="h-12 rounded-full bg-ink text-white text-sm font-medium px-7 hover:bg-black hover:scale-[1.03] active:scale-95 transition whitespace-nowrap">
-            Ajouter le bien →
-          </button>
+        <div class="animate-fade-up mt-8 w-full rounded-2xl bg-white shadow-[0_8px_40px_rgba(0,0,0,0.14)] overflow-hidden" style="animation-delay: 0.24s">
+          <div class="px-5 pt-5 pb-4">
+            <input
+              type="text"
+              placeholder="Colle une URL d'annonce…"
+              class="w-full bg-transparent text-sm text-ink outline-none placeholder:text-stone"
+            />
+          </div>
+          <div class="flex items-center justify-between gap-2 px-3 pb-3">
+            <span class="inline-flex items-center rounded-full bg-surface border border-hairline px-3 py-1.5 text-xs text-slate">
+              SeLoger · Leboncoin · PAP
+            </span>
+            <button class="flex items-center justify-center size-9 rounded-full bg-ink text-white hover:bg-ink-deep hover:scale-[1.05] active:scale-95 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -35,10 +35,11 @@ const coords = computed(() => {
   const dt = t1 - t0 || 1
   const min = prixMin.value
   const max = prixMax.value
+  const plat = max === min
   const dp = max - min || 1
   return pts.map((p, i) => {
     const x = pts.length === 1 ? W / 2 : PAD_X + ((+new Date(p.controle_le) - t0) / dt) * (W - PAD_X * 2)
-    const y = PAD_Y + (1 - (p.prix - min) / dp) * (H - PAD_Y * 2)
+    const y = plat ? H / 2 : PAD_Y + (1 - (p.prix - min) / dp) * (H - PAD_Y * 2)
     return { x, y, prix: p.prix, date: p.controle_le, i }
   })
 })
@@ -102,18 +103,18 @@ const survol = ref<number | null>(null)
         </g>
       </svg>
 
-      <div class="mt-3 flex items-center justify-between text-xs">
-        <span class="text-stone">{{ fmtDate(valides[0].controle_le) }}</span>
+      <div class="mt-3 flex items-center justify-between gap-3 text-xs">
+        <span class="whitespace-nowrap text-stone">{{ fmtDate(valides[0].controle_le) }}</span>
         <span
           v-if="survol !== null"
-          class="rounded-full bg-ink px-2.5 py-1 font-semibold text-white"
+          class="whitespace-nowrap rounded-full bg-ink px-2.5 py-1 font-semibold text-white"
         >
           {{ fmt(coords[survol].prix) }} € · {{ fmtDate(coords[survol].date) }}
         </span>
-        <span v-else class="text-stone">
+        <span v-else class="whitespace-nowrap text-stone">
           min {{ fmt(prixMin) }} € · max {{ fmt(prixMax) }} €
         </span>
-        <span class="text-stone">{{ fmtDate(valides[valides.length - 1].controle_le) }}</span>
+        <span class="whitespace-nowrap text-stone">{{ fmtDate(valides[valides.length - 1].controle_le) }}</span>
       </div>
     </div>
   </div>

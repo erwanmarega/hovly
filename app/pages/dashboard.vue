@@ -1,29 +1,19 @@
 <script setup lang="ts">
-import type { Statut } from '~/types'
+import type { Bien, Statut } from '~/types'
 import { STATUTS } from '~/composables/useBiens'
 
 useHead({ title: 'Mes biens — Hovly' })
 
 const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } = useBiens()
 
-const supabase = useSupabaseClient()
-const user = useSupabaseUser()
-const userEmail = computed(() => user.value?.email ?? '')
-
 const { pending } = useAsyncData('biens', () => refresh(), { server: false })
-
-const { nonVues, refresh: refreshAlertes } = useAlertes()
-useAsyncData('alertes', () => refreshAlertes(), { server: false })
-
-async function logout() {
-  await supabase.auth.signOut()
-  await navigateTo('/')
-}
 
 const filtreStatut = ref<Statut | 'tous'>('tous')
 const recherche = ref('')
-const triClef = ref<'date' | 'prix' | 'surface' | 'prix_m2'>('date')
+const triClef = ref<'date' | 'prix' | 'surface' | 'prix_m2' | 'score'>('date')
 const triAsc = ref(false)
+
+const scoreDe = (b: Bien) => scoreBien(b, biens.value)
 
 const sourceLabels: Record<string, string> = {
   seloger: 'SeLoger',
@@ -61,6 +51,8 @@ const biensAffiches = computed(() => {
         va = a.surface; vb = b.surface; break
       case 'prix_m2':
         va = prixM2(a); vb = prixM2(b); break
+      case 'score':
+        va = scoreDe(a).total; vb = scoreDe(b).total; break
       default:
         va = new Date(a.created_at).getTime()
         vb = new Date(b.created_at).getTime()
@@ -101,46 +93,7 @@ function choisirStatut(id: string, s: Statut) {
 
 <template>
   <div class="min-h-screen bg-surface text-ink antialiased">
-    <header class="sticky top-0 z-20 border-b border-hairline bg-white/90 backdrop-blur">
-      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <div class="flex items-center gap-8">
-          <HovlyLink />
-          <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-steel">
-            <span class="rounded-full bg-ink px-3.5 py-1.5 text-white">Mes biens</span>
-            <NuxtLink to="/alertes" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 hover:bg-surface">
-              Alertes
-              <span v-if="nonVues > 0" class="grid min-w-5 place-items-center rounded-full bg-coral-soft px-1.5 text-xs font-bold text-white">
-                {{ nonVues }}
-              </span>
-            </NuxtLink>
-          </nav>
-        </div>
-        <div class="flex items-center gap-3">
-          <NuxtLink
-            to="/ajouter"
-            class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-black transition"
-          >
-            <span class="text-base leading-none">+</span> Ajouter un bien
-          </NuxtLink>
-          <NuxtLink
-            to="/profil"
-            class="grid size-9 place-items-center rounded-full bg-brand text-sm font-bold text-ink hover:opacity-90 transition"
-            :title="userEmail"
-          >
-            {{ (userEmail || '?').charAt(0).toUpperCase() }}
-          </NuxtLink>
-          <button
-            @click="logout"
-            class="grid size-9 place-items-center rounded-full border border-hairline bg-white text-stone hover:bg-surface hover:text-ink transition"
-            title="Se déconnecter"
-          >
-            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </header>
+    <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
       <div class="flex flex-wrap items-end justify-between gap-4">
@@ -204,7 +157,7 @@ function choisirStatut(id: string, s: Statut) {
 
       <div class="mt-5 overflow-hidden rounded-2xl border border-hairline bg-white">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[820px] text-left text-sm">
+          <table class="w-full min-w-[920px] text-left text-sm">
             <thead>
               <tr class="border-b border-hairline text-xs font-semibold uppercase tracking-wide text-stone">
                 <th class="px-5 py-3 font-semibold">Bien</th>
@@ -222,6 +175,10 @@ function choisirStatut(id: string, s: Statut) {
                 </th>
                 <th class="px-5 py-3 font-semibold">Pièces</th>
                 <th class="px-5 py-3 font-semibold">DPE</th>
+                <th class="cursor-pointer px-5 py-3 font-semibold hover:text-ink" @click="toggleTri('score')">
+                  Score
+                  <span v-if="triClef === 'score'">{{ triAsc ? '↑' : '↓' }}</span>
+                </th>
                 <th class="px-5 py-3 font-semibold">Statut</th>
                 <th class="px-5 py-3 font-semibold">Note</th>
                 <th class="px-5 py-3"></th>
@@ -256,6 +213,7 @@ function choisirStatut(id: string, s: Statut) {
                 <td class="px-5 py-3 whitespace-nowrap text-slate">{{ eur(prixM2(b)) }} €</td>
                 <td class="px-5 py-3 whitespace-nowrap">{{ b.nb_pieces }}p</td>
                 <td class="px-5 py-3"><BadgeDPE :dpe="b.dpe" /></td>
+                <td class="px-5 py-3 whitespace-nowrap"><ScoreBien :score="scoreDe(b)" /></td>
                 <td class="px-5 py-3">
                   <div class="relative">
                     <button @click="menuOuvert = menuOuvert === b.id ? null : b.id">

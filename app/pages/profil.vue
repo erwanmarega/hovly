@@ -66,17 +66,7 @@ const inputCls =
 <template>
   <div class="min-h-screen bg-surface text-ink antialiased">
 
-    <header class="sticky top-0 z-20 border-b border-hairline bg-white/90 backdrop-blur">
-      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <HovlyLink />
-        <NuxtLink
-          to="/dashboard"
-          class="rounded-full border border-hairline bg-white px-4 py-2 text-sm font-medium text-steel hover:bg-surface transition"
-        >
-          ← Mes biens
-        </NuxtLink>
-      </div>
-    </header>
+    <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-2xl px-6 py-10">
 

@@ -38,25 +38,7 @@ function libelle(a: Alerte) {
 <template>
   <div class="min-h-screen bg-surface text-ink antialiased">
 
-    <header class="sticky top-0 z-20 border-b border-hairline bg-white/90 backdrop-blur">
-      <div class="mx-auto flex h-16 max-w-4xl items-center justify-between px-6">
-        <div class="flex items-center gap-8">
-          <HovlyLink />
-          <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-steel">
-            <NuxtLink to="/dashboard" class="rounded-full px-3.5 py-1.5 hover:bg-surface">Mes biens</NuxtLink>
-            <span class="rounded-full bg-ink px-3.5 py-1.5 text-white">Alertes</span>
-          </nav>
-        </div>
-        <button
-          @click="lancerVerif"
-          :disabled="checking"
-          class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-black transition disabled:opacity-60"
-        >
-          <span v-if="checking" class="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
-          {{ checking ? 'Vérification…' : 'Vérifier maintenant' }}
-        </button>
-      </div>
-    </header>
+    <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-4xl px-6 py-8">
       <div class="flex flex-wrap items-end justify-between gap-3">
@@ -64,13 +46,23 @@ function libelle(a: Alerte) {
           <h1 class="text-3xl font-light tracking-tight text-ink-deep">Alertes</h1>
           <p class="mt-1 text-slate">Baisses de prix et annonces disparues.</p>
         </div>
-        <button
-          v-if="nonVues > 0"
-          @click="marquerLues"
-          class="text-sm font-medium text-blue hover:underline"
-        >
-          Tout marquer comme lu
-        </button>
+        <div class="flex items-center gap-4">
+          <button
+            v-if="nonVues > 0"
+            @click="marquerLues"
+            class="text-sm font-medium text-blue hover:underline"
+          >
+            Tout marquer comme lu
+          </button>
+          <button
+            @click="lancerVerif"
+            :disabled="checking"
+            class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-black transition disabled:opacity-60"
+          >
+            <span v-if="checking" class="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+            {{ checking ? 'Vérification…' : 'Vérifier maintenant' }}
+          </button>
+        </div>
       </div>
 
       <p v-if="checkMsg" class="mt-4 rounded-xl bg-white border border-hairline px-4 py-3 text-sm text-slate">
