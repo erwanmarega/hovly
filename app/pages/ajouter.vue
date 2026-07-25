@@ -9,13 +9,21 @@ const { biens, refresh, ajouter } = useBiens()
 const { preferences } = usePreferences()
 useAsyncData('biens-ajout', () => refresh(), { server: false })
 
-const SOURCES: SiteSource[] = ['seloger', 'leboncoin', 'pap', 'logic-immo', 'bienici']
+const SOURCES: SiteSource[] = [
+  'seloger',
+  'leboncoin',
+  'pap',
+  'logic-immo',
+  'bienici',
+  'century21'
+]
 const LABELS: Record<SiteSource, string> = {
   seloger: 'SeLoger',
   leboncoin: 'Leboncoin',
   pap: 'PAP',
   'logic-immo': 'Logic-Immo',
-  bienici: 'Bien’ici'
+  bienici: 'Bien’ici',
+  century21: 'Century 21'
 }
 const dpeOptions: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
@@ -163,7 +171,8 @@ async function analyser() {
   error.value = ''
   const source = detecterSource(url.value)
   if (!source) {
-    error.value = 'URL non reconnue. Sources : SeLoger, Leboncoin, PAP, Logic-Immo, Bien’ici.'
+    error.value =
+      'URL non reconnue. Sources : SeLoger, Leboncoin, PAP, Logic-Immo, Bien’ici, Century 21.'
     return
   }
 

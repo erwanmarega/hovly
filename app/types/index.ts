@@ -20,6 +20,16 @@ export type SiteSource =
   | 'pap'
   | 'logic-immo'
   | 'bienici'
+  | 'century21'
+
+export type AvisVisite = 'bon' | 'moyen' | 'mauvais'
+
+export interface Checklist {
+  /** Avis par critère de visite (voir CRITERES_VISITE). */
+  notes: Record<string, AvisVisite>
+  /** Identifiants des questions déjà posées à l'agent. */
+  questions: string[]
+}
 
 export interface Bien {
   id: string
@@ -44,6 +54,10 @@ export interface Bien {
   description: string | null
   statut: Statut
   note_perso: string | null
+  visite_le: string | null
+  compte_rendu: string | null
+  checklist: Partial<Checklist> | null
+  rappel_envoye_le: string | null
   actif: boolean
   created_at: string
 }

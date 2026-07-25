@@ -21,7 +21,9 @@ const selection = ref<string | null>(null);
 
 const filtreStatut = ref<Statut | "tous">("tous");
 const recherche = ref("");
-const triClef = ref<"date" | "prix" | "surface" | "prix_m2" | "score">("date");
+const triClef = ref<
+  "date" | "prix" | "surface" | "prix_m2" | "score" | "visite"
+>("date");
 const triAsc = ref(false);
 
 const { preferences } = usePreferences();
@@ -35,8 +37,6 @@ const {
   nombre: nbCompares,
   complet: selectionComplete,
   comparable,
-  estSelectionne,
-  basculer,
   vider: viderComparaison
 } = useComparateur();
 const doublonsParId = computed(() => {
@@ -46,14 +46,6 @@ const doublonsParId = computed(() => {
   }
   return map;
 });
-
-const sourceLabels: Record<string, string> = {
-  seloger: "SeLoger",
-  leboncoin: "Leboncoin",
-  pap: "PAP",
-  "logic-immo": "Logic-Immo",
-  bienici: "BienIci",
-};
 
 const biensAffiches = computed(() => {
   let list = biens.value.filter((b) => b.actif);
@@ -73,6 +65,19 @@ const biensAffiches = computed(() => {
   }
 
   const dir = triAsc.value ? 1 : -1;
+
+  // Tri par visite : les biens sans date restent en bas dans les deux sens.
+  if (triClef.value === "visite") {
+    const avec = list.filter((b) => b.visite_le);
+    const sans = list.filter((b) => !b.visite_le);
+    avec.sort(
+      (a, b) =>
+        (new Date(a.visite_le!).getTime() - new Date(b.visite_le!).getTime()) *
+        dir
+    );
+    return [...avec, ...sans];
+  }
+
   return [...list].sort((a, b) => {
     let va: number;
     let vb: number;
@@ -158,19 +163,13 @@ function toggleTri(clef: typeof triClef.value) {
 }
 
 const eur = (n: number) => n.toLocaleString("fr-FR");
-
-const menuOuvert = ref<string | null>(null);
-function choisirStatut(id: string, s: Statut) {
-  setStatut(id, s);
-  menuOuvert.value = null;
-}
 </script>
 
 <template>
   <div class="min-h-screen bg-surface text-ink antialiased">
     <TheNavbar width="max-w-7xl" />
 
-    <main class="mx-auto max-w-7xl px-6 py-8">
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <section
         class="bandeau relative isolate overflow-hidden rounded-feature bg-brand px-7 py-8 text-black md:px-10 md:py-10"
       >
@@ -273,6 +272,8 @@ function choisirStatut(id: string, s: Statut) {
         </dl>
       </section>
 
+      <ProchainesVisites :biens="biens" class="mt-6" />
+
       <div
         v-if="groupesDoublons.length"
         class="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-deep/30 bg-brand-light px-4 py-3"
@@ -289,7 +290,7 @@ function choisirStatut(id: string, s: Statut) {
       </div>
 
       <div
-        class="barre sticky top-3 z-20 mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-hairline-soft bg-white/85 p-3 backdrop-blur-xl"
+        class="barre sticky top-[4.5rem] z-20 mt-6 md:top-3 flex flex-wrap items-center gap-3 rounded-2xl border border-hairline-soft bg-white/85 p-3 backdrop-blur-xl"
       >
         <div class="relative min-w-[200px] flex-1">
           <input
@@ -318,7 +319,7 @@ function choisirStatut(id: string, s: Statut) {
           </button>
         </div>
 
-        <div class="flex items-center gap-2 overflow-x-auto">
+        <div class="filtres -mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 py-0.5 sm:w-auto">
           <button
             class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
             :class="
@@ -356,7 +357,7 @@ function choisirStatut(id: string, s: Statut) {
         </div>
 
         <div
-          class="segments relative ml-auto flex items-center rounded-full bg-surface p-1"
+          class="segments relative flex w-full items-center rounded-full bg-surface p-1 sm:ml-auto sm:w-auto"
         >
           <span
             class="pastille absolute inset-y-1 rounded-full bg-ink"
@@ -395,15 +396,15 @@ function choisirStatut(id: string, s: Statut) {
             :style="{ animationDelay: `${n * 0.1}s` }"
           />
           <span
-            class="squelette h-3 w-48 rounded-full"
+            class="squelette h-3 w-full max-w-48 rounded-full"
             :style="{ animationDelay: `${n * 0.1}s` }"
           />
           <span
-            class="squelette ml-auto h-3 w-20 rounded-full"
+            class="squelette ml-auto hidden h-3 w-20 rounded-full sm:block"
             :style="{ animationDelay: `${n * 0.1}s` }"
           />
           <span
-            class="squelette h-6 w-16 rounded-full"
+            class="squelette h-6 w-16 shrink-0 rounded-full"
             :style="{ animationDelay: `${n * 0.1}s` }"
           />
         </div>
@@ -414,9 +415,21 @@ function choisirStatut(id: string, s: Statut) {
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
         <div
-          class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-light text-2xl"
+          class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-light text-ink"
         >
-          🏠
+          <svg
+            class="size-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 9.6V20h14V9.6" />
+            <path d="M10 20v-6h4v6" />
+          </svg>
         </div>
         <p class="mt-4 text-lg font-medium text-ink-deep">
           Aucun bien pour l’instant
@@ -485,229 +498,27 @@ function choisirStatut(id: string, s: Statut) {
         />
       </div>
 
-      <div
+      <ListeBiens
         v-else
-        class="mt-5 overflow-hidden rounded-feature border border-hairline-soft bg-white shadow-[0_1px_2px_rgba(5,0,56,0.04)]"
-      >
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[920px] text-left text-sm">
-            <thead class="bg-surface-soft">
-              <tr
-                class="border-b border-hairline-soft text-[11px] font-semibold uppercase tracking-wider text-stone"
-              >
-                <th class="w-10 px-5 py-3" />
-                <th class="px-5 py-3 font-semibold">Bien</th>
-                <th
-                  class="cursor-pointer px-5 py-3 font-semibold hover:text-ink"
-                  @click="toggleTri('prix')"
-                >
-                  Loyer
-                  <span v-if="triClef === 'prix'">{{
-                    triAsc ? "↑" : "↓"
-                  }}</span>
-                </th>
-                <th
-                  class="cursor-pointer px-5 py-3 font-semibold hover:text-ink"
-                  @click="toggleTri('surface')"
-                >
-                  m²
-                  <span v-if="triClef === 'surface'">{{
-                    triAsc ? "↑" : "↓"
-                  }}</span>
-                </th>
-                <th
-                  class="cursor-pointer px-5 py-3 font-semibold hover:text-ink"
-                  @click="toggleTri('prix_m2')"
-                >
-                  €/m²
-                  <span v-if="triClef === 'prix_m2'">{{
-                    triAsc ? "↑" : "↓"
-                  }}</span>
-                </th>
-                <th class="px-5 py-3 font-semibold">Pièces</th>
-                <th class="px-5 py-3 font-semibold">DPE</th>
-                <th
-                  class="cursor-pointer px-5 py-3 font-semibold hover:text-ink"
-                  @click="toggleTri('score')"
-                >
-                  Score
-                  <span v-if="triClef === 'score'">{{
-                    triAsc ? "↑" : "↓"
-                  }}</span>
-                </th>
-                <th class="px-5 py-3 font-semibold">Statut</th>
-                <th class="px-5 py-3 font-semibold">Note</th>
-                <th class="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(b, i) in biensPage"
-                :key="b.id"
-                class="ligne border-b border-hairline-soft transition last:border-0 hover:bg-surface-soft"
-                :style="{ '--i': i }"
-              >
-                <td class="px-5 py-3">
-                  <input
-                    type="checkbox"
-                    class="size-4 cursor-pointer accent-ink"
-                    :checked="estSelectionne(b.id)"
-                    :disabled="!estSelectionne(b.id) && selectionComplete"
-                    :aria-label="`Comparer ${b.titre}`"
-                    @change="basculer(b.id)"
-                  >
-                </td>
-                <td class="px-5 py-3">
-                  <NuxtLink
-                    :to="`/bien/${b.id}`"
-                    class="flex items-center gap-3 group"
-                  >
-                    <img
-                      v-if="b.photos?.[0]"
-                      :src="b.photos[0]"
-                      :alt="b.titre"
-                      class="size-11 shrink-0 rounded-lg object-cover bg-surface"
-                      loading="lazy"
-                    />
-                    <div
-                      v-else
-                      class="size-11 shrink-0 rounded-lg bg-surface"
-                    />
-                    <div class="min-w-0">
-                      <p
-                        class="truncate font-medium text-ink max-w-[220px] group-hover:text-blue transition"
-                      >
-                        {{ b.titre }}
-                      </p>
-                      <p class="flex items-center gap-1.5 text-xs text-stone">
-                        {{ b.ville }} ·
-                        <span class="text-steel">{{
-                          sourceLabels[b.site_source]
-                        }}</span>
-                        <span
-                          v-if="doublonsParId.get(b.id)"
-                          class="rounded-full bg-brand-light px-1.5 py-0.5 text-[10px] font-semibold text-[#8a6d1c]"
-                          :title="`Ce bien apparaît sur ${doublonsParId.get(b.id)} annonces`"
-                        >
-                          ×{{ doublonsParId.get(b.id) }}
-                        </span>
-                      </p>
-                    </div>
-                  </NuxtLink>
-                </td>
-                <td
-                  class="whitespace-nowrap px-5 py-3 font-semibold tabular-nums"
-                >
-                  {{ eur(prixMensuel(b)) }} €
-                </td>
-                <td class="whitespace-nowrap px-5 py-3 tabular-nums text-slate">
-                  {{ b.surface }} m²
-                </td>
-                <td class="whitespace-nowrap px-5 py-3 tabular-nums text-slate">
-                  {{ eur(prixM2(b)) }} €
-                </td>
-                <td class="whitespace-nowrap px-5 py-3 tabular-nums text-slate">
-                  {{ b.nb_pieces }}p
-                </td>
-                <td class="px-5 py-3"><BadgeDPE :dpe="b.dpe" /></td>
-                <td class="px-5 py-3 whitespace-nowrap">
-                  <ScoreBien :score="scoreDe(b)" />
-                </td>
-                <td class="px-5 py-3">
-                  <div class="relative">
-                    <button
-                      @click="menuOuvert = menuOuvert === b.id ? null : b.id"
-                    >
-                      <BadgeStatut :statut="b.statut" />
-                    </button>
-                    <div
-                      v-if="menuOuvert === b.id"
-                      class="absolute z-10 mt-1 w-44 rounded-xl border border-hairline bg-white p-1 shadow-lg"
-                    >
-                      <button
-                        v-for="s in STATUTS"
-                        :key="s.value"
-                        class="block w-full rounded-lg px-3 py-1.5 text-left text-sm hover:bg-surface"
-                        :class="
-                          b.statut === s.value
-                            ? 'font-semibold text-ink'
-                            : 'text-slate'
-                        "
-                        @click="choisirStatut(b.id, s.value)"
-                      >
-                        {{ s.label }}
-                      </button>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-5 py-3">
-                  <span
-                    class="block max-w-[160px] truncate text-slate"
-                    :title="b.note_perso ?? ''"
-                  >
-                    {{ b.note_perso || "—" }}
-                  </span>
-                </td>
-                <td class="px-5 py-3 text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <a
-                      :href="b.url_source"
-                      target="_blank"
-                      rel="noopener"
-                      class="grid size-8 place-items-center rounded-lg text-stone hover:bg-surface hover:text-ink transition"
-                      title="Voir l'annonce"
-                    >
-                      <svg
-                        class="size-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path
-                          d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                        />
-                        <path d="M15 3h6v6" />
-                        <path d="M10 14 21 3" />
-                      </svg>
-                    </a>
-                    <button
-                      class="grid size-8 place-items-center rounded-lg text-stone hover:bg-coral hover:text-[#600000] transition"
-                      title="Supprimer"
-                      @click="supprimer(b.id)"
-                    >
-                      <svg
-                        class="size-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        <path
-                          d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        class="mt-5"
+        :biens="biensPage"
+        :score="scoreDe"
+        :doublons="doublonsParId"
+        :tri-clef="triClef"
+        :tri-asc="triAsc"
+        :page="page"
+        :total="biensAffiches.length"
+        :par-page="PAR_PAGE"
+        @tri="toggleTri"
+        @update:page="page = $event"
+        @supprimer="supprimer"
+        @statut="setStatut"
+      />
 
-        <PaginationListe
-          :page="page"
-          :total="biensAffiches.length"
-          :par-page="PAR_PAGE"
-          @update:page="page = $event"
-        />
-      </div>
       <Transition name="barre-cmp">
         <div
           v-if="nbCompares"
-          class="fixed inset-x-0 bottom-6 z-30 mx-auto flex w-fit items-center gap-4 rounded-full border border-hairline bg-white/95 px-5 py-3 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl"
+          class="barre-cmp fixed inset-x-0 z-30 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-center gap-3 rounded-full border border-hairline bg-white/95 px-4 py-2.5 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-3"
         >
           <span class="text-sm font-medium">
             {{ nbCompares }} bien{{ nbCompares > 1 ? 's' : '' }} sélectionné{{ nbCompares > 1 ? 's' : '' }}
@@ -797,15 +608,11 @@ function choisirStatut(id: string, s: Statut) {
   animation-delay: calc(var(--i) * 0.05s);
 }
 
-.ligne {
-  opacity: 0;
-  animation: apparaitre 0.4s ease forwards;
-  animation-delay: calc(var(--i) * 0.03s);
+.filtres {
+  scrollbar-width: none;
 }
-@keyframes apparaitre {
-  to {
-    opacity: 1;
-  }
+.filtres::-webkit-scrollbar {
+  display: none;
 }
 
 .squelette {
@@ -825,6 +632,15 @@ function choisirStatut(id: string, s: Statut) {
   }
 }
 
+.barre-cmp {
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .barre-cmp {
+    bottom: 1.5rem;
+  }
+}
+
 .barre-cmp-enter-active,
 .barre-cmp-leave-active {
   transition:
@@ -840,8 +656,7 @@ function choisirStatut(id: string, s: Statut) {
 @media (prefers-reduced-motion: reduce) {
   .bandeau,
   .tuile,
-  .grille > *,
-  .ligne {
+  .grille > * {
     opacity: 1;
     animation: none;
   }

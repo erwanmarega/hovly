@@ -279,6 +279,55 @@ export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
   return out
 }
 
+const C21_BASE = 'https://www.century21.fr'
+
+function montantEuros(texte: string, motif: RegExp): number | null {
+  const m = texte.match(motif)
+  if (!m?.[1]) return null
+  const v = decimal(m[1].replace(/[\s\u00a0\u202f]/g, ''))
+  return v == null ? null : Math.round(v)
+}
+
+export function extraireCentury21(data: PageData): Partial<Bien> {
+  const txt = data.bodyText.replace(/\s+/g, ' ')
+  const out: Partial<Bien> = {}
+
+  const loyer = montantEuros(txt, /Loyer de base\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
+  if (loyer != null) out.prix = loyer * 100
+
+  const charges = montantEuros(txt, /Provision pour charges\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
+  if (charges != null) out.charges = charges * 100
+
+  const surface =
+    montantEuros(txt, /Surface habitable\s*:\s*([\d\s.,]+)\s*m2/i) ??
+    montantEuros(txt, /Surface totale\s*:\s*([\d\s.,]+)\s*m2/i)
+  if (surface != null) out.surface = surface
+
+  const pieces = txt.match(/Nombre de pi[eè]ces\s*:\s*(\d+)/i) ?? txt.match(/(\d+)\s*pi[eè]ces?/i)
+  if (pieces?.[1]) out.nb_pieces = entier(pieces[1])
+
+  if (/rez[- ]de[- ]chauss[ée]e/i.test(txt)) {
+    out.etage = 0
+  } else {
+    const etage = txt.match(/[ÉE]tage\s*:\s*(\d+)/i)
+    if (etage?.[1]) out.etage = entier(etage[1])
+  }
+
+  const lieu = (data.ogTitle || data.title || '').match(/([A-ZÀ-Ü][\p{L}'’ -]+?)\s*-\s*(\d{5})/u)
+  if (lieu) {
+    const ville = nettoyerVille(lieu[1])
+    if (ville) out.ville = ville
+    out.code_postal = lieu[2]
+  }
+
+  const photos = [...(data.domImages ?? []), ...(data.scriptImages ?? [])]
+    .filter((u) => u.includes('/imagesBien/'))
+    .map((u) => (u.startsWith('http') ? u : `${C21_BASE}${u.startsWith('/') ? '' : '/'}${u}`))
+  if (photos.length) out.photos = [...new Set(photos)].slice(0, 20)
+
+  return out
+}
+
 export function extraire(data: PageData): Partial<Bien> {
   const node = trouverNoeudImmo(data.jsonLd)
   const flat = aplatirJsonLd(data.jsonLd)

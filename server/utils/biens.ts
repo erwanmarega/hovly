@@ -21,7 +21,8 @@ export function serviceDb(event: H3Event) {
 export const CHAMPS_MODIFIABLES = [
   'titre', 'prix', 'surface', 'nb_pieces', 'etage', 'charges',
   'dpe', 'adresse', 'ville', 'code_postal', 'photos', 'description',
-  'statut', 'note_perso', 'actif'
+  'statut', 'note_perso', 'actif',
+  'visite_le', 'compte_rendu', 'checklist'
 ] as const
 
 export const STATUTS_VALIDES = [

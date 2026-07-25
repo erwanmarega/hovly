@@ -1,6 +1,12 @@
 import type { Bien, SiteSource } from '~/types'
 import { getBrowser, pickUserAgent, randomDelay } from './browser'
-import { extraire, extraireLeboncoin, estPageRecherche, type PageData } from './extract'
+import {
+  extraire,
+  extraireLeboncoin,
+  extraireCentury21,
+  estPageRecherche,
+  type PageData
+} from './extract'
 import { detecterSource } from './source'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
@@ -55,9 +61,16 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
   }
 
   const data = extraire(raw)
-  if (source === 'leboncoin') {
-    const lbc = extraireLeboncoin(raw.nextData)
-    for (const [k, v] of Object.entries(lbc)) {
+
+  const specifique =
+    source === 'leboncoin'
+      ? extraireLeboncoin(raw.nextData)
+      : source === 'century21'
+        ? extraireCentury21(raw)
+        : null
+
+  if (specifique) {
+    for (const [k, v] of Object.entries(specifique)) {
       if (v != null && v !== '') (data as any)[k] = v
     }
   }

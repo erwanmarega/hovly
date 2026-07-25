@@ -15,7 +15,8 @@ const LABELS: Record<SiteSource, string> = {
   leboncoin: 'Leboncoin',
   pap: 'PAP',
   'logic-immo': 'Logic-Immo',
-  bienici: 'Bien’ici'
+  bienici: 'Bien’ici',
+  century21: 'Century 21'
 }
 </script>
 

@@ -1,0 +1,39 @@
+interface CorpsAbonnement {
+  endpoint?: string
+  keys?: { p256dh?: string; auth?: string }
+}
+
+export default defineEventHandler(async (event) => {
+  const user = await requireUser(event)
+  const body = await readBody<CorpsAbonnement>(event)
+
+  const endpoint = body?.endpoint
+  const p256dh = body?.keys?.p256dh
+  const auth = body?.keys?.auth
+
+  if (!endpoint || !p256dh || !auth) {
+    throw createError({ statusCode: 400, statusMessage: 'Abonnement push incomplet' })
+  }
+
+  // Service role : l'endpoint est unique globalement, il peut appartenir à un
+  // autre compte (navigateur partagé) — cas que la RLS bloquerait à l'upsert.
+  // Le user_id vient de la session, jamais du corps de la requête.
+  const client = serviceDb(event)
+
+  // Le même navigateur peut renvoyer un endpoint déjà connu (re-souscription) :
+  // on écrase les clés et on rattache l'abonnement à l'utilisateur courant.
+  const { error } = await client.from('push_abonnements').upsert(
+    {
+      user_id: user.id,
+      endpoint,
+      p256dh,
+      auth,
+      agent: getHeader(event, 'user-agent') ?? null,
+      derniere_erreur: null
+    },
+    { onConflict: 'endpoint' }
+  )
+
+  if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+  return { ok: true }
+})

@@ -8,10 +8,17 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Statut invalide' })
   }
 
+  if (body?.visite_le != null && Number.isNaN(new Date(body.visite_le).getTime())) {
+    throw createError({ statusCode: 400, statusMessage: 'Date de visite invalide' })
+  }
+
   const patch: Record<string, unknown> = {}
   for (const champ of CHAMPS_MODIFIABLES) {
     if (champ in body) patch[champ] = body[champ]
   }
+
+  // Replanifier une visite doit pouvoir redéclencher le rappel J-1.
+  if ('visite_le' in patch) patch.rappel_envoye_le = null
   if (Object.keys(patch).length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Aucun champ à mettre à jour' })
   }

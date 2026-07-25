@@ -1,5 +1,5 @@
 import type { Bien } from '~/types'
-import { verifierBiens, notifier } from '../utils/check'
+import { verifierBiens, notifier, notifierPush } from '../utils/check'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
 
   const resume = await verifierBiens(service, (biens ?? []) as Bien[])
   const envois = await notifier(user.email ?? null, resume)
+  const push = await notifierPush(service, user.id, resume)
 
-  return { ...resume, envois }
+  return { ...resume, envois, push }
 })

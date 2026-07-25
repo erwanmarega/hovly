@@ -24,12 +24,17 @@ create table if not exists public.biens (
   statut      text not null default 'a_visiter',
   note_perso  text,
   actif       boolean not null default true,
+  visite_le        timestamptz,
+  compte_rendu     text,
+  checklist        jsonb not null default '{}'::jsonb,
+  rappel_envoye_le timestamptz,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
 create index if not exists biens_user_id_idx on public.biens (user_id);
 create index if not exists biens_created_at_idx on public.biens (created_at desc);
+create index if not exists biens_visite_le_idx on public.biens (visite_le) where visite_le is not null;
 
 create table if not exists public.prix_historique (
   id          uuid primary key default gen_random_uuid(),
@@ -96,3 +101,23 @@ create policy "alertes_own" on public.alertes
   for all using (
     exists (select 1 from public.biens b where b.id = bien_id and b.user_id = auth.uid())
   );
+
+create table if not exists public.push_abonnements (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  endpoint        text not null unique,
+  p256dh          text not null,
+  auth            text not null,
+  agent           text,
+  cree_le         timestamptz not null default now(),
+  derniere_erreur text
+);
+
+create index if not exists push_abonnements_user_id_idx
+  on public.push_abonnements (user_id);
+
+alter table public.push_abonnements enable row level security;
+
+drop policy if exists "push_abonnements_own" on public.push_abonnements;
+create policy "push_abonnements_own" on public.push_abonnements
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

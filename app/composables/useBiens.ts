@@ -44,6 +44,19 @@ export function useBiens() {
     }
   }
 
+  /** Mise à jour optimiste d'un ou plusieurs champs, annulée si l'API refuse. */
+  async function mettreAJour(id: string, patch: Partial<Bien>) {
+    const b = biens.value.find((x) => x.id === id)
+    const avant = b ? { ...b } : null
+    if (b) Object.assign(b, patch)
+    try {
+      await $fetch(`/api/biens/${id}`, { method: 'PATCH', body: patch })
+    } catch (e) {
+      if (b && avant) Object.assign(b, avant)
+      throw e
+    }
+  }
+
   async function setNote(id: string, note: string) {
     const b = biens.value.find((x) => x.id === id)
     if (b) b.note_perso = note
@@ -60,7 +73,17 @@ export function useBiens() {
     }
   }
 
-  return { biens, refresh, prixMensuel, prixM2, setStatut, setNote, supprimer, ajouter }
+  return {
+    biens,
+    refresh,
+    prixMensuel,
+    prixM2,
+    setStatut,
+    setNote,
+    mettreAJour,
+    supprimer,
+    ajouter
+  }
 }
 
 export function detecterSource(url: string): SiteSource | null {
@@ -75,5 +98,6 @@ export function detecterSource(url: string): SiteSource | null {
   if (host.includes('pap.fr')) return 'pap'
   if (host.includes('logic-immo')) return 'logic-immo'
   if (host.includes('bienici')) return 'bienici'
+  if (host.includes('century21')) return 'century21'
   return null
 }

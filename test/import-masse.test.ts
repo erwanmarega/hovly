@@ -93,7 +93,7 @@ describe('parserUrls', () => {
   })
 
   it('signale une source non supportée', () => {
-    const r = parserUrls('https://www.century21.fr/annonce/1')
+    const r = parserUrls('https://www.orpi.com/annonce/1')
     expect(r[0]).toMatchObject({ statut: 'source_inconnue', source: null })
   })
 

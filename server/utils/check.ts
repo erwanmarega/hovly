@@ -2,6 +2,7 @@ import type { Bien } from '~/types'
 import type { AlerteCreee, CheckResume, ResumeEnvois } from '~/types/check'
 import { scrapeUrl } from './scrape'
 import { envoyerAlerteEmail } from './email'
+import { envoyerAlertePush, pushDisponible } from './push'
 
 export type { AlerteCreee, CheckResume, ResumeEnvois }
 
@@ -91,6 +92,31 @@ export async function notifier(
       envois.echecs++
       if (res.raison && !envois.raisons.includes(res.raison)) envois.raisons.push(res.raison)
     }
+  }
+  return envois
+}
+
+/**
+ * Notifications push, un envoi par alerte et par appareil abonné.
+ * Sans clés VAPID configurées, ne fait rien (le push est optionnel).
+ */
+export async function notifierPush(
+  client: any,
+  userId: string,
+  resume: CheckResume
+): Promise<ResumeEnvois> {
+  const envois: ResumeEnvois = { envoyes: 0, echecs: 0, raisons: [] }
+  if (resume.alertes.length === 0 || !pushDisponible()) return envois
+
+  for (const a of resume.alertes) {
+    const res = await envoyerAlertePush(client, userId, a).catch((e: Error) => ({
+      envoyes: 0,
+      echecs: 1,
+      raisons: [e.message]
+    }))
+    envois.envoyes += res.envoyes
+    envois.echecs += res.echecs
+    for (const r of res.raisons) if (!envois.raisons.includes(r)) envois.raisons.push(r)
   }
   return envois
 }

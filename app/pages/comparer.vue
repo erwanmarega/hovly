@@ -33,7 +33,8 @@ const sourceLabels: Record<string, string> = {
   leboncoin: 'Leboncoin',
   pap: 'PAP',
   'logic-immo': 'Logic-Immo',
-  bienici: 'Bien’ici'
+  bienici: 'Bien’ici',
+  century21: 'Century 21'
 }
 </script>
 
@@ -83,7 +84,21 @@ const sourceLabels: Record<string, string> = {
         v-else-if="choisis.length < 2"
         class="mt-6 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
-        <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-light text-2xl">⚖️</div>
+        <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-light text-ink">
+          <svg
+            class="size-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 4v17M8 21h8M12 6l7 2M12 6 5 8" />
+            <path d="M5 8 2 14a3 3 0 0 0 6 0Z" />
+            <path d="m19 8-3 6a3 3 0 0 0 6 0Z" />
+          </svg>
+        </div>
         <p class="mt-4 text-lg font-medium text-ink-deep">
           {{ choisis.length === 1 ? 'Encore un bien à choisir' : 'Sélectionne au moins deux biens' }}
         </p>
@@ -114,7 +129,7 @@ const sourceLabels: Record<string, string> = {
           <table class="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr>
-                <th class="sticky left-0 z-10 w-40 bg-white p-4 text-left align-bottom">
+                <th class="sticky left-0 z-10 w-28 bg-white p-3 text-left align-bottom sm:w-40 sm:p-4">
                   <span class="text-xs font-semibold uppercase tracking-wide text-stone">
                     {{ choisis.length }} biens
                   </span>

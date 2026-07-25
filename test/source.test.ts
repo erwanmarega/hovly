@@ -15,7 +15,7 @@ describe('detecterSource', () => {
   })
 
   it('retourne null pour source non supportée', () => {
-    expect(detecterSource('https://www.century21.fr/x')).toBeNull()
+    expect(detecterSource('https://www.orpi.com/x')).toBeNull()
   })
 
   it('retourne null pour URL invalide', () => {

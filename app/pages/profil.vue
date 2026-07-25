@@ -337,6 +337,14 @@ const inputCls =
         </div>
       </section>
 
+      <section class="mt-6 rounded-feature border border-hairline-soft bg-white p-6">
+        <h2 class="text-sm font-semibold text-ink-deep">Notifications</h2>
+        <p class="mt-1 text-sm text-slate">
+          Les alertes arrivent par email. Active le push pour être prévenu sur cet appareil.
+        </p>
+        <ReglagePush class="mt-5" />
+      </section>
+
       <div class="mt-6 grid gap-6 lg:grid-cols-2">
         <section class="rounded-feature border border-hairline-soft bg-white p-6">
           <h2 class="text-sm font-semibold text-ink-deep">Informations</h2>

@@ -51,7 +51,7 @@ describe('envoyerAlerteEmail — annonce supprimée', () => {
     const b = corps()
 
     expect(b.to).toBe('moi@exemple.fr')
-    expect(b.subject).toBe('⚠️ Annonce supprimée — T3 Cachan')
+    expect(b.subject).toBe('Annonce supprimée — T3 Cachan')
     expect(b.html).toContain('T3 Cachan')
     expect(b.html).toContain('Archivés')
   })
@@ -73,7 +73,7 @@ describe('envoyerAlerteEmail — baisse de prix', () => {
     await envoyerAlerteEmail('moi@exemple.fr', baisse)
     const b = corps()
 
-    expect(b.subject).toBe('📉 Baisse de prix — T2 Lyon')
+    expect(b.subject).toBe('Baisse de prix — T2 Lyon')
     expect(b.html).toMatch(/1\s570\s€/u)
     expect(b.html).toMatch(/1\s490\s€/u)
   })

@@ -12,5 +12,6 @@ export function detecterSource(url: string): SiteSource | null {
   if (host.includes('pap.fr')) return 'pap'
   if (host.includes('logic-immo')) return 'logic-immo'
   if (host.includes('bienici')) return 'bienici'
+  if (host.includes('century21')) return 'century21'
   return null
 }

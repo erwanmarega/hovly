@@ -21,4 +21,5 @@ export interface CheckResume {
   erreurs: number
   alertes: AlerteCreee[]
   envois?: ResumeEnvois
+  push?: ResumeEnvois
 }

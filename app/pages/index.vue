@@ -8,7 +8,14 @@ useHead({
   ]
 })
 
-const sources: SiteSource[] = ['seloger', 'leboncoin', 'pap', 'logic-immo', 'bienici']
+const sources: SiteSource[] = [
+  'seloger',
+  'leboncoin',
+  'pap',
+  'logic-immo',
+  'bienici',
+  'century21'
+]
 
 
 </script>

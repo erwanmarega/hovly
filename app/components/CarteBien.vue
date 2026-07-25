@@ -61,6 +61,7 @@ const eur = (n: number) => n.toLocaleString('fr-FR')
           {{ eur(prixM2) }} €/m²
         </span>
         <BadgeDPE :dpe="bien.dpe" />
+        <BadgeVisite :visite-le="bien.visite_le" compact />
       </div>
 
       <div class="mt-auto flex items-center gap-1 pt-4">

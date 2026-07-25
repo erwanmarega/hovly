@@ -19,6 +19,7 @@ const conteneur = ref<HTMLElement | null>(null)
 const { biens: contexte } = useBiens()
 
 let carte: LeafletMap | null = null
+let observateur: ResizeObserver | null = null
 let couche: (CircleMarker | Circle)[] = []
 const marqueurs = new Map<string, CircleMarker>()
 
@@ -114,10 +115,17 @@ onMounted(async () => {
     attribution: '&copy; OpenStreetMap &copy; CARTO'
   }).addTo(carte)
 
+  // La hauteur peut changer après le montage (colonne étirée, images chargées) :
+  // sans invalidateSize, Leaflet laisse des tuiles grises.
+  observateur = new ResizeObserver(() => carte?.invalidateSize())
+  observateur.observe(conteneur.value)
+
   await dessiner()
 })
 
 onBeforeUnmount(() => {
+  observateur?.disconnect()
+  observateur = null
   carte?.remove()
   carte = null
 })
@@ -137,11 +145,14 @@ watch(
 </script>
 
 <template>
-  <div>
+  <div class="flex min-h-0 flex-col">
+    <!-- hauteur="100%" : la carte remplit le conteneur parent (colonne étirée)
+         plutôt que d'imposer une hauteur fixe. -->
     <div
       ref="conteneur"
       class="w-full overflow-hidden rounded-2xl border border-hairline bg-white"
-      :style="{ height: hauteur }"
+      :class="hauteur === '100%' && 'min-h-0 flex-1'"
+      :style="hauteur === '100%' ? undefined : { height: hauteur }"
     />
 
     <p v-if="sansPosition > 0" class="mt-2 text-xs text-stone">

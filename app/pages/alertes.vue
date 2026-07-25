@@ -97,17 +97,6 @@ async function lancerVerif() {
 
 const eur = (c: number | null) =>
   c == null ? '—' : Math.round(c / 100).toLocaleString('fr-FR') + ' €'
-
-const heure = (iso: string) =>
-  new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-
-function ecart(a: Alerte) {
-  if (a.type !== 'baisse_prix' || !a.ancien_prix || !a.nouveau_prix) return null
-  return Math.round(((a.nouveau_prix - a.ancien_prix) / a.ancien_prix) * 100)
-}
-
-const libelle = (a: Alerte) =>
-  a.type === 'baisse_prix' ? 'Baisse de prix' : 'Annonce supprimée'
 </script>
 
 <template>
@@ -203,6 +192,8 @@ const libelle = (a: Alerte) =>
         </p>
       </Transition>
 
+      <ReglagePush class="mt-6" />
+
       <div
         class="mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-hairline-soft bg-white p-3"
       >
@@ -237,7 +228,20 @@ const libelle = (a: Alerte) =>
         v-else-if="!alertes.length"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
-        <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-teal text-2xl">🔔</div>
+        <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-teal text-[#0a4a42]">
+          <svg
+            class="size-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+          </svg>
+        </div>
         <p class="mt-4 text-lg font-medium text-ink-deep">Aucune alerte pour l’instant</p>
         <p class="mx-auto mt-1 max-w-xs text-sm text-slate">
           Hovly surveille tes biens chaque jour. Tu peux aussi lancer une vérification manuelle.
@@ -264,58 +268,7 @@ const libelle = (a: Alerte) =>
 
           <ul class="space-y-2.5">
             <li v-for="(a, i) in liste" :key="a.id" class="alerte" :style="{ '--i': i }">
-              <NuxtLink
-                :to="`/bien/${a.bien_id}`"
-                class="carte flex items-center gap-4 rounded-2xl border bg-white p-4"
-                :class="a.vue ? 'border-hairline-soft' : 'border-blue/40 ring-1 ring-blue/10'"
-              >
-                <div class="relative shrink-0">
-                  <img
-                    v-if="a.biens?.photos?.[0]"
-                    :src="a.biens.photos[0]"
-                    alt=""
-                    loading="lazy"
-                    class="size-12 rounded-xl bg-surface object-cover"
-                  >
-                  <div
-                    v-else
-                    class="grid size-12 place-items-center rounded-xl text-lg"
-                    :class="a.type === 'baisse_prix' ? 'bg-teal' : 'bg-coral'"
-                  >
-                    {{ a.type === 'baisse_prix' ? '📉' : '⚠️' }}
-                  </div>
-                  <span
-                    class="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full text-[10px] ring-2 ring-white"
-                    :class="a.type === 'baisse_prix' ? 'bg-teal' : 'bg-coral'"
-                  >
-                    {{ a.type === 'baisse_prix' ? '↓' : '!' }}
-                  </span>
-                </div>
-
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold">{{ libelle(a) }}</span>
-                    <span v-if="!a.vue" class="size-2 rounded-full bg-blue" />
-                  </div>
-                  <p class="truncate text-sm text-slate">{{ a.biens?.titre ?? 'Bien' }}</p>
-                  <p v-if="a.biens?.ville" class="truncate text-xs text-stone">
-                    {{ a.biens.ville }}
-                  </p>
-                </div>
-
-                <div class="shrink-0 text-right">
-                  <p v-if="a.type === 'baisse_prix'" class="flex items-center justify-end gap-2">
-                    <s class="text-xs font-normal text-stone">{{ eur(a.ancien_prix) }}</s>
-                    <span class="text-sm font-semibold">{{ eur(a.nouveau_prix) }}</span>
-                    <span
-                      v-if="ecart(a) !== null"
-                      class="rounded-full bg-teal/50 px-2 py-0.5 text-[11px] font-bold text-[#0a4a42]"
-                    >{{ ecart(a) }} %</span>
-                  </p>
-                  <p v-else class="text-sm font-medium text-[#600000]">Plus disponible</p>
-                  <p class="mt-1 text-xs text-stone">{{ heure(a.envoyee_le) }}</p>
-                </div>
-              </NuxtLink>
+              <LigneAlerte :alerte="a" />
             </li>
           </ul>
         </section>
@@ -390,18 +343,6 @@ const libelle = (a: Alerte) =>
   animation-delay: calc(var(--i) * 0.05s);
 }
 
-.carte {
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
-.carte:hover {
-  transform: translateX(3px);
-  border-color: var(--color-hairline-strong);
-  box-shadow: 0 10px 26px rgb(5 0 56 / 7%);
-}
-
 .squelette {
   display: block;
   background: linear-gradient(
@@ -443,8 +384,7 @@ const libelle = (a: Alerte) =>
     animation: none;
   }
   .action:not(:disabled):hover,
-  .filtre:hover,
-  .carte:hover {
+  .filtre:hover {
     transform: none;
   }
 }

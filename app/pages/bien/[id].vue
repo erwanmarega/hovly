@@ -32,6 +32,7 @@ const sourceLabels: Record<string, string> = {
   pap: "PAP",
   "logic-immo": "Logic-Immo",
   bienici: "BienIci",
+  century21: "Century 21",
 };
 
 const { biens, refresh: refreshBiens } = useBiens();
@@ -72,18 +73,54 @@ const dateAjout = computed(() =>
     : ""
 );
 
+/**
+ * `useAsyncData` renvoie un shallowRef : muter une propriété de `bien.value` ne
+ * déclenche rien. Toute écriture locale remplace donc l'objet entier.
+ */
+function patcher(patch: Partial<Bien>) {
+  if (bien.value) bien.value = { ...bien.value, ...patch };
+}
+
 const menuStatut = ref(false);
 async function setStatut(s: Statut) {
   menuStatut.value = false;
   if (!bien.value) return;
   const prev = bien.value.statut;
-  bien.value.statut = s;
+  patcher({ statut: s });
   try {
     await $fetch(`/api/biens/${id}`, { method: "PATCH", body: { statut: s } });
   } catch {
-    bien.value.statut = prev;
+    patcher({ statut: prev });
   }
 }
+
+/** Les composants de visite écrivent en base ; la page recopie le patch localement. */
+const appliquerVisite = patcher;
+
+const afficherChecklist = computed(() => {
+  const b = bien.value;
+  if (!b) return false;
+  return (
+    !!b.visite_le ||
+    b.statut === "visite" ||
+    b.statut === "planifie" ||
+    !!b.compte_rendu ||
+    bilanVisite(b.checklist).remplis > 0
+  );
+});
+
+/** La checklist apparaît en bas de page : on l'amène sous les yeux. */
+const blocChecklist = ref<HTMLElement | null>(null);
+watch(afficherChecklist, (visible, avant) => {
+  if (!visible || avant) return;
+  nextTick(() => {
+    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    blocChecklist.value?.scrollIntoView({
+      behavior: doux ? "smooth" : "auto",
+      block: "start",
+    });
+  });
+});
 
 const noteDraft = ref("");
 watchEffect(() => {
@@ -96,9 +133,58 @@ async function saveNote() {
     method: "PATCH",
     body: { note_perso: noteDraft.value },
   });
-  bien.value.note_perso = noteDraft.value;
+  patcher({ note_perso: noteDraft.value });
   noteSaved.value = true;
   setTimeout(() => (noteSaved.value = false), 1500);
+}
+
+const LIBELLES_CHAMPS: Record<string, string> = {
+  titre: "titre",
+  prix: "loyer",
+  surface: "surface",
+  nb_pieces: "pièces",
+  etage: "étage",
+  charges: "charges",
+  dpe: "DPE",
+  adresse: "adresse",
+  ville: "ville",
+  code_postal: "code postal",
+  photos: "photos",
+  description: "description",
+};
+
+const rafraichissement = ref(false);
+const messageRefresh = ref("");
+const refreshErreur = ref(false);
+
+async function rafraichir() {
+  rafraichissement.value = true;
+  messageRefresh.value = "";
+  refreshErreur.value = false;
+  try {
+    const r = await $fetch<{
+      indisponible: boolean;
+      changements: { champ: string; avant: unknown; apres: unknown }[];
+      bien: Bien;
+    }>(`/api/biens/${id}/refresh`, { method: "POST" });
+
+    bien.value = r.bien;
+    if (r.indisponible) {
+      refreshErreur.value = true;
+      messageRefresh.value = "L’annonce n’est plus en ligne — bien archivé.";
+    } else if (!r.changements.length) {
+      messageRefresh.value = "Aucun changement : les données étaient à jour.";
+    } else {
+      const noms = r.changements.map((c) => LIBELLES_CHAMPS[c.champ] ?? c.champ);
+      messageRefresh.value = `Mis à jour : ${noms.join(", ")}.`;
+    }
+  } catch (e: unknown) {
+    const err = e as { statusMessage?: string };
+    refreshErreur.value = true;
+    messageRefresh.value = err?.statusMessage || "Rafraîchissement impossible.";
+  } finally {
+    rafraichissement.value = false;
+  }
 }
 
 const deleting = ref(false);
@@ -151,7 +237,7 @@ async function supprimer() {
               }}
             </p>
           </div>
-          <div class="flex shrink-0 items-center gap-3">
+          <div class="flex w-full shrink-0 flex-wrap items-center gap-2.5 sm:w-auto sm:gap-3">
             <a
               :href="bien.url_source"
               target="_blank"
@@ -174,6 +260,30 @@ async function supprimer() {
               </svg>
             </a>
             <button
+              :disabled="rafraichissement"
+              class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-steel hover:bg-surface hover:text-ink transition disabled:opacity-60"
+              title="Relancer l’extraction depuis l’annonce"
+              @click="rafraichir"
+            >
+              <span
+                v-if="rafraichissement"
+                class="size-4 animate-spin rounded-full border-2 border-hairline border-t-ink"
+              />
+              <svg
+                v-else
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M21 12a9 9 0 1 1-3-6.7" />
+                <path d="M21 3v6h-6" />
+              </svg>
+              {{ rafraichissement ? "Rafraîchissement…" : "Rafraîchir" }}
+            </button>
+            <button
               :disabled="deleting"
               class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-steel hover:bg-coral hover:text-[#600000] transition disabled:opacity-60"
               @click="supprimer"
@@ -194,8 +304,24 @@ async function supprimer() {
           </div>
         </div>
 
-        <div class="mt-6 grid gap-6 lg:grid-cols-5">
-          <div class="lg:col-span-3">
+        <Transition name="msg">
+          <p
+            v-if="messageRefresh"
+            class="mt-4 rounded-2xl border px-4 py-3 text-sm"
+            :class="
+              refreshErreur
+                ? 'border-coral bg-coral/20 text-[#600000]'
+                : 'border-teal-deep/30 bg-teal/30 text-[#0a4a42]'
+            "
+          >
+            {{ messageRefresh }}
+          </p>
+        </Transition>
+
+        <!-- Les deux colonnes s'étirent : la carte et la zone de note absorbent
+             l'écart pour que les deux blocs se terminent à la même hauteur. -->
+        <div class="mt-6 grid items-stretch gap-6 lg:grid-cols-5">
+          <div class="flex flex-col lg:col-span-3">
             <div
               v-if="bien.photos.length"
               class="overflow-hidden rounded-2xl border border-hairline bg-white"
@@ -268,7 +394,8 @@ async function supprimer() {
 
             <div
               v-if="bien.lat != null && bien.lon != null"
-              class="mt-6 rounded-2xl border border-hairline bg-white p-6"
+              class="mt-6 flex min-h-0 flex-col rounded-2xl border border-hairline bg-white p-6"
+              :class="bien.description ? '' : 'flex-1'"
             >
               <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Situation</h2>
@@ -277,10 +404,12 @@ async function supprimer() {
                 </span>
               </div>
               <ClientOnly>
-                <CarteBiens class="mt-3" :biens="[bien]" hauteur="16rem" />
+                <div class="mt-3 min-h-64 flex-1">
+                  <CarteBiens class="h-full" :biens="[bien]" hauteur="100%" />
+                </div>
                 <template #fallback>
                   <div
-                    class="mt-3 h-64 animate-pulse rounded-2xl border border-hairline bg-surface"
+                    class="mt-3 min-h-64 flex-1 animate-pulse rounded-2xl border border-hairline bg-surface"
                   />
                 </template>
               </ClientOnly>
@@ -288,7 +417,7 @@ async function supprimer() {
 
             <div
               v-if="bien.description"
-              class="mt-6 rounded-2xl border border-hairline bg-white p-6"
+              class="mt-6 flex-1 rounded-2xl border border-hairline bg-white p-6"
             >
               <h2 class="text-lg font-semibold">Description</h2>
               <p
@@ -299,7 +428,7 @@ async function supprimer() {
             </div>
           </div>
 
-          <div class="lg:col-span-2 space-y-6">
+          <div class="flex flex-col gap-6 lg:col-span-2">
             <div class="rounded-2xl border border-hairline bg-white p-6">
               <p class="text-3xl font-bold tracking-tight">
                 {{ eur(prixMensuel) }} €<span
@@ -357,22 +486,16 @@ async function supprimer() {
                 </li>
               </ul>
             </div>
-          </div>
-        </div>
 
-        <div class="mt-6 grid gap-6 lg:grid-cols-3">
-          <PrixHistorique :points="historique" class="lg:col-span-2" />
+            <PlanificateurVisite :bien="bien" @maj="appliquerVisite" />
 
-          <div class="flex flex-col gap-6">
             <div class="rounded-2xl border border-hairline bg-white p-6">
-              <h2
-                class="text-sm font-semibold uppercase tracking-wide text-stone"
-              >
+              <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
                 Statut
               </h2>
               <div class="relative mt-3">
                 <button
-                  class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left hover:bg-surface transition"
+                  class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left transition hover:bg-surface"
                   @click="menuStatut = !menuStatut"
                 >
                   <BadgeStatut :statut="bien.statut" />
@@ -395,9 +518,7 @@ async function supprimer() {
                     :key="s.value"
                     class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface"
                     :class="
-                      bien.statut === s.value
-                        ? 'font-semibold text-ink'
-                        : 'text-slate'
+                      bien.statut === s.value ? 'font-semibold text-ink' : 'text-slate'
                     "
                     @click="setStatut(s.value)"
                   >
@@ -411,26 +532,67 @@ async function supprimer() {
               class="flex flex-1 flex-col rounded-2xl border border-hairline bg-white p-6"
             >
               <div class="flex items-center justify-between">
-                <h2
-                  class="text-sm font-semibold uppercase tracking-wide text-stone"
-                >
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
                   Ma note
                 </h2>
-                <span v-if="noteSaved" class="text-xs font-medium text-success"
-                  >Enregistré ✓</span
-                >
+                <span v-if="noteSaved" class="text-xs font-medium text-success">
+                  Enregistré
+                </span>
               </div>
               <textarea
                 v-model="noteDraft"
                 rows="4"
                 placeholder="Quartier, points forts, points faibles…"
-                class="mt-3 min-h-24 w-full flex-1 resize-none rounded-lg border border-hairline-strong bg-white px-4 py-2.5 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
+                class="mt-3 min-h-24 w-full flex-1 resize-none rounded-lg border border-hairline-strong bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20"
                 @blur="saveNote"
               />
             </div>
           </div>
         </div>
+
+        <PrixHistorique :points="historique" class="mt-6" />
+
+        <Transition name="bloc">
+          <div v-if="afficherChecklist" ref="blocChecklist" class="scroll-mt-24">
+            <ChecklistVisite :bien="bien" class="mt-6" @maj="appliquerVisite" />
+          </div>
+        </Transition>
       </template>
     </main>
   </div>
 </template>
+
+<style scoped>
+.bloc-enter-active,
+.bloc-leave-active {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.bloc-enter-from,
+.bloc-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.msg-enter-active,
+.msg-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+.msg-enter-from,
+.msg-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg-enter-active,
+  .msg-leave-active,
+  .bloc-enter-active,
+  .bloc-leave-active {
+    transition: none;
+  }
+}
+</style>

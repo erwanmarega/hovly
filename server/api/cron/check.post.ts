@@ -1,6 +1,6 @@
 import type { Bien } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
-import { verifierBiens, notifier } from '../../utils/check'
+import { verifierBiens, notifier, notifierPush } from '../../utils/check'
 
 export default defineEventHandler(async (event) => {
   const secret = process.env.CRON_SECRET
@@ -28,6 +28,8 @@ export default defineEventHandler(async (event) => {
   let totalAlertes = 0
   let emailsEnvoyes = 0
   let emailsEchoues = 0
+  let pushEnvoyes = 0
+  let pushEchoues = 0
   for (const [userId, liste] of parUser) {
     const resume = await verifierBiens(service, liste)
     totalAlertes += resume.alertes.length
@@ -36,6 +38,10 @@ export default defineEventHandler(async (event) => {
       const envois = await notifier(data?.user?.email ?? null, resume)
       emailsEnvoyes += envois.envoyes
       emailsEchoues += envois.echecs
+
+      const push = await notifierPush(service, userId, resume)
+      pushEnvoyes += push.envoyes
+      pushEchoues += push.echecs
     }
   }
 
@@ -44,6 +50,7 @@ export default defineEventHandler(async (event) => {
     users: parUser.size,
     biens: biens?.length ?? 0,
     alertes: totalAlertes,
-    emails: { envoyes: emailsEnvoyes, echecs: emailsEchoues }
+    emails: { envoyes: emailsEnvoyes, echecs: emailsEchoues },
+    push: { envoyes: pushEnvoyes, echecs: pushEchoues }
   }
 })

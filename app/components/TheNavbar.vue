@@ -25,6 +25,10 @@ const anchors = [
   { href: "#sources", label: "Sources" },
 ];
 
+useHead({
+  bodyAttrs: { class: computed(() => (user.value ? "a-nav-mobile" : "")) },
+});
+
 async function logout() {
   await supabase.auth.signOut();
   await navigateTo("/");
@@ -83,12 +87,6 @@ async function logout() {
             "
           >
             Comparer
-            <span
-              v-if="nonVues > 0"
-              class="grid min-w-5 place-items-center rounded-full bg-coral-soft px-1.5 text-xs font-bold text-white"
-            >
-              {{ nonVues }}
-            </span>
           </NuxtLink>
         </nav>
 
@@ -110,10 +108,13 @@ async function logout() {
         <template v-if="user">
           <NuxtLink
             to="/ajouter"
-            class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-black transition"
+            class="flex items-center gap-2 rounded-full bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-black transition sm:px-4"
+            title="Ajouter un bien"
           >
-            <span class="text-base leading-none">+</span> Ajouter un bien
+            <span class="text-base leading-none">+</span>
+            <span class="hidden sm:inline">Ajouter un bien</span>
           </NuxtLink>
+          <CentreNotifications />
           <NuxtLink
             to="/profil"
             class="grid size-9 place-items-center rounded-full bg-brand text-sm font-bold text-ink hover:opacity-90 transition"
@@ -122,7 +123,7 @@ async function logout() {
             {{ (userEmail || "?").charAt(0).toUpperCase() }}
           </NuxtLink>
           <button
-            class="grid size-9 place-items-center rounded-full border border-hairline bg-white text-stone hover:bg-surface hover:text-ink transition"
+            class="hidden size-9 place-items-center rounded-full border border-hairline bg-white text-stone hover:bg-surface hover:text-ink transition md:grid"
             title="Se déconnecter"
             @click="logout"
           >
@@ -142,11 +143,13 @@ async function logout() {
         <NuxtLink
           v-else
           to="/login"
-          class="hidden sm:inline text-sm font-medium hover:text-slate transition"
+          class="rounded-full border border-hairline px-4 py-2 text-sm font-medium transition hover:bg-surface"
         >
           Se connecter
         </NuxtLink>
       </div>
     </div>
   </header>
+
+  <NavMobile v-if="user" />
 </template>
