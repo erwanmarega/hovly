@@ -32,7 +32,8 @@ export const PREFERENCES_DEFAUT: Preferences = {
   poidsDpe: 30,
   poidsCharges: 20,
   prixKwh: null,
-  chauffageDansCharges: false
+  chauffageDansCharges: false,
+  ancres: []
 }
 
 const MALUS_CRITERE = 12

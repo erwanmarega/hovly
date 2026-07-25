@@ -4,6 +4,32 @@ export type DPE = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
 export type GeoPrecision = 'exacte' | 'rue' | 'ville'
 
+export type ModeTrajet = 'voiture' | 'velo' | 'marche' | 'transport'
+
+/** Point d'ancrage du quotidien : boulot, école, gare, salle de sport… */
+export interface Ancre {
+  id: string
+  label: string
+  adresse: string
+  lat: number
+  lon: number
+  mode: ModeTrajet
+  /** Durée au-delà de laquelle le trajet est jugé rédhibitoire (minutes). */
+  maxMinutes: number | null
+}
+
+export interface Trajet {
+  id: string
+  bien_id: string
+  ancre: string
+  mode: ModeTrajet
+  ancre_lat: number
+  ancre_lon: number
+  duree_s: number | null
+  distance_m: number | null
+  calcule_le: string
+}
+
 export interface Preferences {
   budgetMax: number | null
   surfaceMin: number | null
@@ -16,6 +42,8 @@ export interface Preferences {
   prixKwh: number | null
   /** Coût réel : le chauffage est déjà compris dans les charges. */
   chauffageDansCharges: boolean
+  /** Points d'ancrage pour les temps de trajet. */
+  ancres: Ancre[]
 }
 
 export type SiteSource =

@@ -1,7 +1,8 @@
-import type { Bien, DPE } from '~/types'
+import type { Ancre, Bien, DPE, Trajet } from '~/types'
 import type { Score } from '~/composables/useScore'
 import type { OptionsCout } from '~/composables/useCoutReel'
 import { coutReel } from '~/composables/useCoutReel'
+import { cleTrajet, formatDuree } from '~/composables/useTrajets'
 
 export const MAX_COMPARAISON = 4
 
@@ -43,10 +44,16 @@ function ligne(
   }
 }
 
+export interface ContexteTrajets {
+  ancres: Ancre[]
+  index: Map<string, Trajet>
+}
+
 export function comparer(
   biens: Bien[],
   scores: Score[],
-  optionsCout: OptionsCout = {}
+  optionsCout: OptionsCout = {},
+  trajets?: ContexteTrajets
 ): LigneComparaison[] {
   const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
   const charges = biens.map((b) => (b.charges != null ? Math.round(b.charges / 100) : null))
@@ -62,6 +69,17 @@ export function comparer(
 
   const vide = (v: number | null) => (v == null ? '—' : String(v))
 
+  // Une ligne par point d'ancrage : c'est souvent ce qui tranche.
+  const lignesTrajets = (trajets?.ancres ?? []).map((ancre) =>
+    ligne(
+      `trajet-${ancre.id}`,
+      ancre.label,
+      'min',
+      biens.map((b) => trajets!.index.get(cleTrajet(b.id, ancre.id, ancre.mode))?.duree_s ?? null),
+      (v) => formatDuree(v)
+    )
+  )
+
   return [
     ligne('loyer', 'Loyer', 'min', loyers, (v) => (v == null ? '—' : `${eur(v)} €`)),
     ligne('charges', 'Charges', 'min', charges, (v) => (v == null ? '—' : `${eur(v)} €`)),
@@ -74,6 +92,7 @@ export function comparer(
     ligne('pieces', 'Pièces', 'max', pieces, vide),
     ligne('etage', 'Étage', null, etages, vide),
     ligne('dpe', 'DPE', 'min', dpes, (v) => (v == null ? '—' : DPE_ORDRE[v]!)),
+    ...lignesTrajets,
     ligne('score', 'Score', 'max', totauxScore, (v) => (v == null ? '—' : String(v))),
     ligne('criteres', 'Critères non respectés', 'min', horsCriteres, (v) =>
       v == null ? '—' : v === 0 ? 'Aucun' : String(v)

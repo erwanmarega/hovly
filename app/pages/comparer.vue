@@ -17,8 +17,14 @@ const choisis = computed(() =>
 
 const contexte = computed(() => representants(biens.value))
 const scores = computed(() => choisis.value.map((b) => scoreBien(b, contexte.value, preferences.value)))
+const { trajets, ancres, refresh: refreshTrajets } = useTrajets()
+useAsyncData('trajets-comparer', () => refreshTrajets(), { server: false })
+
 const lignes = computed(() =>
-  comparer(choisis.value, scores.value, optionsDepuisPreferences(preferences.value))
+  comparer(choisis.value, scores.value, optionsDepuisPreferences(preferences.value), {
+    ancres: ancres.value,
+    index: indexer(trajets.value)
+  })
 )
 
 const gagnant = computed(() => {

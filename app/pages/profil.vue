@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DPE, Preferences } from '~/types'
+import type { Ancre, DPE, Preferences } from '~/types'
 
 useHead({ title: 'Mon profil — Hovly' })
 
@@ -131,10 +131,46 @@ const apercu = computed(() => {
   }
 })
 
+const {
+  calcul: calculTrajets,
+  erreur: erreurTrajets,
+  calculer: calculerTrajets,
+  calculable: trajetsCalculables,
+  chargerEtat: chargerEtatTrajets
+} = useTrajets()
+
+onMounted(chargerEtatTrajets)
+const trajetsMsg = ref('')
+
 async function enregistrerPrefs() {
   const ok = await enregistrer({ ...brouillon })
   prefsMsg.value = ok ? 'Critères enregistrés' : 'Erreur. Réessaie.'
   messageEphemere(prefsMsg)
+}
+
+/**
+ * Ajouter ou retirer une ancre est une action à part entière : on enregistre
+ * aussitôt, sans attendre le bouton des critères.
+ */
+async function majAncres(ancres: Ancre[]) {
+  brouillon.ancres = ancres
+  trajetsMsg.value = ''
+  const ok = await enregistrer({ ...brouillon })
+  trajetsMsg.value = ok ? 'Points d’ancrage enregistrés' : 'Enregistrement impossible.'
+  messageEphemere(trajetsMsg)
+}
+
+/** Enregistre d'abord : le serveur calcule à partir des ancres envoyées. */
+async function majTrajets() {
+  trajetsMsg.value = ''
+  const ok = await enregistrer({ ...brouillon })
+  if (!ok) {
+    trajetsMsg.value = 'Enregistrement impossible.'
+    return
+  }
+  const fait = await calculerTrajets()
+  trajetsMsg.value = fait ? 'Trajets à jour.' : ''
+  messageEphemere(trajetsMsg)
 }
 
 async function reinitialiserPrefs() {
@@ -365,6 +401,39 @@ const inputCls =
             <span v-if="prefsMsg" class="text-sm font-medium text-success">{{ prefsMsg }}</span>
           </Transition>
         </div>
+      </section>
+
+      <section class="mt-6 rounded-feature border border-hairline-soft bg-white p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-ink-deep">Mes points d’ancrage</h2>
+            <p class="mt-1 text-sm text-slate">
+              Boulot, école, gare : Hovly calcule le temps de trajet depuis chaque bien.
+            </p>
+          </div>
+          <button
+            v-if="trajetsCalculables"
+            :disabled="calculTrajets || enregistrement"
+            class="action rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
+            @click="majTrajets"
+          >
+            {{ calculTrajets ? 'Calcul…' : 'Calculer les trajets' }}
+          </button>
+          <p v-else-if="brouillon.ancres.length" class="max-w-xs text-xs text-stone">
+            Calcul indisponible : aucune clé d’API de trajet n’est configurée sur le serveur
+            (<code>ORS_API_KEY</code> pour voiture/vélo/marche, <code>NAVITIA_TOKEN</code> pour
+            les transports).
+          </p>
+        </div>
+
+        <ReglageAncres
+          class="mt-5"
+          :ancres="brouillon.ancres"
+          @update:ancres="majAncres"
+        />
+
+        <p v-if="erreurTrajets" class="mt-3 text-xs text-[#600000]">{{ erreurTrajets }}</p>
+        <p v-else-if="trajetsMsg" class="mt-3 text-xs text-[#0a4a42]">{{ trajetsMsg }}</p>
       </section>
 
       <section class="mt-6 rounded-feature border border-hairline-soft bg-white p-6">

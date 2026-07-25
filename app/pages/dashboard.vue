@@ -22,13 +22,26 @@ const selection = ref<string | null>(null);
 const filtreStatut = ref<Statut | "tous">("tous");
 const recherche = ref("");
 const triClef = ref<
-  "date" | "prix" | "surface" | "prix_m2" | "score" | "visite" | "cout_reel"
+  | "date"
+  | "prix"
+  | "surface"
+  | "prix_m2"
+  | "score"
+  | "visite"
+  | "cout_reel"
+  | "trajet"
 >("date");
 const triAsc = ref(false);
 
 const { preferences } = usePreferences();
 
 const { calculer: coutDe } = useCoutReel();
+const { pour: trajetsDe, refresh: refreshTrajets } = useTrajets();
+useAsyncData("trajets-dashboard", () => refreshTrajets(), { server: false });
+
+/** Sans trajet calculé, le bien passe en fin de tri plutôt que devant. */
+const pireTrajetSec = (b: Bien) =>
+  trajetLePlusLong(trajetsDe(b.id))?.duree_s ?? Number.POSITIVE_INFINITY;
 
 const contexteScore = computed(() => representants(biens.value));
 const scoreDe = (b: Bien) => scoreBien(b, contexteScore.value, preferences.value);
@@ -67,6 +80,14 @@ const biensAffiches = computed(() => {
   }
 
   const dir = triAsc.value ? 1 : -1;
+
+  // Tri par trajet : les biens sans trajet calculé restent en bas dans les deux sens.
+  if (triClef.value === "trajet") {
+    const avec = list.filter((b) => Number.isFinite(pireTrajetSec(b)));
+    const sans = list.filter((b) => !Number.isFinite(pireTrajetSec(b)));
+    avec.sort((a, b) => (pireTrajetSec(a) - pireTrajetSec(b)) * dir);
+    return [...avec, ...sans];
+  }
 
   // Tri par visite : les biens sans date restent en bas dans les deux sens.
   if (triClef.value === "visite") {

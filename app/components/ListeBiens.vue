@@ -2,7 +2,15 @@
 import type { Bien, Statut } from '~/types'
 import type { Score } from '~/composables/useScore'
 
-type Clef = 'date' | 'prix' | 'surface' | 'prix_m2' | 'score' | 'visite' | 'cout_reel'
+type Clef =
+  | 'date'
+  | 'prix'
+  | 'surface'
+  | 'prix_m2'
+  | 'score'
+  | 'visite'
+  | 'cout_reel'
+  | 'trajet'
 
 const props = defineProps<{
   biens: Bien[]
@@ -26,6 +34,15 @@ const emit = defineEmits<{
 
 const { prixMensuel, prixM2 } = useBiens()
 const { calculer: coutDe } = useCoutReel()
+const { actif: trajetsActifs, pour: trajetsDe } = useTrajets()
+
+// Calculés une fois par rendu plutôt qu'à chaque cellule.
+const couts = computed(() => new Map(props.biens.map((b) => [b.id, coutDe(b)])))
+
+/** Colonne trajet : on montre le plus long, c'est lui qui fait renoncer. */
+const pireTrajet = computed(
+  () => new Map(props.biens.map((b) => [b.id, trajetLePlusLong(trajetsDe(b.id))]))
+)
 const { complet: selectionComplete, estSelectionne, basculer } = useComparateur()
 
 const TRIS: { value: Clef, label: string }[] = [
@@ -34,6 +51,7 @@ const TRIS: { value: Clef, label: string }[] = [
   { value: 'surface', label: 'Surface' },
   { value: 'prix_m2', label: '€/m²' },
   { value: 'cout_reel', label: 'Coût réel' },
+  { value: 'trajet', label: 'Trajet le plus long' },
   { value: 'score', label: 'Score' },
   { value: 'visite', label: 'Date de visite' }
 ]
@@ -57,8 +75,8 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
   <div
     class="overflow-hidden rounded-feature border border-hairline-soft bg-white shadow-[0_1px_2px_rgba(5,0,56,0.04)]"
   >
-    <!-- Mobile : tri explicite, les entêtes de colonnes n'existent pas -->
-    <div class="flex items-center gap-2 border-b border-hairline-soft px-4 py-2.5 md:hidden">
+    <!-- Tri explicite tant que toutes les colonnes ne tiennent pas à l'écran. -->
+    <div class="flex items-center gap-2 border-b border-hairline-soft px-4 py-2.5 xl:hidden">
       <label class="text-xs font-medium text-stone" for="tri-liste">Trier par</label>
       <select
         id="tri-liste"
@@ -100,42 +118,51 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       <table class="w-full text-left text-sm">
         <thead class="bg-surface-soft">
           <tr
-            class="border-b border-hairline-soft text-[11px] font-semibold uppercase tracking-wider text-stone [&>th]:px-3 [&>th]:py-3 xl:[&>th]:px-5"
+            class="border-b border-hairline-soft text-[11px] font-semibold uppercase tracking-wider text-stone [&>th]:px-3 [&>th]:py-3 2xl:[&>th]:px-4"
           >
             <th class="w-10" />
             <th class="font-semibold">Bien</th>
-            <th class="cursor-pointer font-semibold hover:text-ink" @click="emit('tri', 'prix')">
-              Loyer <span v-if="triClef === 'prix'">{{ triAsc ? '↑' : '↓' }}</span>
+            <th class="font-semibold">
+              <button class="transition hover:text-ink" @click="emit('tri', 'prix')">
+                Loyer <span v-if="triClef === 'prix'">{{ triAsc ? '↑' : '↓' }}</span>
+              </button>
+              <span class="px-1 text-hairline-strong">/</span>
+              <button
+                class="font-normal transition hover:text-ink"
+                title="Loyer + charges + énergie estimée + assurance"
+                @click="emit('tri', 'cout_reel')"
+              >
+                réel <span v-if="triClef === 'cout_reel'">{{ triAsc ? '↑' : '↓' }}</span>
+              </button>
             </th>
-            <th class="cursor-pointer font-semibold hover:text-ink" @click="emit('tri', 'surface')">
-              m² <span v-if="triClef === 'surface'">{{ triAsc ? '↑' : '↓' }}</span>
+            <th class="font-semibold">
+              <button class="transition hover:text-ink" @click="emit('tri', 'surface')">
+                m² <span v-if="triClef === 'surface'">{{ triAsc ? '↑' : '↓' }}</span>
+              </button>
+              <span class="px-1 text-hairline-strong">/</span>
+              <button class="font-normal transition hover:text-ink" @click="emit('tri', 'prix_m2')">
+                €/m² <span v-if="triClef === 'prix_m2'">{{ triAsc ? '↑' : '↓' }}</span>
+              </button>
             </th>
-            <th
-              class="hidden cursor-pointer font-semibold hover:text-ink lg:table-cell"
-              @click="emit('tri', 'prix_m2')"
-            >
-              €/m² <span v-if="triClef === 'prix_m2'">{{ triAsc ? '↑' : '↓' }}</span>
-            </th>
-            <th
-              class="hidden cursor-pointer font-semibold hover:text-ink xl:table-cell"
-              title="Loyer + charges + énergie estimée + assurance"
-              @click="emit('tri', 'cout_reel')"
-            >
-              Coût réel <span v-if="triClef === 'cout_reel'">{{ triAsc ? '↑' : '↓' }}</span>
-            </th>
-            <th class="hidden font-semibold xl:table-cell">Pièces</th>
             <th class="hidden font-semibold lg:table-cell">DPE</th>
             <th class="cursor-pointer font-semibold hover:text-ink" @click="emit('tri', 'score')">
               Score <span v-if="triClef === 'score'">{{ triAsc ? '↑' : '↓' }}</span>
             </th>
-            <th class="font-semibold">Statut</th>
             <th
+              v-if="trajetsActifs"
               class="hidden cursor-pointer font-semibold hover:text-ink lg:table-cell"
+              title="Temps de trajet le plus long vers tes points d’ancrage"
+              @click="emit('tri', 'trajet')"
+            >
+              Trajet <span v-if="triClef === 'trajet'">{{ triAsc ? '↑' : '↓' }}</span>
+            </th>
+            <th
+              class="hidden cursor-pointer font-semibold hover:text-ink xl:table-cell"
               @click="emit('tri', 'visite')"
             >
               Visite <span v-if="triClef === 'visite'">{{ triAsc ? '↑' : '↓' }}</span>
             </th>
-            <th class="hidden font-semibold xl:table-cell">Note</th>
+            <th class="font-semibold">Statut</th>
             <th />
           </tr>
         </thead>
@@ -143,7 +170,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
           <tr
             v-for="(b, i) in biens"
             :key="b.id"
-            class="ligne border-b border-hairline-soft transition last:border-0 hover:bg-surface-soft [&>td]:px-3 [&>td]:py-3 xl:[&>td]:px-5"
+            class="ligne border-b border-hairline-soft transition last:border-0 hover:bg-surface-soft [&>td]:px-3 [&>td]:py-3 2xl:[&>td]:px-4"
             :style="{ '--i': i }"
           >
             <td>
@@ -168,54 +195,74 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
                 <div v-else class="size-11 shrink-0 rounded-lg bg-surface" />
                 <div class="min-w-0">
                   <p
-                    class="max-w-[160px] truncate font-medium text-ink transition group-hover:text-blue xl:max-w-[220px]"
+                    class="max-w-[150px] truncate font-medium text-ink transition group-hover:text-blue xl:max-w-[200px]"
                   >
                     {{ b.titre }}
                   </p>
                   <p class="flex items-center gap-1.5 text-xs text-stone">
-                    {{ b.ville }} ·
+                    <span class="truncate">{{ b.ville }}</span>
                     <span class="text-steel">{{ SOURCES[b.site_source] }}</span>
                     <span
                       v-if="doublons.get(b.id)"
                       class="rounded-full bg-brand-light px-1.5 py-0.5 text-[10px] font-semibold text-[#8a6d1c]"
                       :title="`Ce bien apparaît sur ${doublons.get(b.id)} annonces`"
                     >×{{ doublons.get(b.id) }}</span>
+                    <!-- La note vit dans l'infobulle plutôt que dans une colonne à elle. -->
+                    <svg
+                      v-if="b.note_perso"
+                      class="size-3 shrink-0 text-steel"
+                      :aria-label="b.note_perso"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    >
+                      <title>{{ b.note_perso }}</title>
+                      <path d="M4 6h16M4 12h16M4 18h9" />
+                    </svg>
                   </p>
                 </div>
               </NuxtLink>
             </td>
-            <td class="whitespace-nowrap font-semibold tabular-nums">{{ eur(prixMensuel(b)) }} €</td>
-            <td class="whitespace-nowrap tabular-nums text-slate">{{ b.surface }} m²</td>
-            <td class="hidden whitespace-nowrap tabular-nums text-slate lg:table-cell">
-              {{ eur(prixM2(b)) }} €
+            <td class="whitespace-nowrap tabular-nums">
+              <p class="font-semibold">{{ eur(prixMensuel(b)) }} €</p>
+              <p class="text-xs text-stone">
+                réel {{ eur(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
+              </p>
             </td>
-            <td class="hidden whitespace-nowrap tabular-nums xl:table-cell">
-              <span class="font-medium">{{ eur(Math.round(coutDe(b).total / 100)) }} €</span>
-              <span
-                v-if="coutDe(b).ecartPourcent > 0"
-                class="ml-1 text-[11px] font-semibold text-stone"
-              >+{{ coutDe(b).ecartPourcent }} %</span>
-            </td>
-            <td class="hidden whitespace-nowrap tabular-nums text-slate xl:table-cell">
-              {{ b.nb_pieces }}p
+            <td class="whitespace-nowrap tabular-nums">
+              <p class="text-slate">{{ b.surface }} m²</p>
+              <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ eur(prixM2(b)) }} €/m²</p>
             </td>
             <td class="hidden lg:table-cell"><BadgeDPE :dpe="b.dpe" /></td>
             <td class="whitespace-nowrap"><ScoreBien :score="score(b)" /></td>
+            <td v-if="trajetsActifs" class="hidden whitespace-nowrap lg:table-cell">
+              <span
+                v-if="pireTrajet.get(b.id)"
+                class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                :class="
+                  pireTrajet.get(b.id)!.depasse
+                    ? 'bg-coral text-[#600000]'
+                    : 'bg-teal text-[#0a4a42]'
+                "
+                :title="`${pireTrajet.get(b.id)!.ancre.label} ${LIBELLES_MODE[pireTrajet.get(b.id)!.ancre.mode]}`"
+              >
+                <IconeMode :mode="pireTrajet.get(b.id)!.ancre.mode" class="size-3" />
+                {{ formatDuree(pireTrajet.get(b.id)!.duree_s) }}
+              </span>
+              <span v-else class="text-stone">—</span>
+            </td>
+            <td class="hidden whitespace-nowrap xl:table-cell">
+              <BadgeVisite v-if="b.visite_le" :visite-le="b.visite_le" compact />
+              <span v-else class="text-stone">—</span>
+            </td>
             <td>
               <SelecteurStatut
                 :statut="b.statut"
                 :vers-le-haut="versLeHaut(i)"
                 @change="emit('statut', b.id, $event)"
               />
-            </td>
-            <td class="hidden whitespace-nowrap lg:table-cell">
-              <BadgeVisite v-if="b.visite_le" :visite-le="b.visite_le" compact />
-              <span v-else class="text-stone">—</span>
-            </td>
-            <td class="hidden xl:table-cell">
-              <span class="block max-w-[160px] truncate text-slate" :title="b.note_perso ?? ''">
-                {{ b.note_perso || '—' }}
-              </span>
             </td>
             <td class="text-right">
               <div class="flex items-center justify-end gap-1">

@@ -38,6 +38,9 @@ const sourceLabels: Record<string, string> = {
 const { biens, refresh: refreshBiens } = useBiens();
 const { preferences } = usePreferences();
 useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
+
+const { refresh: refreshTrajets } = useTrajets();
+useAsyncData("trajets-bien", () => refreshTrajets(), { server: false });
 const score = computed(() =>
   bien.value
     ? scoreBien(bien.value, representants(biens.value), preferences.value)
@@ -450,6 +453,8 @@ async function supprimer() {
             </div>
 
             <CoutReel :bien="bien" />
+
+            <TrajetsBien :bien="bien" />
 
             <ScoreBreakdown v-if="score" :score="score" />
 

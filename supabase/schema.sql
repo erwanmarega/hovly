@@ -57,6 +57,21 @@ create table if not exists public.alertes (
 
 create index if not exists alertes_bien_id_idx on public.alertes (bien_id);
 
+create table if not exists public.trajets (
+  id         uuid primary key default gen_random_uuid(),
+  bien_id    uuid not null references public.biens (id) on delete cascade,
+  ancre      text not null,
+  mode       text not null check (mode in ('voiture', 'velo', 'marche', 'transport')),
+  ancre_lat  double precision not null,
+  ancre_lon  double precision not null,
+  duree_s    integer,
+  distance_m integer,
+  calcule_le timestamptz not null default now(),
+  unique (bien_id, ancre, mode)
+);
+
+create index if not exists trajets_bien_id_idx on public.trajets (bien_id);
+
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
 begin
@@ -73,6 +88,7 @@ create trigger biens_set_updated_at
 alter table public.biens enable row level security;
 alter table public.prix_historique enable row level security;
 alter table public.alertes enable row level security;
+alter table public.trajets enable row level security;
 
 drop policy if exists "biens_select_own" on public.biens;
 create policy "biens_select_own" on public.biens
@@ -121,3 +137,9 @@ alter table public.push_abonnements enable row level security;
 drop policy if exists "push_abonnements_own" on public.push_abonnements;
 create policy "push_abonnements_own" on public.push_abonnements
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "trajets_own" on public.trajets;
+create policy "trajets_own" on public.trajets
+  for all using (
+    exists (select 1 from public.biens b where b.id = bien_id and b.user_id = auth.uid())
+  );
