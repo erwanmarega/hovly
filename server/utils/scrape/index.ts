@@ -1,6 +1,6 @@
 import type { Bien, SiteSource } from '~/types'
 import { getBrowser, pickUserAgent, randomDelay } from './browser'
-import { extraire, extraireLeboncoin, type PageData } from './extract'
+import { extraire, extraireLeboncoin, estPageRecherche, type PageData } from './extract'
 import { detecterSource } from './source'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
@@ -43,6 +43,14 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
       statusCode: 423,
       statusMessage:
         "Annonce protégée par un anti-bot. Impossible d'extraire automatiquement — saisis les infos manuellement."
+    })
+  }
+
+  if (estPageRecherche(raw)) {
+    throw createError({
+      statusCode: 422,
+      statusMessage:
+        "Cette URL est une page de recherche, pas une annonce. Ouvre l'annonce et copie son lien."
     })
   }
 

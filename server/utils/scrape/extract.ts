@@ -80,15 +80,33 @@ export function extraireVille(
   return null
 }
 
-function trouverNoeudImmo(blocs: any[]): any | null {
-  const cibles = ['RealEstateListing', 'Residence', 'Apartment', 'House', 'Product', 'Offer', 'Place']
+export function aplatirJsonLd(blocs: any[]): any[] {
   const flat: any[] = []
   const pousser = (n: any) => {
     if (!n || typeof n !== 'object') return
+    if (Array.isArray(n)) {
+      n.forEach(pousser)
+      return
+    }
     flat.push(n)
     if (Array.isArray(n['@graph'])) n['@graph'].forEach(pousser)
   }
   blocs.forEach(pousser)
+  return flat
+}
+
+function trouverNoeudImmo(blocs: any[]): any | null {
+  const cibles = [
+    'RealEstateListing',
+    'Residence',
+    'Apartment',
+    'House',
+    'Accommodation',
+    'Product',
+    'Offer',
+    'Place'
+  ]
+  const flat = aplatirJsonLd(blocs)
   for (const cible of cibles) {
     const found = flat.find((n) => {
       const t = n['@type']
@@ -97,6 +115,60 @@ function trouverNoeudImmo(blocs: any[]): any | null {
     if (found) return found
   }
   return flat[0] ?? null
+}
+
+function offresDe(n: any): any[] {
+  const o = n?.offers ?? n?.offer
+  if (!o) return []
+  return Array.isArray(o) ? o : [o]
+}
+
+function estAgregat(o: any): boolean {
+  return o?.['@type'] === 'AggregateOffer'
+}
+
+export function estPageRecherche(data: PageData): boolean {
+  const flat = aplatirJsonLd(data.jsonLd)
+  if (!flat.length) return false
+
+  let agregat = false
+  for (const n of flat) {
+    for (const o of offresDe(n)) {
+      if (!estAgregat(o)) return false
+      if ((o.offerCount ?? 0) > 1) agregat = true
+    }
+  }
+  if (!agregat) return false
+
+  return !flat.some(
+    (n) => n?.floorSize?.value != null || n?.numberOfRooms != null || n?.address?.streetAddress
+  )
+}
+
+function prixMachine(brut: unknown): number | null {
+  const v = decimal(String(brut))
+  return v == null ? null : Math.round(v)
+}
+
+function prixJsonLd(flat: any[]): number | null {
+  for (const n of flat) {
+    for (const o of offresDe(n)) {
+      if (estAgregat(o)) continue
+      const brut = o?.price ?? o?.priceSpecification?.price
+      if (brut != null) return prixMachine(brut)
+    }
+    const direct = n?.price ?? n?.priceSpecification?.price
+    if (direct != null) return prixMachine(direct)
+  }
+  return null
+}
+
+function premierDefini<T>(flat: any[], lire: (n: any) => T | null | undefined): T | null {
+  for (const n of flat) {
+    const v = lire(n)
+    if (v != null && v !== '') return v
+  }
+  return null
 }
 
 export function entier(texte: string | undefined): number | null {
@@ -209,14 +281,13 @@ export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
 
 export function extraire(data: PageData): Partial<Bien> {
   const node = trouverNoeudImmo(data.jsonLd)
+  const flat = aplatirJsonLd(data.jsonLd)
   const txt = data.bodyText
 
-  const titre = (data.ogTitle || node?.name || data.h1 || data.title || '').trim().slice(0, 200)
+  const nom = premierDefini<string>(flat, (n) => (typeof n?.name === 'string' ? n.name : null))
+  const titre = (data.ogTitle || nom || data.h1 || data.title || '').trim().slice(0, 200)
 
-  let prixEuros: number | null = null
-  const offer = Array.isArray(node?.offers) ? node.offers[0] : (node?.offers ?? node)
-  const prixBrut = offer?.price ?? offer?.priceSpecification?.price ?? offer?.lowPrice
-  if (prixBrut != null) prixEuros = entier(String(prixBrut))
+  let prixEuros = prixJsonLd(flat)
   if (!prixEuros) {
     const m = txt.match(/(\d[\d\s.\u00a0]{2,9})\s*€/)
     if (m) prixEuros = entier(m[1])
@@ -224,7 +295,8 @@ export function extraire(data: PageData): Partial<Bien> {
   const prix = prixEuros ? prixEuros * 100 : null
 
   let surface: number | null = null
-  if (node?.floorSize?.value) surface = decimal(String(node.floorSize.value))
+  const surfaceLd = premierDefini<number | string>(flat, (n) => n?.floorSize?.value)
+  if (surfaceLd != null) surface = decimal(String(surfaceLd))
   if (!surface) {
     const m = txt.match(/(\d+(?:[.,]\d+)?)\s*m(?:²|2|\^2)/i)
     if (m) surface = decimal(m[1])
@@ -232,7 +304,8 @@ export function extraire(data: PageData): Partial<Bien> {
   if (surface) surface = Math.round(surface)
 
   let nb_pieces: number | null = null
-  if (node?.numberOfRooms) nb_pieces = entier(String(node.numberOfRooms))
+  const piecesLd = premierDefini<number | string>(flat, (n) => n?.numberOfRooms)
+  if (piecesLd != null) nb_pieces = entier(String(piecesLd))
   if (!nb_pieces) {
     const m = txt.match(/(\d+)\s*pi[eè]ces?/i) || txt.match(/\b[TF](\d)\b/)
     if (m) nb_pieces = entier(m[1])
@@ -246,9 +319,11 @@ export function extraire(data: PageData): Partial<Bien> {
   const md = txt.match(/DPE\s*:?\s*([A-G])\b/i) || txt.match(/classe\s*énerg\w*\s*:?\s*([A-G])\b/i)
   if (md && DPE_VALIDES.includes(md[1].toUpperCase())) dpe = md[1].toUpperCase() as DPE
 
-  let code_postal: string | null = node?.address?.postalCode ?? null
+  const rue = premierDefini<string>(flat, (n) => n?.address?.streetAddress)
+
+  let code_postal = premierDefini<string>(flat, (n) => n?.address?.postalCode)
   if (!code_postal) {
-    for (const src of [data.ogTitle, data.h1, data.title, node?.address?.streetAddress, txt]) {
+    for (const src of [data.ogTitle, data.h1, data.title, rue, txt]) {
       const m = src?.match(/\b(\d{5})\b(?!\s*(?:€|EUR|euros?))/i)
       if (m) {
         code_postal = m[1]!
@@ -256,9 +331,10 @@ export function extraire(data: PageData): Partial<Bien> {
       }
     }
   }
+
   const ville: string | null =
-    nettoyerVille(node?.address?.addressLocality) ??
-    extraireVille([data.ogTitle, data.h1, data.title, node?.address?.streetAddress, txt], code_postal)
+    nettoyerVille(premierDefini<string>(flat, (n) => n?.address?.addressLocality)) ??
+    extraireVille([data.ogTitle, data.h1, data.title, rue, txt], code_postal)
 
   const photos = collecterPhotos(data, node)
 
@@ -272,6 +348,6 @@ export function extraire(data: PageData): Partial<Bien> {
     code_postal,
     ville,
     photos,
-    adresse: node?.address?.streetAddress ?? null
+    adresse: rue
   }
 }

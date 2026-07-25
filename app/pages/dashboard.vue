@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Bien, Statut } from '~/types'
+import type { Score } from '~/composables/useScore'
 import { STATUTS } from '~/composables/useBiens'
 
 useHead({ title: 'Mes biens — Hovly' })
@@ -71,14 +72,19 @@ const biensAffiches = computed(() => {
 
 const stats = computed(() => {
   const actifs = biens.value.filter((b) => b.actif)
-  const prixMoyen = actifs.length
-    ? Math.round(actifs.reduce((s, b) => s + prixMensuel(b), 0) / actifs.length)
-    : 0
-  const m2Moyen = actifs.length
-    ? Math.round(actifs.reduce((s, b) => s + prixM2(b), 0) / actifs.length)
-    : 0
-  const coups = actifs.filter((b) => b.statut === 'coup_de_coeur').length
-  return { total: actifs.length, prixMoyen, m2Moyen, coups }
+  const loyers = actifs.map(prixMensuel).filter((p) => p > 0)
+  const meilleur = actifs.reduce<{ score: Score; bien: Bien } | null>((best, b) => {
+    const score = scoreDe(b)
+    return !best || score.total > best.score.total ? { score, bien: b } : best
+  }, null)
+
+  return {
+    total: actifs.length,
+    loyerMin: loyers.length ? Math.min(...loyers) : 0,
+    loyerMax: loyers.length ? Math.max(...loyers) : 0,
+    meilleur,
+    coups: actifs.filter((b) => b.statut === 'coup_de_coeur').length
+  }
 })
 
 function toggleTri(clef: typeof triClef.value) {
@@ -117,12 +123,31 @@ function choisirStatut(id: string, s: Statut) {
           <p class="mt-2 text-3xl font-light tracking-tight">{{ stats.total }}</p>
         </div>
         <div class="rounded-2xl border border-hairline-soft bg-white p-5">
-          <p class="text-xs font-semibold uppercase tracking-wide text-stone">Loyer moyen</p>
-          <p class="mt-2 text-3xl font-light tracking-tight">{{ eur(stats.prixMoyen) }} €</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone">Fourchette</p>
+          <p v-if="stats.loyerMax" class="mt-2 text-3xl font-light tracking-tight">
+            {{ eur(stats.loyerMin) }}
+            <span class="text-stone">–</span>
+            {{ eur(stats.loyerMax) }} €
+          </p>
+          <p v-else class="mt-2 text-3xl font-light tracking-tight text-stone">—</p>
         </div>
-        <div class="rounded-2xl border border-hairline-soft bg-white p-5">
-          <p class="text-xs font-semibold uppercase tracking-wide text-stone">€/m² moyen</p>
-          <p class="mt-2 text-3xl font-light tracking-tight">{{ eur(stats.m2Moyen) }} €</p>
+        <NuxtLink
+          v-if="stats.meilleur"
+          :to="`/bien/${stats.meilleur.bien.id}`"
+          class="rounded-2xl border border-hairline-soft bg-white p-5 hover:border-hairline transition"
+        >
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone">Meilleur score</p>
+          <p class="mt-2 flex items-baseline gap-2">
+            <span class="text-3xl font-light tracking-tight">{{ stats.meilleur.score.total }}</span>
+            <span class="text-sm font-medium" :class="stats.meilleur.score.couleur">
+              {{ stats.meilleur.score.label }}
+            </span>
+          </p>
+          <p class="mt-1 truncate text-xs text-stone">{{ stats.meilleur.bien.titre }}</p>
+        </NuxtLink>
+        <div v-else class="rounded-2xl border border-hairline-soft bg-white p-5">
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone">Meilleur score</p>
+          <p class="mt-2 text-3xl font-light tracking-tight text-stone">—</p>
         </div>
         <div class="rounded-2xl border border-hairline-soft bg-white p-5">
           <p class="text-xs font-semibold uppercase tracking-wide text-stone">Coups de cœur</p>
