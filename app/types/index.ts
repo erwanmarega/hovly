@@ -4,6 +4,16 @@ export type DPE = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
 export type GeoPrecision = 'exacte' | 'rue' | 'ville'
 
+export interface Preferences {
+  budgetMax: number | null
+  surfaceMin: number | null
+  piecesMin: number | null
+  dpeMin: DPE | null
+  poidsPrix: number
+  poidsDpe: number
+  poidsCharges: number
+}
+
 export type SiteSource =
   | 'seloger'
   | 'leboncoin'

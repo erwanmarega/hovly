@@ -35,9 +35,10 @@ const sourceLabels: Record<string, string> = {
 };
 
 const { biens, refresh: refreshBiens } = useBiens();
+const { preferences } = usePreferences();
 useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
 const score = computed(() =>
-  bien.value ? scoreBien(bien.value, biens.value) : null
+  bien.value ? scoreBien(bien.value, biens.value, preferences.value) : null
 );
 
 const photoActive = ref(0);

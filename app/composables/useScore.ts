@@ -1,4 +1,4 @@
-import type { Bien, DPE } from '~/types'
+import type { Bien, DPE, Preferences } from '~/types'
 
 export interface ScorePart {
   label: string
@@ -7,21 +7,43 @@ export interface ScorePart {
   hint: string
 }
 
+export interface Critere {
+  label: string
+  ok: boolean
+  detail: string
+}
+
 export interface Score {
   total: number
   label: string
   couleur: string
   tint: string
   parts: ScorePart[]
+  criteres: Critere[]
+  personnalise: boolean
 }
 
-const DPE_POINTS: Record<DPE, number> = {
-  A: 30,
-  B: 26,
-  C: 21,
-  D: 15,
-  E: 9,
-  F: 4,
+export const PREFERENCES_DEFAUT: Preferences = {
+  budgetMax: null,
+  surfaceMin: null,
+  piecesMin: null,
+  dpeMin: null,
+  poidsPrix: 50,
+  poidsDpe: 30,
+  poidsCharges: 20
+}
+
+const MALUS_CRITERE = 12
+
+const DPE_ORDRE: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+const DPE_FRACTION: Record<DPE, number> = {
+  A: 1,
+  B: 26 / 30,
+  C: 21 / 30,
+  D: 0.5,
+  E: 9 / 30,
+  F: 4 / 30,
   G: 0
 }
 
@@ -40,24 +62,90 @@ function pm2(b: Bien): number {
   return b.surface ? b.prix / b.surface : 0
 }
 
-export function scoreBien(bien: Bien, contexte: Bien[]): Score {
+export function estPersonnalise(p: Preferences): boolean {
+  return (
+    p.budgetMax != null ||
+    p.surfaceMin != null ||
+    p.piecesMin != null ||
+    p.dpeMin != null ||
+    p.poidsPrix !== PREFERENCES_DEFAUT.poidsPrix ||
+    p.poidsDpe !== PREFERENCES_DEFAUT.poidsDpe ||
+    p.poidsCharges !== PREFERENCES_DEFAUT.poidsCharges
+  )
+}
+
+function repartir(prefs: Preferences): { prix: number; dpe: number; charges: number } {
+  const brut = [
+    Math.max(0, prefs.poidsPrix),
+    Math.max(0, prefs.poidsDpe),
+    Math.max(0, prefs.poidsCharges)
+  ]
+  const somme = brut[0]! + brut[1]! + brut[2]!
+  if (!somme) return { prix: 50, dpe: 30, charges: 20 }
+
+  const prix = Math.round((brut[0]! / somme) * 100)
+  const dpe = Math.round((brut[1]! / somme) * 100)
+  return { prix, dpe, charges: 100 - prix - dpe }
+}
+
+function criteres(bien: Bien, prefs: Preferences): Critere[] {
+  const out: Critere[] = []
+  const eur = (n: number) => n.toLocaleString('fr-FR')
+
+  if (prefs.budgetMax != null) {
+    const loyer = Math.round(bien.prix / 100)
+    out.push({
+      label: 'Budget',
+      ok: loyer <= prefs.budgetMax,
+      detail: `${eur(loyer)} € / max ${eur(prefs.budgetMax)} €`
+    })
+  }
+  if (prefs.surfaceMin != null) {
+    out.push({
+      label: 'Surface',
+      ok: bien.surface >= prefs.surfaceMin,
+      detail: `${bien.surface} m² / min ${prefs.surfaceMin} m²`
+    })
+  }
+  if (prefs.piecesMin != null) {
+    out.push({
+      label: 'Pièces',
+      ok: bien.nb_pieces >= prefs.piecesMin,
+      detail: `${bien.nb_pieces} / min ${prefs.piecesMin}`
+    })
+  }
+  if (prefs.dpeMin != null) {
+    const rang = bien.dpe ? DPE_ORDRE.indexOf(bien.dpe) : -1
+    out.push({
+      label: 'DPE',
+      ok: rang >= 0 && rang <= DPE_ORDRE.indexOf(prefs.dpeMin),
+      detail: bien.dpe ? `${bien.dpe} / min ${prefs.dpeMin}` : `non renseigné / min ${prefs.dpeMin}`
+    })
+  }
+  return out
+}
+
+export function scoreBien(
+  bien: Bien,
+  contexte: Bien[],
+  prefs: Preferences = PREFERENCES_DEFAUT
+): Score {
+  const poids = repartir(prefs)
   const parts: ScorePart[] = []
 
   const p = pm2(bien)
-  const memeVille = contexte.filter(
-    (b) => b.actif && b.surface > 0 && b.ville === bien.ville
-  )
+  const memeVille = contexte.filter((b) => b.actif && b.surface > 0 && b.ville === bien.ville)
   const refs = memeVille.length >= 2 ? memeVille : contexte.filter((b) => b.actif && b.surface > 0)
   const med = mediane(refs.map(pm2))
 
   let ptsPrix: number
   let hintPrix: string
   if (!p || !med) {
-    ptsPrix = 25
+    ptsPrix = Math.round(poids.prix * 0.5)
     hintPrix = 'Pas assez de comparables'
   } else {
     const ratio = p / med
-    ptsPrix = Math.round(clamp01((1.25 - ratio) / 0.5) * 50)
+    ptsPrix = Math.round(clamp01((1.25 - ratio) / 0.5) * poids.prix)
     const ecart = Math.round((ratio - 1) * 100)
     hintPrix =
       ecart <= -5
@@ -66,29 +154,32 @@ export function scoreBien(bien: Bien, contexte: Bien[]): Score {
           ? `${ecart}% au-dessus du marché local`
           : 'Dans le marché local'
   }
-  parts.push({ label: 'Prix au m²', points: ptsPrix, max: 50, hint: hintPrix })
+  parts.push({ label: 'Prix au m²', points: ptsPrix, max: poids.prix, hint: hintPrix })
 
-  const ptsDpe = bien.dpe ? DPE_POINTS[bien.dpe] : 15
+  const ptsDpe = Math.round((bien.dpe ? DPE_FRACTION[bien.dpe] : 0.5) * poids.dpe)
   parts.push({
     label: 'Performance énergétique',
     points: ptsDpe,
-    max: 30,
+    max: poids.dpe,
     hint: bien.dpe ? `DPE ${bien.dpe}` : 'DPE non renseigné'
   })
 
   let ptsCharges: number
   let hintCharges: string
   if (bien.charges == null || !bien.prix) {
-    ptsCharges = 10
+    ptsCharges = Math.round(poids.charges * 0.5)
     hintCharges = 'Charges non renseignées'
   } else {
     const c = bien.charges / bien.prix
-    ptsCharges = Math.round(clamp01((0.3 - c) / 0.25) * 20)
+    ptsCharges = Math.round(clamp01((0.3 - c) / 0.25) * poids.charges)
     hintCharges = `${Math.round(c * 100)}% du loyer`
   }
-  parts.push({ label: 'Charges', points: ptsCharges, max: 20, hint: hintCharges })
+  parts.push({ label: 'Charges', points: ptsCharges, max: poids.charges, hint: hintCharges })
 
-  const total = parts.reduce((s, p) => s + p.points, 0)
+  const listeCriteres = criteres(bien, prefs)
+  const malus = listeCriteres.filter((c) => !c.ok).length * MALUS_CRITERE
+  const brut = parts.reduce((s, part) => s + part.points, 0)
+  const total = Math.max(0, brut - malus)
 
   const { label, couleur, tint } =
     total >= 80
@@ -101,7 +192,15 @@ export function scoreBien(bien: Bien, contexte: Bien[]): Score {
             ? { label: 'Moyen', couleur: 'text-[#8a4a1c]', tint: 'bg-coral' }
             : { label: 'Faible', couleur: 'text-[#8a1c1c]', tint: 'bg-coral' }
 
-  return { total, label, couleur, tint, parts }
+  return {
+    total,
+    label,
+    couleur,
+    tint,
+    parts,
+    criteres: listeCriteres,
+    personnalise: estPersonnalise(prefs)
+  }
 }
 
 export function couleurScore(total: number | null | undefined): string {
