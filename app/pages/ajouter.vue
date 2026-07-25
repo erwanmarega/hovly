@@ -137,7 +137,7 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
               type="url"
               placeholder="https://www.seloger.com/annonces/..."
               :class="inputCls + ' flex-1'"
-            />
+            >
             <button
               type="submit"
               :disabled="loading || !url"
@@ -167,7 +167,7 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
         </div>
 
         <div v-if="loading" class="mt-8 rounded-2xl border border-hairline bg-white p-6 text-center text-slate">
-          <div class="mx-auto mb-3 size-6 animate-spin rounded-full border-2 border-hairline border-t-ink"></div>
+          <div class="mx-auto mb-3 size-6 animate-spin rounded-full border-2 border-hairline border-t-ink"/>
           Extraction des données en cours…
         </div>
       </div>
@@ -182,8 +182,8 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
               ✓ Annonce extraite — vérifie et complète
             </p>
             <button
-              @click="etape = 'url'"
               class="text-xs font-medium text-blue hover:underline"
+              @click="etape = 'url'"
             >
               Changer d'URL
             </button>
@@ -199,33 +199,33 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
               :src="draft.photo"
               alt=""
               class="size-20 shrink-0 rounded-xl object-cover bg-surface"
-            />
+            >
             <div class="flex-1">
               <label :class="labelCls">Titre</label>
-              <input v-model="draft.titre" type="text" :class="inputCls" />
+              <input v-model="draft.titre" type="text" :class="inputCls" >
             </div>
           </div>
 
           <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
               <label :class="labelCls">Loyer (€/mois)</label>
-              <input v-model.number="draft.prix" type="number" min="0" :class="inputCls" />
+              <input v-model.number="draft.prix" type="number" min="0" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">Charges (€)</label>
-              <input v-model.number="draft.charges" type="number" min="0" :class="inputCls" />
+              <input v-model.number="draft.charges" type="number" min="0" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">Surface (m²)</label>
-              <input v-model.number="draft.surface" type="number" min="0" :class="inputCls" />
+              <input v-model.number="draft.surface" type="number" min="0" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">Pièces</label>
-              <input v-model.number="draft.nb_pieces" type="number" min="0" :class="inputCls" />
+              <input v-model.number="draft.nb_pieces" type="number" min="0" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">Étage</label>
-              <input v-model.number="draft.etage" type="number" :class="inputCls" />
+              <input v-model.number="draft.etage" type="number" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">DPE</label>
@@ -239,18 +239,18 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
           <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div class="sm:col-span-2">
               <label :class="labelCls">Adresse</label>
-              <input v-model="draft.adresse" type="text" :class="inputCls" />
+              <input v-model="draft.adresse" type="text" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">Ville</label>
-              <input v-model="draft.ville" type="text" :class="inputCls" />
+              <input v-model="draft.ville" type="text" :class="inputCls" >
             </div>
           </div>
 
           <div class="mt-4 grid grid-cols-2 gap-4">
             <div>
               <label :class="labelCls">Code postal</label>
-              <input v-model="draft.code_postal" type="text" :class="inputCls" />
+              <input v-model="draft.code_postal" type="text" :class="inputCls" >
             </div>
             <div>
               <label :class="labelCls">€/m²</label>
@@ -267,9 +267,9 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
                 v-for="s in STATUTS"
                 :key="s.value"
                 type="button"
-                @click="draft.statut = s.value"
                 class="rounded-full px-3.5 py-1.5 text-sm font-medium transition"
                 :class="draft.statut === s.value ? 'bg-ink text-white' : 'border border-hairline bg-white text-steel hover:bg-surface'"
+                @click="draft.statut = s.value"
               >
                 {{ s.label }}
               </button>
@@ -283,7 +283,7 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
               rows="2"
               placeholder="Quartier, points forts, points faibles…"
               class="w-full rounded-lg border border-hairline-strong bg-white px-4 py-2.5 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-            ></textarea>
+            />
           </div>
 
           <p v-if="error" class="mt-3 text-sm font-medium text-coral-soft">{{ error }}</p>
@@ -297,9 +297,9 @@ const labelCls = 'block text-sm font-medium text-ink mb-1.5'
             Annuler
           </NuxtLink>
           <button
-            @click="enregistrer"
             :disabled="saving"
             class="rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-white hover:bg-black transition disabled:opacity-60"
+            @click="enregistrer"
           >
             {{ saving ? 'Enregistrement…' : 'Ajouter à mon tableau' }}
           </button>

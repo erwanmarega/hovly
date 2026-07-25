@@ -21,7 +21,7 @@ defineProps<{ score: Score }>()
           <span class="font-semibold tabular-nums">{{ p.points }}/{{ p.max }}</span>
         </div>
         <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
-          <div class="h-full rounded-full bg-ink transition-all" :style="{ width: `${(p.points / p.max) * 100}%` }"></div>
+          <div class="h-full rounded-full bg-ink transition-all" :style="{ width: `${(p.points / p.max) * 100}%` }"/>
         </div>
         <p class="mt-1 text-xs text-stone">{{ p.hint }}</p>
       </div>

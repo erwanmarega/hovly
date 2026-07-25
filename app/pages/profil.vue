@@ -103,11 +103,11 @@ const inputCls =
           <div>
             <label :class="labelCls">Nom affiché</label>
             <div class="flex gap-3">
-              <input v-model="fullName" type="text" placeholder="Ton nom" :class="inputCls + ' flex-1'" />
+              <input v-model="fullName" type="text" placeholder="Ton nom" :class="inputCls + ' flex-1'" >
               <button
-                @click="saveName"
                 :disabled="savingName"
                 class="h-11 shrink-0 rounded-full bg-ink px-5 text-sm font-medium text-white hover:bg-black transition disabled:opacity-60"
+                @click="saveName"
               >
                 {{ savingName ? '…' : 'Enregistrer' }}
               </button>
@@ -117,7 +117,7 @@ const inputCls =
 
           <div>
             <label :class="labelCls">Email</label>
-            <input :value="email" type="email" disabled :class="inputCls + ' bg-surface text-steel'" />
+            <input :value="email" type="email" disabled :class="inputCls + ' bg-surface text-steel'" >
             <p class="mt-1.5 text-xs text-stone">Membre depuis le {{ membreDepuis }}.</p>
           </div>
         </div>
@@ -134,11 +134,11 @@ const inputCls =
               autocomplete="new-password"
               placeholder="••••••••"
               :class="inputCls + ' flex-1'"
-            />
+            >
             <button
-              @click="savePassword"
               :disabled="savingPwd"
               class="h-11 shrink-0 rounded-full bg-ink px-5 text-sm font-medium text-white hover:bg-black transition disabled:opacity-60"
+              @click="savePassword"
             >
               {{ savingPwd ? '…' : 'Changer' }}
             </button>
@@ -151,8 +151,8 @@ const inputCls =
 
       <div class="mt-6 flex justify-end">
         <button
-          @click="logout"
           class="flex items-center gap-2 rounded-full border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-steel hover:bg-surface hover:text-ink transition"
+          @click="logout"
         >
           <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" />

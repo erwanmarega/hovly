@@ -129,7 +129,7 @@ function choisirStatut(id: string, s: Statut) {
             type="search"
             placeholder="Rechercher un bien, une ville…"
             class="h-10 w-full rounded-full border border-hairline bg-white pl-10 pr-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-          />
+          >
           <svg class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
           </svg>
@@ -137,18 +137,18 @@ function choisirStatut(id: string, s: Statut) {
 
         <div class="flex items-center gap-2 overflow-x-auto">
           <button
-            @click="filtreStatut = 'tous'"
             class="rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition"
             :class="filtreStatut === 'tous' ? 'bg-ink text-white' : 'border border-hairline bg-white text-steel hover:bg-surface'"
+            @click="filtreStatut = 'tous'"
           >
             Tous
           </button>
           <button
             v-for="s in STATUTS"
             :key="s.value"
-            @click="filtreStatut = s.value"
             class="rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition"
             :class="filtreStatut === s.value ? 'bg-ink text-white' : 'border border-hairline bg-white text-steel hover:bg-surface'"
+            @click="filtreStatut = s.value"
           >
             {{ s.label }}
           </button>
@@ -181,7 +181,7 @@ function choisirStatut(id: string, s: Statut) {
                 </th>
                 <th class="px-5 py-3 font-semibold">Statut</th>
                 <th class="px-5 py-3 font-semibold">Note</th>
-                <th class="px-5 py-3"></th>
+                <th class="px-5 py-3"/>
               </tr>
             </thead>
             <tbody>
@@ -198,8 +198,8 @@ function choisirStatut(id: string, s: Statut) {
                       :alt="b.titre"
                       class="size-11 shrink-0 rounded-lg object-cover bg-surface"
                       loading="lazy"
-                    />
-                    <div v-else class="size-11 shrink-0 rounded-lg bg-surface"></div>
+                    >
+                    <div v-else class="size-11 shrink-0 rounded-lg bg-surface"/>
                     <div class="min-w-0">
                       <p class="truncate font-medium text-ink max-w-[220px] group-hover:text-blue transition">{{ b.titre }}</p>
                       <p class="text-xs text-stone">
@@ -226,9 +226,9 @@ function choisirStatut(id: string, s: Statut) {
                       <button
                         v-for="s in STATUTS"
                         :key="s.value"
-                        @click="choisirStatut(b.id, s.value)"
                         class="block w-full rounded-lg px-3 py-1.5 text-left text-sm hover:bg-surface"
                         :class="b.statut === s.value ? 'font-semibold text-ink' : 'text-slate'"
+                        @click="choisirStatut(b.id, s.value)"
                       >
                         {{ s.label }}
                       </button>
@@ -254,9 +254,9 @@ function choisirStatut(id: string, s: Statut) {
                       </svg>
                     </a>
                     <button
-                      @click="supprimer(b.id)"
                       class="grid size-8 place-items-center rounded-lg text-stone hover:bg-coral hover:text-[#600000] transition"
                       title="Supprimer"
+                      @click="supprimer(b.id)"
                     >
                       <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -270,7 +270,7 @@ function choisirStatut(id: string, s: Statut) {
         </div>
 
         <div v-if="pending" class="py-16 text-center">
-          <div class="mx-auto size-6 animate-spin rounded-full border-2 border-hairline border-t-ink"></div>
+          <div class="mx-auto size-6 animate-spin rounded-full border-2 border-hairline border-t-ink"/>
         </div>
         <div v-else-if="biensAffiches.length === 0" class="py-16 text-center">
           <p class="text-slate">Aucun bien ne correspond.</p>

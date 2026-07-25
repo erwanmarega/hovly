@@ -68,7 +68,7 @@ const vReveal = {
         src="https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=1920&q=80"
         alt=""
         class="absolute inset-0 size-full object-cover"
-      />
+      >
       <div class="relative mx-auto w-full max-w-xl bg-white/95 backdrop-blur-md rounded-3xl px-8 py-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.18)]">
         <div class="animate-fade-up inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1 text-xs font-semibold text-ink-deep mb-7">
           <span>✦</span> 
@@ -86,7 +86,7 @@ const vReveal = {
                 :style="{ animationDelay: `${i * 0.08}s` }"
                 aria-hidden="true"
               >{{ c }}</span>
-              <span class="absolute -bottom-1 left-0 right-0 h-[3px] bg-brand rounded-full"></span>
+              <span class="absolute -bottom-1 left-0 right-0 h-[3px] bg-brand rounded-full"/>
             </span>
           </span>
         </h1>
@@ -101,7 +101,7 @@ const vReveal = {
               type="text"
               placeholder="Colle une URL d'annonce…"
               class="w-full bg-transparent text-sm text-ink outline-none placeholder:text-stone"
-            />
+            >
           </div>
           <div class="flex items-center justify-between gap-2 px-3 pb-3">
             <span class="inline-flex items-center rounded-full bg-surface border border-hairline px-3 py-1.5 text-xs text-slate">
@@ -116,8 +116,8 @@ const vReveal = {
         </div>
       </div>
 
-      <div class="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-teal/40 blur-3xl animate-float"></div>
-      <div class="pointer-events-none absolute top-10 -right-20 size-72 rounded-full bg-coral/40 blur-3xl animate-float" style="animation-delay: 2s"></div>
+      <div class="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-teal/40 blur-3xl animate-float"/>
+      <div class="pointer-events-none absolute top-10 -right-20 size-72 rounded-full bg-coral/40 blur-3xl animate-float" style="animation-delay: 2s"/>
     </section>
 
     <section id="sources" class="border-y border-hairline-soft bg-surface-soft">

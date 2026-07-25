@@ -152,7 +152,7 @@ export function extraire(data: PageData): Partial<Bien> {
   const prixBrut = offer?.price ?? offer?.priceSpecification?.price ?? offer?.lowPrice
   if (prixBrut != null) prixEuros = entier(String(prixBrut))
   if (!prixEuros) {
-    const m = txt.match(/(\d[\d\s. ]{2,9})\s*€/)
+    const m = txt.match(/(\d[\d\s.\u00a0]{2,9})\s*€/)
     if (m) prixEuros = entier(m[1])
   }
   const prix = prixEuros ? prixEuros * 100 : null

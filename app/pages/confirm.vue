@@ -12,7 +12,7 @@ watchEffect(() => {
 <template>
   <div class="grid min-h-screen place-items-center bg-surface text-ink">
     <div class="text-center">
-      <div class="mx-auto mb-4 size-7 animate-spin rounded-full border-2 border-hairline border-t-ink"></div>
+      <div class="mx-auto mb-4 size-7 animate-spin rounded-full border-2 border-hairline border-t-ink"/>
       <p class="text-slate">Connexion en cours…</p>
     </div>
   </div>

@@ -57,8 +57,8 @@ async function handleGoogle() {
 
           <button
             type="button"
-            @click="handleGoogle"
             class="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-hairline-strong bg-white px-5 py-3 text-sm font-medium hover:bg-surface transition"
+            @click="handleGoogle"
           >
             <svg class="size-5" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -70,12 +70,12 @@ async function handleGoogle() {
           </button>
 
           <div class="my-6 flex items-center gap-4">
-            <span class="h-px flex-1 bg-hairline"></span>
+            <span class="h-px flex-1 bg-hairline"/>
             <span class="text-xs text-stone">ou</span>
-            <span class="h-px flex-1 bg-hairline"></span>
+            <span class="h-px flex-1 bg-hairline"/>
           </div>
 
-          <form @submit.prevent="handleLogin" class="space-y-4">
+          <form class="space-y-4" @submit.prevent="handleLogin">
             <div>
               <label for="email" class="block text-sm font-medium text-ink mb-1.5">Email</label>
               <input
@@ -85,7 +85,7 @@ async function handleGoogle() {
                 autocomplete="email"
                 placeholder="toi@exemple.com"
                 class="h-11 w-full rounded-lg border border-hairline-strong bg-white px-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-              />
+              >
             </div>
             <div>
               <div class="flex items-center justify-between mb-1.5">
@@ -99,7 +99,7 @@ async function handleGoogle() {
                 autocomplete="current-password"
                 placeholder="••••••••"
                 class="h-11 w-full rounded-lg border border-hairline-strong bg-white px-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-              />
+              >
             </div>
 
             <p v-if="error" class="text-sm text-coral-soft font-medium">{{ error }}</p>
@@ -121,8 +121,6 @@ async function handleGoogle() {
       </div>
     </div>
 
-    <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-brand relative overflow-hidden">
-
-    </div>
+    <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-brand relative overflow-hidden"/>
   </div>
 </template>

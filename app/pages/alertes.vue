@@ -49,17 +49,17 @@ function libelle(a: Alerte) {
         <div class="flex items-center gap-4">
           <button
             v-if="nonVues > 0"
-            @click="marquerLues"
             class="text-sm font-medium text-blue hover:underline"
+            @click="marquerLues"
           >
             Tout marquer comme lu
           </button>
           <button
-            @click="lancerVerif"
             :disabled="checking"
             class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-black transition disabled:opacity-60"
+            @click="lancerVerif"
           >
-            <span v-if="checking" class="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+            <span v-if="checking" class="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"/>
             {{ checking ? 'Vérification…' : 'Vérifier maintenant' }}
           </button>
         </div>
@@ -70,7 +70,7 @@ function libelle(a: Alerte) {
       </p>
 
       <div v-if="pending" class="py-20 text-center">
-        <div class="mx-auto size-7 animate-spin rounded-full border-2 border-hairline border-t-ink"></div>
+        <div class="mx-auto size-7 animate-spin rounded-full border-2 border-hairline border-t-ink"/>
       </div>
 
       <div v-else-if="alertes.length === 0" class="mt-8 rounded-2xl border border-hairline bg-white py-16 text-center">
@@ -95,7 +95,7 @@ function libelle(a: Alerte) {
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <span class="text-sm font-semibold">{{ libelle(a) }}</span>
-              <span v-if="!a.vue" class="size-2 rounded-full bg-blue"></span>
+              <span v-if="!a.vue" class="size-2 rounded-full bg-blue"/>
             </div>
             <p class="truncate text-sm text-slate">{{ a.biens?.titre ?? 'Bien' }}</p>
           </div>

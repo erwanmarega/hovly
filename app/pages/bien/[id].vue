@@ -111,7 +111,7 @@ async function supprimer() {
       <div v-if="pending" class="py-24 text-center">
         <div
           class="mx-auto size-7 animate-spin rounded-full border-2 border-hairline border-t-ink"
-        ></div>
+        />
       </div>
 
       <div v-else-if="error || !bien" class="py-24 text-center">
@@ -167,9 +167,9 @@ async function supprimer() {
               </svg>
             </a>
             <button
-              @click="supprimer"
               :disabled="deleting"
               class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-steel hover:bg-coral hover:text-[#600000] transition disabled:opacity-60"
+              @click="supprimer"
             >
               <svg
                 class="size-4"
@@ -197,7 +197,7 @@ async function supprimer() {
                 :src="bien.photos[photoActive]"
                 :alt="bien.titre"
                 class="aspect-[4/3] w-full object-cover"
-              />
+              >
               <div
                 v-if="bien.photos.length > 1"
                 class="flex gap-2 overflow-x-auto p-3"
@@ -205,15 +205,15 @@ async function supprimer() {
                 <button
                   v-for="(p, i) in bien.photos"
                   :key="i"
-                  @click="photoActive = i"
                   class="size-16 shrink-0 overflow-hidden rounded-lg border-2 transition"
                   :class="
                     i === photoActive
                       ? 'border-ink'
                       : 'border-transparent opacity-70 hover:opacity-100'
                   "
+                  @click="photoActive = i"
                 >
-                  <img :src="p" alt="" class="size-full object-cover" />
+                  <img :src="p" alt="" class="size-full object-cover" >
                 </button>
               </div>
             </div>
@@ -309,8 +309,8 @@ async function supprimer() {
               </h2>
               <div class="relative mt-3">
                 <button
-                  @click="menuStatut = !menuStatut"
                   class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left hover:bg-surface transition"
+                  @click="menuStatut = !menuStatut"
                 >
                   <BadgeStatut :statut="bien.statut" />
                   <svg
@@ -330,13 +330,13 @@ async function supprimer() {
                   <button
                     v-for="s in STATUTS"
                     :key="s.value"
-                    @click="setStatut(s.value)"
                     class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface"
                     :class="
                       bien.statut === s.value
                         ? 'font-semibold text-ink'
                         : 'text-slate'
                     "
+                    @click="setStatut(s.value)"
                   >
                     {{ s.label }}
                   </button>
@@ -359,11 +359,11 @@ async function supprimer() {
               </div>
               <textarea
                 v-model="noteDraft"
-                @blur="saveNote"
                 rows="4"
                 placeholder="Quartier, points forts, points faibles…"
                 class="mt-3 min-h-24 w-full flex-1 resize-none rounded-lg border border-hairline-strong bg-white px-4 py-2.5 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-              ></textarea>
+                @blur="saveNote"
+              />
             </div>
           </div>
         </div>

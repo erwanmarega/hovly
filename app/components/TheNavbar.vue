@@ -86,9 +86,9 @@ async function logout() {
             {{ (userEmail || '?').charAt(0).toUpperCase() }}
           </NuxtLink>
           <button
-            @click="logout"
             class="grid size-9 place-items-center rounded-full border border-hairline bg-white text-stone hover:bg-surface hover:text-ink transition"
             title="Se déconnecter"
+            @click="logout"
           >
             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" />
