@@ -10,33 +10,51 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SUPABASE_URL: https://ci.supabase.co
+  SUPABASE_KEY: ci-anon-key
+
 jobs:
-  ci:
+  lint:
     runs-on: ubuntu-latest
-    env:
-      # Valeurs factices : @nuxtjs/supabase exige ces variables au build,
-      # aucun appel réseau n'est fait pendant la CI.
-      SUPABASE_URL: https://ci.supabase.co
-      SUPABASE_KEY: ci-anon-key
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run lint
 
-      - uses: actions/setup-node@v4
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm test
+
+  build:
+    needs: [lint, typecheck, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: 22
-          cache: npm
+          name: nuxt-output
+          path: .output
+          retention-days: 7
 
-      - name: Install
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
+  ci:
+    if: always()
+    needs: [lint, typecheck, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifie que tous les jobs sont verts
+        run: |
+          echo "${{ toJSON(needs) }}"
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "false" ]
