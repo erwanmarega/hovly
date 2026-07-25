@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Bien, DPE, SiteSource, Statut } from '~/types'
+import type { EntreeImport } from '~/composables/useImportMasse'
 import { detecterSource, STATUTS } from '~/composables/useBiens'
 
 useHead({ title: 'Ajouter un bien — Hovly' })
@@ -25,7 +26,66 @@ const ETAPES_EXTRACTION = [
   'Localisation du bien'
 ]
 
+const mode = ref<'simple' | 'masse'>('simple')
 const etape = ref<'url' | 'edition'>('url')
+
+const collageMasse = ref('')
+const entrees = ref<EntreeImport[]>([])
+const importEnCours = ref(false)
+const indexCourant = ref(0)
+
+const resume = computed(() => resumeImport(entrees.value))
+
+watch(collageMasse, (texte) => {
+  if (importEnCours.value) return
+  entrees.value = parserUrls(
+    texte,
+    biens.value.map((b) => b.url_source)
+  )
+})
+
+async function lancerImport() {
+  importEnCours.value = true
+  const aTraiter = entrees.value.filter((e) => e.statut === 'prete')
+
+  for (const entree of aTraiter) {
+    indexCourant.value = entrees.value.indexOf(entree)
+    entree.statut = 'analyse'
+    try {
+      const b = await $fetch<Partial<Bien>>('/api/scrape', {
+        method: 'POST',
+        body: { url: entree.url }
+      })
+      if (!b.titre && !b.prix) throw new Error('Aucune donnée extraite')
+
+      await ajouter({
+        url_source: entree.url,
+        site_source: entree.source!,
+        titre: b.titre ?? 'Sans titre',
+        prix: b.prix ?? 0,
+        surface: b.surface ?? 0,
+        nb_pieces: b.nb_pieces ?? 0,
+        etage: b.etage ?? null,
+        charges: b.charges ?? null,
+        dpe: b.dpe ?? null,
+        adresse: b.adresse ?? null,
+        ville: b.ville ?? '',
+        code_postal: b.code_postal ?? '',
+        photos: b.photos ?? [],
+        description: b.description ?? null,
+        statut: 'a_visiter'
+      })
+      entree.statut = 'ajoutee'
+      entree.titre = b.titre ?? undefined
+    } catch (e: unknown) {
+      const err = e as { statusMessage?: string; message?: string }
+      entree.statut = 'echec'
+      entree.message = err?.statusMessage || err?.message || 'Extraction impossible'
+    }
+  }
+
+  importEnCours.value = false
+}
 const url = ref('')
 const loading = ref(false)
 const saving = ref(false)
@@ -250,7 +310,121 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
 
       <Transition name="etape" mode="out-in">
         <section v-if="etape === 'url'" key="url" class="mt-8">
-          <div class="rounded-feature border border-hairline-soft bg-white p-8">
+          <div class="mb-5 flex items-center gap-1 rounded-full bg-surface p-1 w-fit">
+            <button
+              v-for="m in [
+                { value: 'simple' as const, label: 'Une annonce' },
+                { value: 'masse' as const, label: 'Plusieurs annonces' }
+              ]"
+              :key="m.value"
+              class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+              :class="mode === m.value ? 'bg-ink text-white' : 'text-steel hover:text-ink'"
+              @click="mode = m.value"
+            >
+              {{ m.label }}
+            </button>
+          </div>
+
+          <div v-if="mode === 'masse'" class="rounded-feature border border-hairline-soft bg-white p-8">
+            <label for="masse" :class="labelCls">Colle tes liens, un par ligne</label>
+            <textarea
+              id="masse"
+              v-model="collageMasse"
+              rows="6"
+              :disabled="importEnCours"
+              placeholder="https://www.pap.fr/annonces/…&#10;https://www.leboncoin.fr/ad/locations/…&#10;https://www.bienici.com/annonce/…"
+              class="w-full resize-y rounded-xl border border-hairline-strong bg-white px-4 py-3 font-mono text-xs outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:opacity-60"
+            />
+
+            <div v-if="entrees.length" class="mt-5">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-sm text-slate">
+                  <span class="font-semibold text-ink">{{ resume.pretes }}</span> prête{{ resume.pretes > 1 ? 's' : '' }} à importer
+                  <template v-if="resume.ignorees">
+                    · <span class="text-stone">{{ resume.ignorees }} ignorée{{ resume.ignorees > 1 ? 's' : '' }}</span>
+                  </template>
+                  <template v-if="resume.ajoutees">
+                    · <span class="text-success">{{ resume.ajoutees }} ajoutée{{ resume.ajoutees > 1 ? 's' : '' }}</span>
+                  </template>
+                  <template v-if="resume.echecs">
+                    · <span class="text-[#600000]">{{ resume.echecs }} en échec</span>
+                  </template>
+                </p>
+
+                <button
+                  :disabled="importEnCours || !resume.pretes"
+                  class="analyser h-11 shrink-0 rounded-full bg-ink px-6 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
+                  @click="lancerImport"
+                >
+                  {{
+                    importEnCours
+                      ? `Import ${resume.ajoutees + resume.echecs}/${resume.total - resume.ignorees}…`
+                      : `Importer ${resume.pretes} annonce${resume.pretes > 1 ? 's' : ''}`
+                  }}
+                </button>
+              </div>
+
+              <div
+                v-if="importEnCours"
+                class="mt-3 h-1 overflow-hidden rounded-full bg-surface"
+              >
+                <div
+                  class="h-full rounded-full bg-ink transition-all duration-500"
+                  :style="{
+                    width: `${((resume.ajoutees + resume.echecs) / Math.max(1, resume.total - resume.ignorees)) * 100}%`
+                  }"
+                />
+              </div>
+
+              <ul class="mt-4 divide-y divide-hairline-soft">
+                <li
+                  v-for="(e, i) in entrees"
+                  :key="i"
+                  class="flex items-center gap-3 py-2.5 text-sm"
+                >
+                  <span
+                    class="grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold"
+                    :class="{
+                      'bg-surface text-stone': e.statut === 'prete',
+                      'bg-brand-light text-[#8a6d1c]': ['source_inconnue', 'deja_ajoutee', 'doublon_liste'].includes(e.statut),
+                      'bg-teal text-[#0a4a42]': e.statut === 'ajoutee',
+                      'bg-coral text-[#600000]': e.statut === 'echec'
+                    }"
+                  >
+                    <span v-if="e.statut === 'analyse'" class="size-3 animate-spin rounded-full border-2 border-stone border-t-ink" />
+                    <template v-else-if="e.statut === 'ajoutee'">✓</template>
+                    <template v-else-if="e.statut === 'echec'">✕</template>
+                    <template v-else-if="e.statut === 'prete'">{{ i + 1 }}</template>
+                    <template v-else>!</template>
+                  </span>
+
+                  <LogoSource v-if="e.source" :source="e.source" :avec-nom="false" :taille="16" />
+                  <span v-else class="size-4 shrink-0 rounded bg-surface" />
+
+                  <span class="min-w-0 flex-1 truncate" :class="e.statut === 'echec' ? 'text-[#600000]' : 'text-slate'">
+                    {{ e.titre || e.url }}
+                  </span>
+
+                  <span v-if="e.message" class="shrink-0 text-xs text-stone">{{ e.message }}</span>
+                </li>
+              </ul>
+
+              <NuxtLink
+                v-if="!importEnCours && resume.ajoutees"
+                to="/dashboard"
+                class="mt-5 inline-flex rounded-full border border-hairline px-5 py-2.5 text-sm font-medium text-steel transition hover:bg-surface"
+              >
+                Voir mes {{ resume.ajoutees }} nouveaux biens
+              </NuxtLink>
+            </div>
+
+            <p v-else class="mt-4 text-sm text-stone">
+              Chaque lien est vérifié avant l’import : source reconnue, annonce pas déjà suivie,
+              pas de doublon dans la liste.
+            </p>
+          </div>
+
+          <div v-else class="rounded-feature border border-hairline-soft bg-white p-8">
             <form @submit.prevent="analyser">
               <label for="url" :class="labelCls">Lien de l’annonce</label>
               <div class="flex flex-col gap-3 sm:flex-row">
