@@ -73,6 +73,13 @@ async function analyser() {
   }
 }
 
+onMounted(() => {
+  const depuisLanding = useRoute().query.url
+  if (typeof depuisLanding !== 'string' || !depuisLanding) return
+  url.value = depuisLanding
+  if (detecterSource(depuisLanding)) analyser()
+})
+
 const prixM2 = computed(() =>
   draft.surface ? Math.round(draft.prix / draft.surface) : 0
 )
