@@ -70,6 +70,22 @@ const biensAffiches = computed(() => {
   })
 })
 
+const PAR_PAGE = 12
+const page = ref(1)
+
+const biensPage = computed(() =>
+  biensAffiches.value.slice((page.value - 1) * PAR_PAGE, page.value * PAR_PAGE)
+)
+
+watch([recherche, filtreStatut, triClef, triAsc], () => {
+  page.value = 1
+})
+
+watch(biensAffiches, (liste) => {
+  const nbPages = Math.max(1, Math.ceil(liste.length / PAR_PAGE))
+  if (page.value > nbPages) page.value = nbPages
+})
+
 const stats = computed(() => {
   const actifs = biens.value.filter((b) => b.actif)
   const loyers = actifs.map(prixMensuel).filter((p) => p > 0)
@@ -243,7 +259,7 @@ function choisirStatut(id: string, s: Statut) {
             </thead>
             <tbody>
               <tr
-                v-for="b in biensAffiches"
+                v-for="b in biensPage"
                 :key="b.id"
                 class="border-b border-hairline-soft last:border-0 hover:bg-surface-soft transition"
               >
@@ -325,6 +341,14 @@ function choisirStatut(id: string, s: Statut) {
             </tbody>
           </table>
         </div>
+
+        <PaginationListe
+          v-if="!pending && biensAffiches.length"
+          :page="page"
+          :total="biensAffiches.length"
+          :par-page="PAR_PAGE"
+          @update:page="page = $event"
+        />
 
         <div v-if="pending" class="py-16 text-center">
           <div class="mx-auto size-6 animate-spin rounded-full border-2 border-hairline border-t-ink"/>

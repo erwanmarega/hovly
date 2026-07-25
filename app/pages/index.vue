@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { SiteSource } from '~/types'
+
 useHead({
   title: 'Hovly — Tous tes biens immobiliers en un seul endroit',
   meta: [
@@ -6,7 +8,7 @@ useHead({
   ]
 })
 
-const sources = ['SeLoger', 'Leboncoin', 'PAP', 'Logic-Immo', 'BienIci']
+const sources: SiteSource[] = ['seloger', 'leboncoin', 'pap', 'logic-immo', 'bienici']
 
 const features = [
   {
@@ -126,12 +128,16 @@ const vReveal = {
           Fonctionne avec tes sites préférés
         </p>
         <div class="group relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <div class="flex w-max gap-10 animate-marquee group-hover:[animation-play-state:paused]">
-            <span
+          <div
+            class="flex w-max items-center gap-10 animate-marquee group-hover:[animation-play-state:paused]"
+          >
+            <LogoSource
               v-for="(s, i) in [...sources, ...sources, ...sources, ...sources]"
               :key="i"
-              class="shrink-0 text-lg font-semibold text-steel whitespace-nowrap"
-            >{{ s }}</span>
+              :source="s"
+              :taille="28"
+              class="opacity-70 transition hover:opacity-100"
+            />
           </div>
         </div>
       </div>
