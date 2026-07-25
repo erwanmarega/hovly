@@ -25,7 +25,27 @@ const triClef = ref<"date" | "prix" | "surface" | "prix_m2" | "score">("date");
 const triAsc = ref(false);
 
 const { preferences } = usePreferences();
-const scoreDe = (b: Bien) => scoreBien(b, biens.value, preferences.value);
+
+const contexteScore = computed(() => representants(biens.value));
+const scoreDe = (b: Bien) => scoreBien(b, contexteScore.value, preferences.value);
+
+const groupesDoublons = computed(() => grouperDoublons(biens.value.filter((b) => b.actif)));
+
+const {
+  nombre: nbCompares,
+  complet: selectionComplete,
+  comparable,
+  estSelectionne,
+  basculer,
+  vider: viderComparaison
+} = useComparateur();
+const doublonsParId = computed(() => {
+  const map = new Map<string, number>();
+  for (const groupe of groupesDoublons.value) {
+    for (const b of groupe) map.set(b.id, groupe.length);
+  }
+  return map;
+});
 
 const sourceLabels: Record<string, string> = {
   seloger: "SeLoger",
@@ -254,6 +274,21 @@ function choisirStatut(id: string, s: Statut) {
       </section>
 
       <div
+        v-if="groupesDoublons.length"
+        class="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-deep/30 bg-brand-light px-4 py-3"
+      >
+        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm">⧉</span>
+        <p class="text-sm text-ink">
+          <span class="font-semibold">
+            {{ groupesDoublons.length }}
+            bien{{ groupesDoublons.length > 1 ? 's' : '' }} en double
+          </span>
+          — la même annonce publiée sur plusieurs sites. Elles ne comptent qu’une fois dans le
+          calcul du prix médian.
+        </p>
+      </div>
+
+      <div
         class="barre sticky top-3 z-20 mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-hairline-soft bg-white/85 p-3 backdrop-blur-xl"
       >
         <div class="relative min-w-[200px] flex-1">
@@ -460,6 +495,7 @@ function choisirStatut(id: string, s: Statut) {
               <tr
                 class="border-b border-hairline-soft text-[11px] font-semibold uppercase tracking-wider text-stone"
               >
+                <th class="w-10 px-5 py-3" />
                 <th class="px-5 py-3 font-semibold">Bien</th>
                 <th
                   class="cursor-pointer px-5 py-3 font-semibold hover:text-ink"
@@ -512,6 +548,16 @@ function choisirStatut(id: string, s: Statut) {
                 :style="{ '--i': i }"
               >
                 <td class="px-5 py-3">
+                  <input
+                    type="checkbox"
+                    class="size-4 cursor-pointer accent-ink"
+                    :checked="estSelectionne(b.id)"
+                    :disabled="!estSelectionne(b.id) && selectionComplete"
+                    :aria-label="`Comparer ${b.titre}`"
+                    @change="basculer(b.id)"
+                  >
+                </td>
+                <td class="px-5 py-3">
                   <NuxtLink
                     :to="`/bien/${b.id}`"
                     class="flex items-center gap-3 group"
@@ -533,11 +579,18 @@ function choisirStatut(id: string, s: Statut) {
                       >
                         {{ b.titre }}
                       </p>
-                      <p class="text-xs text-stone">
+                      <p class="flex items-center gap-1.5 text-xs text-stone">
                         {{ b.ville }} ·
                         <span class="text-steel">{{
                           sourceLabels[b.site_source]
                         }}</span>
+                        <span
+                          v-if="doublonsParId.get(b.id)"
+                          class="rounded-full bg-brand-light px-1.5 py-0.5 text-[10px] font-semibold text-[#8a6d1c]"
+                          :title="`Ce bien apparaît sur ${doublonsParId.get(b.id)} annonces`"
+                        >
+                          ×{{ doublonsParId.get(b.id) }}
+                        </span>
                       </p>
                     </div>
                   </NuxtLink>
@@ -651,6 +704,30 @@ function choisirStatut(id: string, s: Statut) {
           @update:page="page = $event"
         />
       </div>
+      <Transition name="barre-cmp">
+        <div
+          v-if="nbCompares"
+          class="fixed inset-x-0 bottom-6 z-30 mx-auto flex w-fit items-center gap-4 rounded-full border border-hairline bg-white/95 px-5 py-3 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl"
+        >
+          <span class="text-sm font-medium">
+            {{ nbCompares }} bien{{ nbCompares > 1 ? 's' : '' }} sélectionné{{ nbCompares > 1 ? 's' : '' }}
+            <span v-if="selectionComplete" class="text-stone">(max atteint)</span>
+          </span>
+          <button
+            class="text-sm font-medium text-steel transition hover:text-ink"
+            @click="viderComparaison"
+          >
+            Vider
+          </button>
+          <NuxtLink
+            :to="comparable ? '/comparer' : ''"
+            class="rounded-full px-4 py-2 text-sm font-medium transition"
+            :class="comparable ? 'bg-ink text-white hover:bg-black' : 'pointer-events-none bg-surface text-stone'"
+          >
+            Comparer
+          </NuxtLink>
+        </div>
+      </Transition>
     </main>
   </div>
 </template>
@@ -746,6 +823,18 @@ function choisirStatut(id: string, s: Statut) {
   to {
     background-position: -200% 0;
   }
+}
+
+.barre-cmp-enter-active,
+.barre-cmp-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.barre-cmp-enter-from,
+.barre-cmp-leave-to {
+  opacity: 0;
+  transform: translateY(16px);
 }
 
 @media (prefers-reduced-motion: reduce) {

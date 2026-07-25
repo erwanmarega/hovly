@@ -38,7 +38,13 @@ const { biens, refresh: refreshBiens } = useBiens();
 const { preferences } = usePreferences();
 useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
 const score = computed(() =>
-  bien.value ? scoreBien(bien.value, biens.value, preferences.value) : null
+  bien.value
+    ? scoreBien(bien.value, representants(biens.value), preferences.value)
+    : null
+);
+
+const doublons = computed(() =>
+  bien.value ? doublonsDe(bien.value, biens.value) : []
 );
 
 const photoActive = ref(0);
@@ -315,6 +321,42 @@ async function supprimer() {
             </div>
 
             <ScoreBreakdown v-if="score" :score="score" />
+
+            <div
+              v-if="doublons.length"
+              class="rounded-2xl border border-brand-deep/30 bg-brand-light p-6"
+            >
+              <h2 class="text-sm font-semibold uppercase tracking-wide text-[#8a6d1c]">
+                Aussi publié ailleurs
+              </h2>
+              <p class="mt-1 text-xs text-ink/60">
+                Hovly a repéré {{ doublons.length }} autre{{ doublons.length > 1 ? 's' : '' }}
+                annonce{{ doublons.length > 1 ? 's' : '' }} du même bien.
+              </p>
+              <ul class="mt-4 space-y-2">
+                <li v-for="d in doublons" :key="d.id">
+                  <NuxtLink
+                    :to="`/bien/${d.id}`"
+                    class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white"
+                  >
+                    <LogoSource :source="d.site_source" :avec-nom="false" :taille="20" />
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm font-medium text-ink">
+                        {{ sourceLabels[d.site_source] }}
+                      </span>
+                      <span class="block truncate text-xs text-stone">{{ d.titre }}</span>
+                    </span>
+                    <span class="shrink-0 text-sm font-semibold tabular-nums">
+                      {{ eur(Math.round(d.prix / 100)) }} €
+                      <span
+                        v-if="d.prix < bien.prix"
+                        class="ml-1 rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold text-[#0a4a42]"
+                      >moins cher</span>
+                    </span>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 

@@ -1,0 +1,102 @@
+import type { Bien, DPE } from '~/types'
+import type { Score } from '~/composables/useScore'
+
+export const MAX_COMPARAISON = 4
+
+export interface LigneComparaison {
+  cle: string
+  label: string
+  sens: 'min' | 'max' | null
+  affichage: string[]
+  meilleurs: number[]
+}
+
+const DPE_ORDRE: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+const eur = (n: number) => n.toLocaleString('fr-FR')
+
+function meilleursIndices(valeurs: (number | null)[], sens: 'min' | 'max' | null): number[] {
+  if (!sens) return []
+  const definies = valeurs.filter((v): v is number => v != null)
+  if (definies.length < 2) return []
+  if (new Set(definies).size === 1) return []
+
+  const cible = sens === 'min' ? Math.min(...definies) : Math.max(...definies)
+  return valeurs.flatMap((v, i) => (v === cible ? [i] : []))
+}
+
+function ligne(
+  cle: string,
+  label: string,
+  sens: 'min' | 'max' | null,
+  valeurs: (number | null)[],
+  format: (v: number | null) => string
+): LigneComparaison {
+  return {
+    cle,
+    label,
+    sens,
+    affichage: valeurs.map(format),
+    meilleurs: meilleursIndices(valeurs, sens)
+  }
+}
+
+export function comparer(biens: Bien[], scores: Score[]): LigneComparaison[] {
+  const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
+  const charges = biens.map((b) => (b.charges != null ? Math.round(b.charges / 100) : null))
+  const totaux = biens.map((b, i) => (loyers[i] == null ? null : loyers[i]! + (charges[i] ?? 0)))
+  const surfaces = biens.map((b) => b.surface || null)
+  const auM2 = biens.map((b) => (b.surface && b.prix ? Math.round(b.prix / 100 / b.surface) : null))
+  const pieces = biens.map((b) => b.nb_pieces || null)
+  const etages = biens.map((b) => b.etage)
+  const dpes = biens.map((b) => (b.dpe ? DPE_ORDRE.indexOf(b.dpe) : null))
+  const totauxScore = scores.map((s) => s.total)
+  const horsCriteres = scores.map((s) => s.criteres.filter((c) => !c.ok).length)
+
+  const vide = (v: number | null) => (v == null ? '—' : String(v))
+
+  return [
+    ligne('loyer', 'Loyer', 'min', loyers, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('charges', 'Charges', 'min', charges, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('total', 'Total mensuel', 'min', totaux, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('surface', 'Surface', 'max', surfaces, (v) => (v == null ? '—' : `${v} m²`)),
+    ligne('m2', 'Prix au m²', 'min', auM2, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('pieces', 'Pièces', 'max', pieces, vide),
+    ligne('etage', 'Étage', null, etages, vide),
+    ligne('dpe', 'DPE', 'min', dpes, (v) => (v == null ? '—' : DPE_ORDRE[v]!)),
+    ligne('score', 'Score', 'max', totauxScore, (v) => (v == null ? '—' : String(v))),
+    ligne('criteres', 'Critères non respectés', 'min', horsCriteres, (v) =>
+      v == null ? '—' : v === 0 ? 'Aucun' : String(v)
+    )
+  ]
+}
+
+export function useComparateur() {
+  const selection = useState<string[]>('comparateur', () => [])
+
+  const complet = computed(() => selection.value.length >= MAX_COMPARAISON)
+  const nombre = computed(() => selection.value.length)
+  const comparable = computed(() => selection.value.length >= 2)
+
+  const estSelectionne = (id: string) => selection.value.includes(id)
+
+  function basculer(id: string) {
+    if (estSelectionne(id)) {
+      selection.value = selection.value.filter((x) => x !== id)
+      return true
+    }
+    if (complet.value) return false
+    selection.value = [...selection.value, id]
+    return true
+  }
+
+  function retirer(id: string) {
+    selection.value = selection.value.filter((x) => x !== id)
+  }
+
+  function vider() {
+    selection.value = []
+  }
+
+  return { selection, nombre, complet, comparable, estSelectionne, basculer, retirer, vider }
+}
