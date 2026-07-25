@@ -17,7 +17,9 @@ const choisis = computed(() =>
 
 const contexte = computed(() => representants(biens.value))
 const scores = computed(() => choisis.value.map((b) => scoreBien(b, contexte.value, preferences.value)))
-const lignes = computed(() => comparer(choisis.value, scores.value))
+const lignes = computed(() =>
+  comparer(choisis.value, scores.value, optionsDepuisPreferences(preferences.value))
+)
 
 const gagnant = computed(() => {
   if (choisis.value.length < 2) return null

@@ -1,5 +1,7 @@
 import type { Bien, DPE } from '~/types'
 import type { Score } from '~/composables/useScore'
+import type { OptionsCout } from '~/composables/useCoutReel'
+import { coutReel } from '~/composables/useCoutReel'
 
 export const MAX_COMPARAISON = 4
 
@@ -41,10 +43,15 @@ function ligne(
   }
 }
 
-export function comparer(biens: Bien[], scores: Score[]): LigneComparaison[] {
+export function comparer(
+  biens: Bien[],
+  scores: Score[],
+  optionsCout: OptionsCout = {}
+): LigneComparaison[] {
   const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
   const charges = biens.map((b) => (b.charges != null ? Math.round(b.charges / 100) : null))
   const totaux = biens.map((b, i) => (loyers[i] == null ? null : loyers[i]! + (charges[i] ?? 0)))
+  const coutsReels = biens.map((b) => Math.round(coutReel(b, optionsCout).total / 100) || null)
   const surfaces = biens.map((b) => b.surface || null)
   const auM2 = biens.map((b) => (b.surface && b.prix ? Math.round(b.prix / 100 / b.surface) : null))
   const pieces = biens.map((b) => b.nb_pieces || null)
@@ -59,6 +66,9 @@ export function comparer(biens: Bien[], scores: Score[]): LigneComparaison[] {
     ligne('loyer', 'Loyer', 'min', loyers, (v) => (v == null ? '—' : `${eur(v)} €`)),
     ligne('charges', 'Charges', 'min', charges, (v) => (v == null ? '—' : `${eur(v)} €`)),
     ligne('total', 'Total mensuel', 'min', totaux, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('cout_reel', 'Coût réel', 'min', coutsReels, (v) =>
+      v == null ? '—' : `${eur(v)} €`
+    ),
     ligne('surface', 'Surface', 'max', surfaces, (v) => (v == null ? '—' : `${v} m²`)),
     ligne('m2', 'Prix au m²', 'min', auM2, (v) => (v == null ? '—' : `${eur(v)} €`)),
     ligne('pieces', 'Pièces', 'max', pieces, vide),

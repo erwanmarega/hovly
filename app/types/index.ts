@@ -12,6 +12,10 @@ export interface Preferences {
   poidsPrix: number
   poidsDpe: number
   poidsCharges: number
+  /** Coût réel : prix du kWh en centimes. */
+  prixKwh: number | null
+  /** Coût réel : le chauffage est déjà compris dans les charges. */
+  chauffageDansCharges: boolean
 }
 
 export type SiteSource =

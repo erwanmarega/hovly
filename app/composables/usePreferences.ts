@@ -11,7 +11,9 @@ function normaliser(brut: unknown): Preferences {
     dpeMin: p.dpeMin ?? null,
     poidsPrix: p.poidsPrix ?? PREFERENCES_DEFAUT.poidsPrix,
     poidsDpe: p.poidsDpe ?? PREFERENCES_DEFAUT.poidsDpe,
-    poidsCharges: p.poidsCharges ?? PREFERENCES_DEFAUT.poidsCharges
+    poidsCharges: p.poidsCharges ?? PREFERENCES_DEFAUT.poidsCharges,
+    prixKwh: nombre(p.prixKwh),
+    chauffageDansCharges: p.chauffageDansCharges === true
   }
 }
 

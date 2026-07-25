@@ -29,6 +29,10 @@ function bien(over: Partial<Bien> = {}): Bien {
     description: null,
     statut: 'a_visiter',
     note_perso: null,
+    visite_le: null,
+    compte_rendu: null,
+    checklist: null,
+    rappel_envoye_le: null,
     actif: true,
     created_at: '2026-07-01T10:00:00.000Z',
     ...over
@@ -155,12 +159,23 @@ describe('comparer — calculs dérivés', () => {
         dpeMin: null,
         poidsPrix: 50,
         poidsDpe: 30,
-        poidsCharges: 20
+        poidsCharges: 20,
+        prixKwh: null,
+        chauffageDansCharges: false
       })
     )
     const l = ligne(comparer(liste, avecPrefs), 'criteres')
     expect(l.affichage).toEqual(['1', 'Aucun'])
     expect(l.meilleurs).toEqual([1])
+  })
+
+  it('classe sur le coût réel, pas sur le loyer affiché', () => {
+    // Même loyer, mais l'un est une passoire : c'est lui qui coûte cher.
+    const liste = [bien({ prix: 100000, surface: 50, dpe: 'G' }), bien({ prix: 100000, surface: 50, dpe: 'A' })]
+    const l = ligne(comparer(liste, scores(liste)), 'cout_reel')
+    expect(l.sens).toBe('min')
+    expect(l.meilleurs).toEqual([1])
+    expect(ligne(comparer(liste, scores(liste)), 'total').meilleurs).toEqual([])
   })
 
   it('désigne le meilleur score', () => {

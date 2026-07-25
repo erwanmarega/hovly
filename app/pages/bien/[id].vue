@@ -449,6 +449,8 @@ async function supprimer() {
               </div>
             </div>
 
+            <CoutReel :bien="bien" />
+
             <ScoreBreakdown v-if="score" :score="score" />
 
             <div

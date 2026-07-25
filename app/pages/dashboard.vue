@@ -22,11 +22,13 @@ const selection = ref<string | null>(null);
 const filtreStatut = ref<Statut | "tous">("tous");
 const recherche = ref("");
 const triClef = ref<
-  "date" | "prix" | "surface" | "prix_m2" | "score" | "visite"
+  "date" | "prix" | "surface" | "prix_m2" | "score" | "visite" | "cout_reel"
 >("date");
 const triAsc = ref(false);
 
 const { preferences } = usePreferences();
+
+const { calculer: coutDe } = useCoutReel();
 
 const contexteScore = computed(() => representants(biens.value));
 const scoreDe = (b: Bien) => scoreBien(b, contexteScore.value, preferences.value);
@@ -97,6 +99,10 @@ const biensAffiches = computed(() => {
       case "score":
         va = scoreDe(a).total;
         vb = scoreDe(b).total;
+        break;
+      case "cout_reel":
+        va = coutDe(a).total;
+        vb = coutDe(b).total;
         break;
       default:
         va = new Date(a.created_at).getTime();

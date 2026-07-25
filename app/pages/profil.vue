@@ -314,6 +314,36 @@ const inputCls =
                 </template>
               </p>
             </div>
+
+            <div class="mt-6 border-t border-hairline-soft pt-5">
+              <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+                Calcul du coût réel
+              </p>
+              <p class="mt-1 text-xs text-stone">
+                Loyer + charges + énergie estimée depuis le DPE + assurance habitation.
+              </p>
+
+              <div class="mt-4 grid grid-cols-2 items-end gap-4">
+                <div>
+                  <label :class="labelCls">Prix du kWh (c€)</label>
+                  <input
+                    v-model.number="brouillon.prixKwh"
+                    type="number"
+                    min="1"
+                    :placeholder="String(PRIX_KWH_DEFAUT)"
+                    :class="inputCls"
+                  >
+                </div>
+                <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate">
+                  <input
+                    v-model="brouillon.chauffageDansCharges"
+                    type="checkbox"
+                    class="size-4 cursor-pointer accent-ink"
+                  >
+                  Chauffage compris dans les charges
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 

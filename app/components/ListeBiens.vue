@@ -2,7 +2,7 @@
 import type { Bien, Statut } from '~/types'
 import type { Score } from '~/composables/useScore'
 
-type Clef = 'date' | 'prix' | 'surface' | 'prix_m2' | 'score' | 'visite'
+type Clef = 'date' | 'prix' | 'surface' | 'prix_m2' | 'score' | 'visite' | 'cout_reel'
 
 const props = defineProps<{
   biens: Bien[]
@@ -25,6 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const { prixMensuel, prixM2 } = useBiens()
+const { calculer: coutDe } = useCoutReel()
 const { complet: selectionComplete, estSelectionne, basculer } = useComparateur()
 
 const TRIS: { value: Clef, label: string }[] = [
@@ -32,6 +33,7 @@ const TRIS: { value: Clef, label: string }[] = [
   { value: 'prix', label: 'Loyer' },
   { value: 'surface', label: 'Surface' },
   { value: 'prix_m2', label: '€/m²' },
+  { value: 'cout_reel', label: 'Coût réel' },
   { value: 'score', label: 'Score' },
   { value: 'visite', label: 'Date de visite' }
 ]
@@ -114,6 +116,13 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
             >
               €/m² <span v-if="triClef === 'prix_m2'">{{ triAsc ? '↑' : '↓' }}</span>
             </th>
+            <th
+              class="hidden cursor-pointer font-semibold hover:text-ink xl:table-cell"
+              title="Loyer + charges + énergie estimée + assurance"
+              @click="emit('tri', 'cout_reel')"
+            >
+              Coût réel <span v-if="triClef === 'cout_reel'">{{ triAsc ? '↑' : '↓' }}</span>
+            </th>
             <th class="hidden font-semibold xl:table-cell">Pièces</th>
             <th class="hidden font-semibold lg:table-cell">DPE</th>
             <th class="cursor-pointer font-semibold hover:text-ink" @click="emit('tri', 'score')">
@@ -179,6 +188,13 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
             <td class="whitespace-nowrap tabular-nums text-slate">{{ b.surface }} m²</td>
             <td class="hidden whitespace-nowrap tabular-nums text-slate lg:table-cell">
               {{ eur(prixM2(b)) }} €
+            </td>
+            <td class="hidden whitespace-nowrap tabular-nums xl:table-cell">
+              <span class="font-medium">{{ eur(Math.round(coutDe(b).total / 100)) }} €</span>
+              <span
+                v-if="coutDe(b).ecartPourcent > 0"
+                class="ml-1 text-[11px] font-semibold text-stone"
+              >+{{ coutDe(b).ecartPourcent }} %</span>
             </td>
             <td class="hidden whitespace-nowrap tabular-nums text-slate xl:table-cell">
               {{ b.nb_pieces }}p
