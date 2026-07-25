@@ -1,22 +1,9 @@
 import type { Bien } from '~/types'
+import type { AlerteCreee, CheckResume, ResumeEnvois } from '~/types/check'
 import { scrapeUrl } from './scrape'
 import { envoyerAlerteEmail } from './email'
 
-export interface AlerteCreee {
-  bien_id: string
-  type: 'baisse_prix' | 'annonce_supprimee'
-  ancien_prix: number | null
-  nouveau_prix: number | null
-  titre: string
-}
-
-export interface CheckResume {
-  verifies: number
-  baisses: number
-  supprimes: number
-  erreurs: number
-  alertes: AlerteCreee[]
-}
+export type { AlerteCreee, CheckResume, ResumeEnvois }
 
 export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckResume> {
   const resume: CheckResume = { verifies: 0, baisses: 0, supprimes: 0, erreurs: 0, alertes: [] }
@@ -79,9 +66,31 @@ export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckRe
   return resume
 }
 
-export async function notifier(email: string | null, resume: CheckResume) {
-  if (!email || resume.alertes.length === 0) return
-  for (const a of resume.alertes) {
-    await envoyerAlerteEmail(email, a).catch(() => {})
+export async function notifier(
+  email: string | null,
+  resume: CheckResume
+): Promise<ResumeEnvois> {
+  const envois: ResumeEnvois = { envoyes: 0, echecs: 0, raisons: [] }
+  if (resume.alertes.length === 0) return envois
+
+  if (!email) {
+    console.warn('[check]', resume.alertes.length, 'alerte(s) sans adresse email destinataire')
+    envois.echecs = resume.alertes.length
+    envois.raisons.push('aucune adresse email')
+    return envois
   }
+
+  for (const a of resume.alertes) {
+    const res = await envoyerAlerteEmail(email, a).catch((e: Error) => ({
+      envoye: false,
+      raison: e.message
+    }))
+    if (res.envoye) {
+      envois.envoyes++
+    } else {
+      envois.echecs++
+      if (res.raison && !envois.raisons.includes(res.raison)) envois.raisons.push(res.raison)
+    }
+  }
+  return envois
 }

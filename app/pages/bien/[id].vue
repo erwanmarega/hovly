@@ -260,6 +260,26 @@ async function supprimer() {
             </div>
 
             <div
+              v-if="bien.lat != null && bien.lon != null"
+              class="mt-6 rounded-2xl border border-hairline bg-white p-6"
+            >
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold">Situation</h2>
+                <span v-if="bien.geo_precision === 'ville'" class="text-xs text-stone">
+                  Position approximative
+                </span>
+              </div>
+              <ClientOnly>
+                <CarteBiens class="mt-3" :biens="[bien]" hauteur="16rem" />
+                <template #fallback>
+                  <div
+                    class="mt-3 h-64 animate-pulse rounded-2xl border border-hairline bg-surface"
+                  />
+                </template>
+              </ClientOnly>
+            </div>
+
+            <div
               v-if="bien.description"
               class="mt-6 rounded-2xl border border-hairline bg-white p-6"
             >

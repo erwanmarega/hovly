@@ -103,3 +103,11 @@ export function scoreBien(bien: Bien, contexte: Bien[]): Score {
 
   return { total, label, couleur, tint, parts }
 }
+
+export function couleurScore(total: number | null | undefined): string {
+  if (total == null) return '#8e91a0'
+  if (total >= 65) return '#0fbcb0'
+  if (total >= 50) return '#fcb900'
+  if (total >= 35) return '#ff9999'
+  return '#e35d5d'
+}

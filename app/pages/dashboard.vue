@@ -8,6 +8,14 @@ const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } = useBiens()
 
 const { pending } = useAsyncData('biens', () => refresh(), { server: false })
 
+const VUES = [
+  { value: 'liste', label: 'Liste' },
+  { value: 'carte', label: 'Carte' }
+] as const
+
+const vue = ref<(typeof VUES)[number]['value']>('liste')
+const selection = ref<string | null>(null)
+
 const filtreStatut = ref<Statut | 'tous'>('tous')
 const recherche = ref('')
 const triClef = ref<'date' | 'prix' | 'surface' | 'prix_m2' | 'score'>('date')
@@ -153,9 +161,33 @@ function choisirStatut(id: string, s: Statut) {
             {{ s.label }}
           </button>
         </div>
+
+        <div class="flex items-center gap-1 rounded-full border border-hairline bg-white p-1">
+          <button
+            v-for="v in VUES"
+            :key="v.value"
+            class="rounded-full px-3 py-1 text-sm font-medium transition"
+            :class="vue === v.value ? 'bg-ink text-white' : 'text-steel hover:bg-surface'"
+            @click="vue = v.value"
+          >
+            {{ v.label }}
+          </button>
+        </div>
       </div>
 
-      <div class="mt-5 overflow-hidden rounded-2xl border border-hairline bg-white">
+      <ClientOnly v-if="vue === 'carte'">
+        <CarteBiens
+          class="mt-5"
+          :biens="biensAffiches"
+          :selection="selection"
+          @select="selection = $event"
+        />
+        <template #fallback>
+          <div class="mt-5 h-[32rem] animate-pulse rounded-2xl border border-hairline bg-white" />
+        </template>
+      </ClientOnly>
+
+      <div v-else class="mt-5 overflow-hidden rounded-2xl border border-hairline bg-white">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[920px] text-left text-sm">
             <thead>

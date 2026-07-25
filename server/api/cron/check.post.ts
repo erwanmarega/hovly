@@ -26,14 +26,24 @@ export default defineEventHandler(async (event) => {
   }
 
   let totalAlertes = 0
+  let emailsEnvoyes = 0
+  let emailsEchoues = 0
   for (const [userId, liste] of parUser) {
     const resume = await verifierBiens(service, liste)
     totalAlertes += resume.alertes.length
     if (resume.alertes.length) {
       const { data } = await service.auth.admin.getUserById(userId)
-      await notifier(data?.user?.email ?? null, resume)
+      const envois = await notifier(data?.user?.email ?? null, resume)
+      emailsEnvoyes += envois.envoyes
+      emailsEchoues += envois.echecs
     }
   }
 
-  return { ok: true, users: parUser.size, biens: biens?.length ?? 0, alertes: totalAlertes }
+  return {
+    ok: true,
+    users: parUser.size,
+    biens: biens?.length ?? 0,
+    alertes: totalAlertes,
+    emails: { envoyes: emailsEnvoyes, echecs: emailsEchoues }
+  }
 })

@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
   const resume = await verifierBiens(service, (biens ?? []) as Bien[])
-  await notifier(user.email ?? null, resume)
+  const envois = await notifier(user.email ?? null, resume)
 
-  return resume
+  return { ...resume, envois }
 })

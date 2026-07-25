@@ -222,27 +222,57 @@ describe('notifier', () => {
     ]
   }
 
-  it('envoie un email par alerte', async () => {
-    envoyerAlerteEmail.mockResolvedValue(undefined)
-    await notifier('a@b.fr', resume)
+  it('envoie un email par alerte et compte les envois', async () => {
+    envoyerAlerteEmail.mockResolvedValue({ envoye: true })
+    const envois = await notifier('a@b.fr', resume)
+
     expect(envoyerAlerteEmail).toHaveBeenCalledTimes(2)
     expect(envoyerAlerteEmail).toHaveBeenNthCalledWith(1, 'a@b.fr', resume.alertes[0])
     expect(envoyerAlerteEmail).toHaveBeenNthCalledWith(2, 'a@b.fr', resume.alertes[1])
+    expect(envois).toEqual({ envoyes: 2, echecs: 0, raisons: [] })
   })
 
-  it('n’envoie rien sans email', async () => {
-    await notifier(null, resume)
+  it('compte un échec quand il n’y a pas d’adresse email', async () => {
+    const envois = await notifier(null, resume)
     expect(envoyerAlerteEmail).not.toHaveBeenCalled()
+    expect(envois).toEqual({ envoyes: 0, echecs: 2, raisons: ['aucune adresse email'] })
   })
 
   it('n’envoie rien sans alerte', async () => {
-    await notifier('a@b.fr', { ...resume, alertes: [] })
+    const envois = await notifier('a@b.fr', { ...resume, alertes: [] })
     expect(envoyerAlerteEmail).not.toHaveBeenCalled()
+    expect(envois).toEqual({ envoyes: 0, echecs: 0, raisons: [] })
   })
 
-  it('avale les erreurs d’envoi', async () => {
-    envoyerAlerteEmail.mockRejectedValue(new Error('smtp down'))
-    await expect(notifier('a@b.fr', resume)).resolves.toBeUndefined()
+  it('remonte la raison d’un refus sans lever', async () => {
+    envoyerAlerteEmail.mockResolvedValue({ envoye: false, raison: '403 domain not verified' })
+    const envois = await notifier('a@b.fr', resume)
+
+    expect(envois.envoyes).toBe(0)
+    expect(envois.echecs).toBe(2)
+    expect(envois.raisons).toEqual(['403 domain not verified'])
+  })
+
+  it('capture une exception d’envoi sans interrompre la boucle', async () => {
+    envoyerAlerteEmail
+      .mockImplementationOnce(() => Promise.reject(new Error('smtp down')))
+      .mockResolvedValueOnce({ envoye: true })
+
+    const envois = await notifier('a@b.fr', resume)
+
     expect(envoyerAlerteEmail).toHaveBeenCalledTimes(2)
+    expect(envois).toMatchObject({ envoyes: 1, echecs: 1, raisons: ['smtp down'] })
+  })
+
+  it('mélange succès et échecs', async () => {
+    envoyerAlerteEmail
+      .mockResolvedValueOnce({ envoye: true })
+      .mockResolvedValueOnce({ envoye: false, raison: 'rate limited' })
+
+    expect(await notifier('a@b.fr', resume)).toEqual({
+      envoyes: 1,
+      echecs: 1,
+      raisons: ['rate limited']
+    })
   })
 })

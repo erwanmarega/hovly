@@ -2,6 +2,8 @@ export type Statut = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_
 
 export type DPE = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
+export type GeoPrecision = 'exacte' | 'rue' | 'ville'
+
 export type SiteSource =
   | 'seloger'
   | 'leboncoin'
@@ -24,6 +26,10 @@ export interface Bien {
   adresse: string | null
   ville: string
   code_postal: string
+  lat: number | null
+  lon: number | null
+  geo_precision: GeoPrecision | null
+  geocode_le: string | null
   photos: string[]
   description: string | null
   statut: Statut

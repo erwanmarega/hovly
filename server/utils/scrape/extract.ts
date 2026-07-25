@@ -14,6 +14,72 @@ export interface PageData {
 
 const DPE_VALIDES = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
+const MOTS_NON_VILLE = new Set([
+  'appartement', 'appart', 'maison', 'studio', 'duplex', 'loft', 'villa', 'immeuble',
+  'location', 'louer', 'vente', 'vendre', 'achat', 'loyer', 'charges', 'surface',
+  'prix', 'dpe', 'ref', 'référence', 'reference', 'annonce', 'immobilier', 'pièces',
+  'pieces', 'chambre', 'chambres', 'terrain', 'parking', 'garage'
+])
+
+const TOKEN_VILLE = /^[A-ZÀ-ÖØ-Þ][\p{L}'’-]*$/u
+
+function nettoyerVille(brut: string | undefined | null): string | null {
+  if (!brut) return null
+  let v = brut.replace(/\s+/g, ' ').trim()
+  v = v.replace(/\s+\d{1,2}\s*(?:er|ers|e|è|ème|eme)\b.*$/i, '')
+  v = v.replace(/[-,;:.]+$/, '').trim()
+  v = v.replace(/\s+(?:de|du|des|le|la|les|en|sur|sous|a|à|d'|l')$/i, '').trim()
+  if (v.length < 2 || v.length > 60) return null
+  if (MOTS_NON_VILLE.has(v.split(/[ -]/)[0]!.toLowerCase())) return null
+  return v
+}
+
+function suiteMajuscules(mots: string[], depuisLaFin: boolean): string[] {
+  const ordre = depuisLaFin ? [...mots].reverse() : mots
+  const pris: string[] = []
+  for (const m of ordre) {
+    if (!TOKEN_VILLE.test(m) || pris.length === 4) break
+    pris.push(m)
+  }
+  return depuisLaFin ? pris.reverse() : pris
+}
+
+function villeDepuisSuite(mots: string[]): string | null {
+  const out = [...mots]
+  while (out.length && MOTS_NON_VILLE.has(out[0]!.toLowerCase())) out.shift()
+  const stop = out.findIndex((m) => MOTS_NON_VILLE.has(m.toLowerCase()))
+  return nettoyerVille((stop > 0 ? out.slice(0, stop) : out).join(' '))
+}
+
+const decouper = (s: string) => s.split(/[\s,;:|/]+/).filter(Boolean)
+
+export function extraireVille(
+  sources: (string | undefined | null)[],
+  code_postal: string | null
+): string | null {
+  if (!code_postal) return null
+  const cp = code_postal.replace(/\s/g, '')
+  if (!/^\d{5}$/.test(cp)) return null
+
+  for (const src of sources) {
+    if (!src) continue
+    for (const occurrence of [...src.matchAll(new RegExp(cp, 'g'))]) {
+      const i = occurrence.index!
+
+      const apres = villeDepuisSuite(suiteMajuscules(decouper(src.slice(i + 5)), false))
+      if (apres) return apres
+
+      const avant = src
+        .slice(0, i)
+        .replace(/[([,\-–\s]+$/, '')
+        .replace(/\s*\d{1,2}\s*(?:er|ers|e|è|ème|eme)$/i, '')
+      const v = villeDepuisSuite(suiteMajuscules(decouper(avant), true))
+      if (v) return v
+    }
+  }
+  return null
+}
+
 function trouverNoeudImmo(blocs: any[]): any | null {
   const cibles = ['RealEstateListing', 'Residence', 'Apartment', 'House', 'Product', 'Offer', 'Place']
   const flat: any[] = []
@@ -182,10 +248,17 @@ export function extraire(data: PageData): Partial<Bien> {
 
   let code_postal: string | null = node?.address?.postalCode ?? null
   if (!code_postal) {
-    const m = txt.match(/\b(\d{5})\b/)
-    if (m) code_postal = m[1]
+    for (const src of [data.ogTitle, data.h1, data.title, node?.address?.streetAddress, txt]) {
+      const m = src?.match(/\b(\d{5})\b(?!\s*(?:€|EUR|euros?))/i)
+      if (m) {
+        code_postal = m[1]!
+        break
+      }
+    }
   }
-  const ville: string | null = node?.address?.addressLocality ?? null
+  const ville: string | null =
+    nettoyerVille(node?.address?.addressLocality) ??
+    extraireVille([data.ogTitle, data.h1, data.title, node?.address?.streetAddress, txt], code_postal)
 
   const photos = collecterPhotos(data, node)
 

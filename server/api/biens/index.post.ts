@@ -28,5 +28,22 @@ export default defineEventHandler(async (event) => {
     await client.from('prix_historique').insert({ bien_id: data.id, prix: data.prix })
   }
 
+  const loc = await geocoder(data)
+  if (loc) {
+    const { error: errGeo } = await client
+      .from('biens')
+      .update({
+        lat: loc.lat,
+        lon: loc.lon,
+        geo_precision: loc.precision,
+        geocode_le: new Date().toISOString()
+      })
+      .eq('id', data.id)
+
+    if (!errGeo) {
+      Object.assign(data, { lat: loc.lat, lon: loc.lon, geo_precision: loc.precision })
+    }
+  }
+
   return data
 })

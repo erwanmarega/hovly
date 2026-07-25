@@ -8,10 +8,17 @@ export interface AlerteCreee {
   titre: string
 }
 
+export interface ResumeEnvois {
+  envoyes: number
+  echecs: number
+  raisons: string[]
+}
+
 export interface CheckResume {
   verifies: number
   baisses: number
   supprimes: number
   erreurs: number
   alertes: AlerteCreee[]
+  envois?: ResumeEnvois
 }
