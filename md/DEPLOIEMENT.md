@@ -65,8 +65,18 @@ Les trois variables Supabase doivent donc être nommées ainsi sur Railway :
 ```
 NUXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NUXT_PUBLIC_SUPABASE_KEY=<clé anon>
-NUXT_SUPABASE_SERVICE_KEY=<clé service_role>
+NUXT_SUPABASE_SECRET_KEY=<clé service_role>
 ```
+
+`NUXT_SUPABASE_SERVICE_KEY` fonctionne aussi mais est déprécié par le module.
+Attention au diagnostic : quand la clé serveur manque, l'erreur cite toujours
+`NUXT_SUPABASE_SECRET_KEY`, même si tu avais renseigné l'autre nom — le message
+ne dit donc pas laquelle des deux tu as ratée.
+
+Symptôme : **500 sur les trois endpoints cron**, y compris `/api/cron/rappels`
+qui ne scrape pas. Un échec commun aux trois désigne toujours la clé service, pas
+le scraping. Le message réel est dans les Deploy logs du service web, jamais dans
+la réponse HTTP — Nitro masque les détails en production.
 
 Les autres sont lues par `process.env` directement dans le code : elles gardent
 leur nom d'origine.
@@ -100,9 +110,29 @@ Même repo, autre Dockerfile.
 
 ```
 CRON_SECRET=<identique au service web>
-WEB_INTERNAL_URL=http://<nom-du-service-web>.railway.internal:3000
+WEB_INTERNAL_URL=http://<nom-du-service-web>.railway.internal:8080
 CRON_TIMEOUT=900   # optionnel, 15 min par défaut
 ```
+
+**Le port n'est pas 3000.** Railway injecte son propre `PORT` (8080 aujourd'hui),
+qui écrase celui du Dockerfile — visible dans les Deploy logs du web :
+`Listening on http://[::]:8080`. C'est ce port qu'il faut viser.
+
+Ne pas tenter `${{service.PORT}}` : Railway ne résout ces références que pour les
+variables définies par l'utilisateur, et `PORT` est injecté par la plateforme. La
+chaîne arriverait littéralement jusqu'à curl. `cron.sh` détecte ce cas et sort en
+erreur explicite. Pour se prémunir d'un changement de port côté Railway, définir
+plutôt `PORT=8080` explicitement sur le service web : la valeur devient la
+tienne, et cesse de dépendre d'un défaut de plateforme.
+
+**Le premier passage n'est pas immédiat.** Railway attend la prochaine occurrence
+de la planification : avec `0 * * * *`, rien avant l'heure ronde suivante. Pour
+valider tout de suite, mettre `*/5 * * * *` (Railway refuse en dessous de
+5 minutes), lire les Deploy logs, puis remettre `0 * * * *`.
+
+L'intervalle minimum de Railway étant de 5 minutes, c'est le plancher applicatif
+de 30 minutes (`FREQUENCE_MIN_PLANCHER` dans `server/utils/veille.ts`) qui limite
+la réactivité des veilles, pas la plateforme.
 
 Le réseau privé évite le proxy public, qui coupe les requêtes longues : un scan
 de 25 veilles peut durer plusieurs minutes.

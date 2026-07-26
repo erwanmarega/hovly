@@ -11,6 +11,17 @@ set -u
 BASE="${WEB_INTERNAL_URL:?WEB_INTERNAL_URL manquant}"
 SECRET="${CRON_SECRET:?CRON_SECRET manquant}"
 
+# Railway ne résout `${{service.VAR}}` que pour les variables définies par
+# l'utilisateur : une référence au PORT injecté par la plateforme arrive ici
+# littéralement. Sans ce test, curl échoue sur « nested brace in URL ».
+case "$BASE" in
+  *'${{'*)
+    echo "FAIL WEB_INTERNAL_URL contient une référence Railway non résolue : $BASE"
+    echo "     Mettre le port en dur, par exemple http://<service>.railway.internal:8080"
+    exit 1
+    ;;
+esac
+
 # 15 min : marge large pour un scan de veilles, tout en évitant qu'un service
 # bloqué laisse tourner le conteneur indéfiniment (facturé à la minute).
 TIMEOUT="${CRON_TIMEOUT:-900}"

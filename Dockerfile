@@ -17,6 +17,9 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 FROM base AS runtime
+# PORT sert au `docker run` local : les plateformes l'écrasent (Railway impose
+# 8080). HOST=:: est en revanche indispensable — le réseau privé Railway est en
+# IPv6 uniquement, et un serveur qui n'écoute qu'en IPv4 y est injoignable.
 ENV NODE_ENV=production \
     PORT=3000 \
     HOST=:: \
