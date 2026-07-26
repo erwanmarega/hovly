@@ -22,7 +22,7 @@ const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport
 </script>
 
 <template>
-  <section class="rounded-2xl border border-hairline bg-white p-6">
+  <section class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
     <div class="flex items-start justify-between gap-3">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Trajets</h2>
       <button

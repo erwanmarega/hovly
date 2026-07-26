@@ -201,7 +201,7 @@ async function supprimer() {
   <div class="min-h-screen bg-surface text-ink antialiased">
     <TheNavbar width="max-w-7xl" />
 
-    <main class="mx-auto max-w-5xl px-6 py-8">
+    <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
       <FilAriane class="mb-5" :items="filAriane" />
 
       <div v-if="pending" class="py-24 text-center">
@@ -223,16 +223,20 @@ async function supprimer() {
       <template v-else>
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <BadgeStatut :statut="bien.statut" />
               <span class="text-xs font-medium text-stone">
                 {{ sourceLabels[bien.site_source] }} · ajouté le {{ dateAjout }}
               </span>
             </div>
-            <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink-deep">
+            <!-- Les titres viennent du scraping et dépassent souvent 70 caractères :
+                 à 30 px ils mangent tout le premier écran sur mobile. -->
+            <h1
+              class="mt-2 text-xl font-bold leading-snug tracking-tight text-ink-deep break-words sm:text-2xl sm:leading-tight lg:text-3xl"
+            >
               {{ bien.titre }}
             </h1>
-            <p class="mt-1 text-slate">
+            <p class="mt-1 break-words text-slate">
               {{
                 [bien.adresse, bien.ville, bien.code_postal]
                   .filter(Boolean)
@@ -240,12 +244,17 @@ async function supprimer() {
               }}
             </p>
           </div>
-          <div class="flex w-full shrink-0 flex-wrap items-center gap-2.5 sm:w-auto sm:gap-3">
+          <!-- Mobile : l'action principale prend toute la largeur, les deux
+               secondaires se partagent la ligne suivante. En flex simple les
+               trois libellés dépassaient 343 px et retombaient en escalier. -->
+          <div
+            class="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3"
+          >
             <a
               :href="bien.url_source"
               target="_blank"
               rel="noopener"
-              class="flex items-center gap-2 whitespace-nowrap rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition"
+              class="col-span-2 flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition sm:col-span-1"
             >
               Voir l'annonce
               <svg
@@ -264,7 +273,7 @@ async function supprimer() {
             </a>
             <button
               :disabled="rafraichissement"
-              class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-steel hover:bg-surface hover:text-ink transition disabled:opacity-60"
+              class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-4 py-2.5 text-sm font-medium text-steel hover:bg-surface hover:text-ink transition disabled:opacity-60 sm:px-5"
               title="Relancer l’extraction depuis l’annonce"
               @click="rafraichir"
             >
@@ -284,11 +293,15 @@ async function supprimer() {
                 <path d="M21 12a9 9 0 1 1-3-6.7" />
                 <path d="M21 3v6h-6" />
               </svg>
-              {{ rafraichissement ? "Rafraîchissement…" : "Rafraîchir" }}
+              <template v-if="rafraichissement">
+                <span class="sm:hidden">Maj…</span>
+                <span class="hidden sm:inline">Rafraîchissement…</span>
+              </template>
+              <template v-else>Rafraîchir</template>
             </button>
             <button
               :disabled="deleting"
-              class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-steel hover:bg-coral hover:text-[#600000] transition disabled:opacity-60"
+              class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-4 py-2.5 text-sm font-medium text-steel hover:bg-coral hover:text-[#600000] transition disabled:opacity-60 sm:px-5"
               @click="supprimer"
             >
               <svg
@@ -302,7 +315,10 @@ async function supprimer() {
                 <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 <path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               </svg>
-              {{ deleting ? "Suppression…" : "Supprimer ce bien" }}
+              <template v-if="deleting">Suppression…</template>
+              <template v-else>
+                Supprimer<span class="hidden sm:inline"> ce bien</span>
+              </template>
             </button>
           </div>
         </div>
@@ -321,8 +337,11 @@ async function supprimer() {
           </p>
         </Transition>
 
-        <div class="mt-6 grid items-stretch gap-6 lg:grid-cols-5">
-          <div class="flex flex-col lg:col-span-3">
+        <!-- min-w-0 sur les deux colonnes : sans ça un grid item garde
+             min-width:auto, et un mot insécable de la description élargit la
+             piste au-delà du viewport → scroll horizontal sur mobile. -->
+        <div class="mt-6 grid items-stretch gap-4 sm:gap-6 lg:grid-cols-5">
+          <div class="flex min-w-0 flex-col lg:col-span-3">
             <div
               v-if="bien.photos.length"
               class="overflow-hidden rounded-2xl border border-hairline bg-white"
@@ -358,7 +377,7 @@ async function supprimer() {
               Aucune photo
             </div>
 
-            <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
               <div class="rounded-2xl border border-hairline-soft bg-white p-4">
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-stone"
@@ -395,10 +414,10 @@ async function supprimer() {
 
             <div
               v-if="bien.lat != null && bien.lon != null"
-              class="mt-6 flex min-h-0 flex-col rounded-2xl border border-hairline bg-white p-6"
+              class="mt-4 flex min-h-0 flex-col rounded-2xl border border-hairline bg-white p-5 sm:mt-6 sm:p-6"
               :class="bien.description ? '' : 'flex-1'"
             >
-              <div class="flex items-center justify-between">
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-semibold">Situation</h2>
                 <span v-if="bien.geo_precision === 'ville'" class="text-xs text-stone">
                   Position approximative
@@ -418,19 +437,19 @@ async function supprimer() {
 
             <div
               v-if="bien.description"
-              class="mt-6 flex-1 rounded-2xl border border-hairline bg-white p-6"
+              class="mt-4 flex-1 rounded-2xl border border-hairline bg-white p-5 sm:mt-6 sm:p-6"
             >
               <h2 class="text-lg font-semibold">Description</h2>
               <p
-                class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate"
+                class="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-slate"
               >
                 {{ bien.description }}
               </p>
             </div>
           </div>
 
-          <div class="flex flex-col gap-6 lg:col-span-2">
-            <div class="rounded-2xl border border-hairline bg-white p-6">
+          <div class="flex min-w-0 flex-col gap-4 sm:gap-6 lg:col-span-2">
+            <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <p class="text-3xl font-bold tracking-tight">
                 {{ eur(prixMensuel) }} €<span
                   class="text-base font-medium text-stone"
@@ -458,7 +477,7 @@ async function supprimer() {
 
             <div
               v-if="doublons.length"
-              class="rounded-2xl border border-brand-deep/30 bg-brand-light p-6"
+              class="rounded-2xl border border-brand-deep/30 bg-brand-light p-5 sm:p-6"
             >
               <h2 class="text-sm font-semibold uppercase tracking-wide text-[#8a6d1c]">
                 Aussi publié ailleurs
@@ -494,7 +513,7 @@ async function supprimer() {
 
             <PlanificateurVisite :bien="bien" @maj="appliquerVisite" />
 
-            <div class="rounded-2xl border border-hairline bg-white p-6">
+            <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
                 Statut
               </h2>
@@ -534,7 +553,7 @@ async function supprimer() {
             </div>
 
             <div
-              class="flex flex-1 flex-col rounded-2xl border border-hairline bg-white p-6"
+              class="flex flex-1 flex-col rounded-2xl border border-hairline bg-white p-5 sm:p-6"
             >
               <div class="flex items-center justify-between">
                 <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
@@ -555,11 +574,11 @@ async function supprimer() {
           </div>
         </div>
 
-        <PrixHistorique :points="historique" class="mt-6" />
+        <PrixHistorique :points="historique" class="mt-4 sm:mt-6" />
 
         <Transition name="bloc">
           <div v-if="afficherChecklist" ref="blocChecklist" class="scroll-mt-24">
-            <ChecklistVisite :bien="bien" class="mt-6" @maj="appliquerVisite" />
+            <ChecklistVisite :bien="bien" class="mt-4 sm:mt-6" @maj="appliquerVisite" />
           </div>
         </Transition>
       </template>

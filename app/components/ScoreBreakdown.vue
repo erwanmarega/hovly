@@ -5,7 +5,7 @@ defineProps<{ score: Score }>()
 </script>
 
 <template>
-  <div class="rounded-2xl border border-hairline bg-white p-6">
+  <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
         {{ score.personnalise ? 'Mon score' : 'Score Hovly' }}
@@ -34,7 +34,7 @@ defineProps<{ score: Score }>()
         <li
           v-for="c in score.criteres"
           :key="c.label"
-          class="flex items-center gap-2 text-sm"
+          class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
           :class="c.ok ? 'text-slate' : 'text-[#600000]'"
         >
           <span

@@ -60,8 +60,8 @@ const survol = ref<number | null>(null)
 </script>
 
 <template>
-  <div class="rounded-2xl border border-hairline bg-white p-6">
-    <div class="flex items-center justify-between">
+  <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Historique du prix</h2>
       <span
         v-if="assez && delta !== 0"
@@ -78,7 +78,11 @@ const survol = ref<number | null>(null)
     </div>
 
     <div v-else class="mt-4">
-      <svg :viewBox="`0 0 ${W} ${H}`" class="w-full" preserveAspectRatio="none" style="height: 180px">
+      <svg
+        :viewBox="`0 0 ${W} ${H}`"
+        class="h-36 w-full sm:h-[180px]"
+        preserveAspectRatio="none"
+      >
         <defs>
           <linearGradient id="prixFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#ffd02f" stop-opacity="0.35" />
@@ -103,15 +107,20 @@ const survol = ref<number | null>(null)
         </g>
       </svg>
 
-      <div class="mt-3 flex items-center justify-between gap-3 text-xs">
+      <!-- Les trois libellés sont insécables : côte à côte ils débordent sous
+           400 px. Le central passe sur sa propre ligne tant qu'on est étroit. -->
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs">
         <span class="whitespace-nowrap text-stone">{{ fmtDate(valides[0].controle_le) }}</span>
         <span
           v-if="survol !== null"
-          class="whitespace-nowrap rounded-full bg-ink px-2.5 py-1 font-semibold text-white"
+          class="order-last w-full whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-center font-semibold text-white sm:order-none sm:w-auto"
         >
           {{ fmt(coords[survol].prix) }} € · {{ fmtDate(coords[survol].date) }}
         </span>
-        <span v-else class="whitespace-nowrap text-stone">
+        <span
+          v-else
+          class="order-last w-full whitespace-nowrap text-center text-stone sm:order-none sm:w-auto sm:text-left"
+        >
           min {{ fmt(prixMin) }} € · max {{ fmt(prixMax) }} €
         </span>
         <span class="whitespace-nowrap text-stone">{{ fmtDate(valides[valides.length - 1].controle_le) }}</span>

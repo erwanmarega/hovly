@@ -72,7 +72,7 @@ async function sauverCompteRendu() {
 </script>
 
 <template>
-  <section class="rounded-2xl border border-hairline bg-white p-6">
+  <section class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
@@ -108,18 +108,20 @@ async function sauverCompteRendu() {
       <li
         v-for="c in CRITERES_VISITE"
         :key="c.id"
-        class="flex flex-wrap items-center gap-3 py-2.5"
+        class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5"
       >
         <div class="min-w-[9rem] flex-1">
           <p class="text-sm font-medium text-ink">{{ c.label }}</p>
           <p class="text-xs text-stone">{{ c.aide }}</p>
         </div>
 
-        <div class="flex shrink-0 items-center gap-1">
+        <!-- Sur mobile les trois avis passent sous le libellé : côte à côte ils
+             tombaient sous la largeur de doigt (44 px). -->
+        <div class="flex w-full shrink-0 items-center gap-1.5 sm:w-auto sm:gap-1">
           <button
             v-for="a in AVIS"
             :key="a.value"
-            class="rounded-full px-2.5 py-1 text-xs font-medium transition"
+            class="flex-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition sm:flex-none sm:py-1"
             :class="
               checklist.notes[c.id] === a.value
                 ? a.classe
