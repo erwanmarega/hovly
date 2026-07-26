@@ -143,3 +143,67 @@ create policy "trajets_own" on public.trajets
   for all using (
     exists (select 1 from public.biens b where b.id = bien_id and b.user_id = auth.uid())
   );
+
+create table if not exists public.recherches (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  label       text not null,
+  url         text not null,
+  site_source text,
+  active      boolean not null default true,
+  prix_max    integer,
+  prix_min    integer,
+  surface_min integer,
+  pieces_min  integer,
+  frequence_min integer not null default 60,
+  derniere_verif   timestamptz,
+  derniere_erreur  text,
+  echecs_consecutifs integer not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists recherches_user_id_idx on public.recherches (user_id);
+create index if not exists recherches_a_verifier_idx
+  on public.recherches (derniere_verif) where active;
+
+drop trigger if exists recherches_set_updated_at on public.recherches;
+create trigger recherches_set_updated_at
+  before update on public.recherches
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.recherche_resultats (
+  id           uuid primary key default gen_random_uuid(),
+  recherche_id uuid not null references public.recherches (id) on delete cascade,
+  url          text not null,
+  titre        text,
+  prix         integer,
+  surface      integer,
+  nb_pieces    integer,
+  photo        text,
+  ville        text,
+  code_postal  char(5),
+  etat         text not null default 'nouveau'
+    check (etat in ('nouveau', 'garde', 'ignore')),
+  bien_id      uuid references public.biens (id) on delete set null,
+  trouve_le    timestamptz not null default now(),
+  unique (recherche_id, url)
+);
+
+create index if not exists recherche_resultats_recherche_idx
+  on public.recherche_resultats (recherche_id, trouve_le desc);
+create index if not exists recherche_resultats_nouveaux_idx
+  on public.recherche_resultats (recherche_id) where etat = 'nouveau';
+
+alter table public.recherches enable row level security;
+alter table public.recherche_resultats enable row level security;
+
+drop policy if exists "recherches_own" on public.recherches;
+create policy "recherches_own" on public.recherches
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "recherche_resultats_own" on public.recherche_resultats;
+create policy "recherche_resultats_own" on public.recherche_resultats
+  for all using (
+    exists (select 1 from public.recherches r where r.id = recherche_id and r.user_id = auth.uid())
+  );

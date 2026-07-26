@@ -87,6 +87,43 @@ export interface Bien {
   created_at: string
 }
 
+export type EtatResultat = 'nouveau' | 'garde' | 'ignore'
+
+export interface Recherche {
+  id: string
+  user_id: string
+  label: string
+  url: string
+  site_source: SiteSource | null
+  active: boolean
+  prix_max: number | null
+  prix_min: number | null
+  surface_min: number | null
+  pieces_min: number | null
+  frequence_min: number
+  derniere_verif: string | null
+  derniere_erreur: string | null
+  echecs_consecutifs: number
+  created_at: string
+  nouveaux?: number
+}
+
+export interface ResultatVeille {
+  id: string
+  recherche_id: string
+  url: string
+  titre: string | null
+  prix: number | null
+  surface: number | null
+  nb_pieces: number | null
+  photo: string | null
+  ville: string | null
+  code_postal: string | null
+  etat: EtatResultat
+  bien_id: string | null
+  trouve_le: string
+}
+
 export type TypeAlerte = 'baisse_prix' | 'annonce_supprimee'
 
 export interface Alerte {

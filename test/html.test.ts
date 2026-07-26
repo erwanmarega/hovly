@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { htmlToPageData } from '../server/utils/scrape/html'
+import { htmlToPageData, vignetteTropPetite } from '../server/utils/scrape/html'
 
 const page = (body: string, head = '') =>
   htmlToPageData(`<html><head>${head}</head><body>${body}</body></html>`)
@@ -101,5 +101,108 @@ describe('htmlToPageData — JSON embarqué', () => {
 
   it('retourne une chaîne vide sans __NEXT_DATA__', () => {
     expect(page('<script>var a = 1</script>').nextData).toBe('')
+  })
+})
+
+describe('htmlToPageData — liens de cartes', () => {
+  const MOTIF = /\/annonces\/[^?#]+\/\d{6,}\.htm/i
+
+  // Reproduit la structure SeLoger : ancre vide étirée sur la carte, dont le
+  // contenu (prix, surface, photo) vit chez un ancêtre.
+  const carte = (id: string, texte: string, img: string) =>
+    `<div class="carte">
+       <div class="media"><img src="${img}"></div>
+       <a href="/annonces/locations/appartement/paris-12eme-75/x/${id}.htm?serp_view=list"></a>
+       <div class="infos">${texte}</div>
+     </div>`
+
+  const liste = (...cartes: string[]) => `<div class="liste">${cartes.join('')}</div>`
+
+  it('remonte à la carte quand l’ancre est vide', () => {
+    const d = htmlToPageData(
+      `<html><body>${liste(
+        carte('274651193', '1 517 € /mois · 41 m² · 2 pièces', 'https://mms.seloger.com/a.jpg')
+      )}</body></html>`,
+      MOTIF
+    )
+
+    const lien = d.liens!.find((l) => l.href.includes('274651193'))!
+    expect(lien.texte).toContain('1 517 €')
+    expect(lien.texte).toContain('41 m²')
+    expect(lien.image).toBe('https://mms.seloger.com/a.jpg')
+  })
+
+  it('s’arrête avant le conteneur de liste', () => {
+    const d = htmlToPageData(
+      `<html><body>${liste(
+        carte('111111111', '1 000 € · 30 m²', 'https://mms.seloger.com/a.jpg'),
+        carte('222222222', '2 000 € · 60 m²', 'https://mms.seloger.com/b.jpg')
+      )}</body></html>`,
+      MOTIF
+    )
+
+    const premier = d.liens!.find((l) => l.href.includes('111111111'))!
+    expect(premier.texte).toContain('1 000 €')
+    expect(premier.texte).not.toContain('2 000 €')
+    expect(premier.image).toBe('https://mms.seloger.com/a.jpg')
+  })
+
+  it('laisse intacte une ancre qui porte déjà son texte', () => {
+    const d = htmlToPageData(
+      '<html><body><div class="bruit">Trier par prix</div>' +
+        '<a href="/annonces/x/y/333333333.htm">Appartement 3 pièces 62 m²</a>' +
+        '</body></html>',
+      MOTIF
+    )
+
+    const lien = d.liens!.find((l) => l.href.includes('333333333'))!
+    expect(lien.texte).toBe('Appartement 3 pièces 62 m²')
+    expect(lien.texte).not.toContain('Trier')
+  })
+
+  it('sans motif fourni, ne remonte jamais (chemin fiche inchangé)', () => {
+    const d = htmlToPageData(
+      `<html><body>${carte('444444444', '900 € · 20 m²', 'https://x.fr/a.jpg')}</body></html>`
+    )
+
+    expect(d.liens!.find((l) => l.href.includes('444444444'))!.texte).toBe('')
+  })
+})
+
+describe('vignetteTropPetite', () => {
+  it('écarte un logo d’agence servi par le CDN des photos', () => {
+    expect(vignetteTropPetite('https://mms.seloger.com/abc.jpg?c=1&h=50')).toBe(true)
+  })
+
+  it('garde une vraie photo d’annonce', () => {
+    expect(vignetteTropPetite('https://mms.seloger.com/abc.jpg?w=525&h=394')).toBe(false)
+  })
+
+  it('retombe sur les attributs quand l’URL ne dit rien', () => {
+    expect(vignetteTropPetite('https://x.fr/a.jpg', '80', '60')).toBe(true)
+    expect(vignetteTropPetite('https://x.fr/a.jpg', '600', '400')).toBe(false)
+  })
+
+  it('garde une image de taille inconnue plutôt que de la perdre', () => {
+    expect(vignetteTropPetite('https://x.fr/a.jpg')).toBe(false)
+  })
+})
+
+describe('htmlToPageData — logo d’agence en tête de carte', () => {
+  const MOTIF = /\/annonces\/[^?#]+\/\d{6,}\.htm/i
+
+  it('saute le logo et prend la première vraie photo', () => {
+    const d = htmlToPageData(
+      `<html><body><div class="liste"><div class="carte">
+         <img src="https://mms.seloger.com/logo.jpg?c=1&h=50">
+         <img src="https://mms.seloger.com/photo.jpg?w=525&h=394" loading="lazy">
+         <a href="/annonces/x/y/555555555.htm"></a>
+         <div>1 200 € /mois · 35 m² · 2 pièces</div>
+       </div></div></body></html>`,
+      MOTIF
+    )
+
+    const lien = d.liens!.find((l) => l.href.includes('555555555'))!
+    expect(lien.image).toBe('https://mms.seloger.com/photo.jpg?w=525&h=394')
   })
 })

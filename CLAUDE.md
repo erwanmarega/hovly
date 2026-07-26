@@ -30,6 +30,9 @@ centrales de Vue.js et la règle par défaut de ce projet.
 - `ScoreBien` — badge score compact (prop `score: Score`). Colonne dashboard, entêtes.
 - `ScoreBreakdown` — carte détaillée du score avec barres par critère (prop `score: Score`).
 - `PrixHistorique` — graphe historique de prix (prop `points`).
+- `CarteVeille` — une recherche sauvegardée : critères, dernier scan, actions. Slot = résultats.
+- `CarteResultat` — une annonce trouvée par une veille, avec Garder / Ignorer.
+- `FormulaireVeille` — création d'une veille depuis une URL de page de résultats.
 
 ### Composables
 
@@ -37,3 +40,20 @@ centrales de Vue.js et la règle par défaut de ce projet.
 - `useAlertes` — état alertes (`useState` partagé), `nonVues`, refresh, vérif.
 - `useScore` — `scoreBien(bien, contexte)` : score rule-based /100
   (prix/m² vs médiane ville 50pts, DPE 30pts, charges 20pts). Type `Score` exporté.
+- `useVeilles` — recherches sauvegardées : CRUD, scan manuel, garder/ignorer un résultat.
+  Les filtres de prix sont en centimes comme `biens.prix` (`enCentimes` / `enEuros`).
+
+### Veille (recherches sauvegardées)
+
+L'utilisateur colle l'URL d'une **page de résultats** (pas une annonce) ; le cron
+`POST /api/cron/veille` la rescanne et empile les nouveautés dans une file à valider.
+
+- `server/utils/scrape/liste.ts` — extrait les annonces d'une page de résultats.
+  Trois couches fusionnées, de la plus fiable à la plus pauvre : `__NEXT_DATA__`
+  (leboncoin), JSON-LD `ItemList`, puis les liens du DOM filtrés par `MOTIF_FICHE`.
+- `server/utils/veille.ts` — filtres, dédup et planification. Le diff repose sur
+  `unique (recherche_id, url)` : l'upsert `ignoreDuplicates` ne renvoie que les
+  lignes réellement créées, donc pas de course entre deux scans.
+- Une annonce dont on n'a pas su lire le prix ou la surface **passe** les filtres :
+  mieux vaut une à écarter à la main qu'une perdue en silence.
+- Backoff exponentiel sur échec, mise en pause automatique après 8 échecs d'affilée.

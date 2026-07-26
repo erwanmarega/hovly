@@ -70,6 +70,56 @@ export async function envoyerRappelEmail(
   return envoyer(apiKey, from, to, subject, html)
 }
 
+export interface LigneVeilleEmail {
+  url: string
+  titre: string | null
+  prix: number | null
+  surface: number | null
+  nb_pieces: number | null
+}
+
+export async function envoyerVeilleEmail(
+  to: string | null,
+  label: string,
+  lignes: LigneVeilleEmail[]
+): Promise<ResultatEnvoi> {
+  if (!to) return { envoye: false, raison: 'aucune adresse email' }
+  if (!lignes.length) return { envoye: false, raison: 'aucune nouveauté' }
+
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('[email] RESEND_API_KEY absente — veille non envoyée à', to)
+    return { envoye: false, raison: 'RESEND_API_KEY absente' }
+  }
+
+  const from = process.env.RESEND_FROM || 'Hovly <onboarding@resend.dev>'
+  const site = process.env.SITE_URL || 'https://hovly.app'
+
+  const items = lignes
+    .map((l) => {
+      const details = [
+        eur(l.prix),
+        l.surface ? `${l.surface} m²` : '',
+        l.nb_pieces ? `${l.nb_pieces} pièces` : ''
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      return `<li><a href="${l.url}">${l.titre || 'Annonce'}</a>${details ? ` — ${details}` : ''}</li>`
+    })
+    .join('')
+
+  const subject =
+    lignes.length === 1
+      ? `1 nouveau bien — ${label}`
+      : `${lignes.length} nouveaux biens — ${label}`
+
+  const html = `<p>Ta veille <strong>${label}</strong> a trouvé ${lignes.length} annonce(s).</p>
+      <ul>${items}</ul>
+      <p><a href="${site}/veilles">Garder ou ignorer dans Hovly</a></p>`
+
+  return envoyer(apiKey, from, to, subject, html)
+}
+
 async function envoyer(
   apiKey: string,
   from: string,

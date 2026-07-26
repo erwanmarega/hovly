@@ -10,7 +10,6 @@ interface Vitrine {
   surface: string;
   dpe: string;
   score: number;
-  teinte: string;
 }
 
 const VITRINES: Vitrine[] = [
@@ -23,7 +22,6 @@ const VITRINES: Vitrine[] = [
     surface: "62 m²",
     dpe: "C",
     score: 84,
-    teinte: "from-[#ffe9e9] to-[#ffd0d0]",
   },
   {
     source: "leboncoin",
@@ -34,7 +32,6 @@ const VITRINES: Vitrine[] = [
     surface: "28 m²",
     dpe: "D",
     score: 71,
-    teinte: "from-[#ffeede] to-[#ffdcc0]",
   },
   {
     source: "pap",
@@ -45,7 +42,6 @@ const VITRINES: Vitrine[] = [
     surface: "45 m²",
     dpe: "C",
     score: 77,
-    teinte: "from-[#e6ecff] to-[#cfd9ff]",
   },
   {
     source: "logic-immo",
@@ -56,7 +52,6 @@ const VITRINES: Vitrine[] = [
     surface: "88 m²",
     dpe: "B",
     score: 88,
-    teinte: "from-[#e2f7f4] to-[#c3faf5]",
   },
   {
     source: "bienici",
@@ -67,7 +62,6 @@ const VITRINES: Vitrine[] = [
     surface: "70 m²",
     dpe: "E",
     score: 65,
-    teinte: "from-[#fdeaf5] to-[#fde0f0]",
   },
   {
     source: "century21",
@@ -78,7 +72,6 @@ const VITRINES: Vitrine[] = [
     surface: "81 m²",
     dpe: "—",
     score: 61,
-    teinte: "from-[#fff6d8] to-[#fff4c4]",
   },
 ];
 
@@ -89,6 +82,7 @@ const manuel = ref(false);
 let minuteur: ReturnType<typeof setInterval> | undefined;
 
 const vitrine = computed(() => VITRINES[actif.value]!);
+const suivante = computed(() => VITRINES[(actif.value + 1) % VITRINES.length]!);
 const numero = (i: number) => String(i + 1).padStart(2, "0");
 
 function choisir(i: number) {
@@ -130,9 +124,9 @@ onBeforeUnmount(() => clearInterval(minuteur));
           <h1
             class="titre mt-5 text-[clamp(2.75rem,7.5vw,5.5rem)] font-light uppercase leading-[0.86] tracking-[-0.03em] text-ink"
           >
-            Tous tes<br />
-            biens.<br />
-            Un seul<br />
+            Tous tes<br >
+            biens.<br >
+            Un seul<br >
             endroit.
           </h1>
         </div>
@@ -205,6 +199,15 @@ onBeforeUnmount(() => clearInterval(minuteur));
               </div>
             </article>
           </Transition>
+
+          <img
+            :src="`/logements/${suivante.source}.jpg`"
+            alt=""
+            width="1"
+            height="1"
+            aria-hidden="true"
+            class="sr-only"
+          >
 
           <div class="mt-4 flex items-center justify-between gap-6">
             <p

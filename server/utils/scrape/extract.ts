@@ -1,5 +1,11 @@
 import type { Bien, DPE } from '~/types'
 
+export interface LienCarte {
+  href: string
+  texte: string
+  image?: string
+}
+
 export interface PageData {
   title: string
   ogTitle: string
@@ -10,6 +16,7 @@ export interface PageData {
   h1: string
   bodyText: string
   nextData?: string
+  liens?: LienCarte[]
 }
 
 const DPE_VALIDES = ['A', 'B', 'C', 'D', 'E', 'F', 'G']

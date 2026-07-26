@@ -19,6 +19,12 @@ useAsyncData("nav-alertes", () => refreshAlertes(), {
   immediate: !!user.value,
 });
 
+const { nouveaux: nouveauxVeilles, refresh: refreshVeilles } = useVeilles();
+useAsyncData("nav-veilles", () => refreshVeilles(), {
+  server: false,
+  immediate: !!user.value,
+});
+
 const anchors = [
   { href: "#features", label: "Fonctionnalités" },
   { href: "#how", label: "Comment ça marche" },
@@ -79,6 +85,23 @@ async function logout() {
               class="grid min-w-5 place-items-center rounded-full bg-coral-soft px-1.5 text-xs font-bold text-white"
             >
               {{ nonVues }}
+            </span>
+          </NuxtLink>
+          <NuxtLink
+            to="/veilles"
+            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 transition"
+            :class="
+              route.path === '/veilles'
+                ? 'bg-ink text-white'
+                : 'hover:bg-surface'
+            "
+          >
+            Veilles
+            <span
+              v-if="nouveauxVeilles > 0"
+              class="grid min-w-5 place-items-center rounded-full bg-blue px-1.5 text-xs font-bold text-white"
+            >
+              {{ nouveauxVeilles }}
             </span>
           </NuxtLink>
           <NuxtLink

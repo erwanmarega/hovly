@@ -98,6 +98,7 @@ const url = ref('')
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
+const urlEstRecherche = ref(false)
 const etapeExtraction = ref(0)
 const collage = ref(false)
 let minuteur: ReturnType<typeof setInterval> | undefined
@@ -169,6 +170,7 @@ async function collerDepuisPressePapier() {
 
 async function analyser() {
   error.value = ''
+  urlEstRecherche.value = false
   const source = detecterSource(url.value)
   if (!source) {
     error.value =
@@ -200,7 +202,14 @@ async function analyser() {
     draft.photo = b.photos?.[0] ?? ''
     etape.value = 'edition'
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string }
+    const err = e as { statusCode?: number; statusMessage?: string }
+
+    // Une page de résultats n'est pas un bien : c'est une veille qui s'ouvre.
+    if (err?.statusCode === 422 && /page de recherche/i.test(err.statusMessage ?? '')) {
+      urlEstRecherche.value = true
+      return
+    }
+
     error.value = err?.statusMessage || 'Extraction impossible. Complète à la main.'
     etape.value = 'edition'
   } finally {
@@ -483,6 +492,25 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               </Transition>
 
               <p v-if="error" class="mt-3 text-sm font-medium text-[#600000]">{{ error }}</p>
+
+              <div
+                v-if="urlEstRecherche"
+                class="mt-4 rounded-2xl border border-blue/40 bg-blue/5 p-4"
+              >
+                <p class="text-sm font-medium text-ink">
+                  Cette URL est une page de résultats, pas une annonce.
+                </p>
+                <p class="mt-1 text-sm text-slate">
+                  Transforme-la en veille : Hovly la rescanne et te prévient dès qu'une
+                  nouvelle annonce y apparaît.
+                </p>
+                <NuxtLink
+                  :to="{ path: '/veilles', query: { url: url.trim() } }"
+                  class="mt-3 inline-flex rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
+                >
+                  Créer une veille
+                </NuxtLink>
+              </div>
             </form>
 
             <Transition name="etat">

@@ -1,13 +1,18 @@
 <script setup lang="ts">
 const route = useRoute()
 const { nonVues } = useAlertes()
+const { nouveaux } = useVeilles()
 
 const onglets = [
   { to: '/dashboard', label: 'Mes biens' },
+  { to: '/veilles', label: 'Veilles' },
   { to: '/comparer', label: 'Comparer' },
   { to: '/alertes', label: 'Alertes' },
   { to: '/profil', label: 'Profil' }
 ]
+
+const badge = (to: string) =>
+  to === '/alertes' ? nonVues.value : to === '/veilles' ? nouveaux.value : 0
 
 const actif = (to: string) => route.path === to || route.path.startsWith(`${to}/`)
 </script>
@@ -39,6 +44,18 @@ const actif = (to: string) => route.path === to || route.path.startsWith(`${to}/
             >
               <rect x="3" y="4" width="18" height="16" rx="2" />
               <path d="M3 10h18M9 10v10" />
+            </svg>
+            <svg
+              v-else-if="o.to === '/veilles'"
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
             </svg>
             <svg
               v-else-if="o.to === '/comparer'"
@@ -80,10 +97,11 @@ const actif = (to: string) => route.path === to || route.path.startsWith(`${to}/
           {{ o.label }}
 
           <span
-            v-if="o.to === '/alertes' && nonVues > 0"
-            class="absolute right-[22%] top-1 grid min-w-4 place-items-center rounded-full bg-coral-soft px-1 text-[10px] font-bold text-white"
+            v-if="badge(o.to) > 0"
+            class="absolute right-[22%] top-1 grid min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold text-white"
+            :class="o.to === '/alertes' ? 'bg-coral-soft' : 'bg-blue'"
           >
-            {{ nonVues }}
+            {{ badge(o.to) }}
           </span>
         </NuxtLink>
       </li>

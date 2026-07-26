@@ -26,7 +26,15 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/login',
       callback: '/confirm',
-      include: ['/dashboard', '/ajouter', '/bien/**', '/profil', '/alertes', '/comparer'],
+      include: [
+        '/dashboard',
+        '/ajouter',
+        '/bien/**',
+        '/profil',
+        '/alertes',
+        '/comparer',
+        '/veilles'
+      ],
       exclude: []
     }
   },
