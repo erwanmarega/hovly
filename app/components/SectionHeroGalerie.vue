@@ -143,19 +143,20 @@ onBeforeUnmount(() => clearInterval(minuteur));
               :key="vitrine.source"
               class="overflow-hidden rounded-sm border border-hairline-soft bg-white"
             >
-              <div
-                class="relative grid aspect-[5/4] place-items-center bg-gradient-to-br"
-                :class="vitrine.teinte"
-              >
-                <LogoSource
-                  :source="vitrine.source"
-                  :taille="64"
-                  class="opacity-25"
-                />
+              <div class="relative aspect-[5/4] overflow-hidden bg-surface">
+                <img
+                  :src="`/logements/${vitrine.source}.jpg`"
+                  :alt="`${vitrine.titre} à ${vitrine.lieu}`"
+                  width="900"
+                  height="720"
+                  fetchpriority="high"
+                  class="size-full object-cover"
+                >
 
                 <span
-                  class="absolute left-4 top-4 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink backdrop-blur"
+                  class="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/90 py-1 pl-1.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-ink shadow-sm backdrop-blur"
                 >
+                  <LogoSource :source="vitrine.source" :taille="16" />
                   Importé de {{ vitrine.label }}
                 </span>
 
@@ -242,15 +243,26 @@ onBeforeUnmount(() => clearInterval(minuteur));
               </span>
 
               <span
-                class="mt-2 grid aspect-[4/3] place-items-center rounded-sm bg-gradient-to-br transition duration-300"
-                :class="[
-                  v.teinte,
+                class="relative mt-2 block aspect-[4/3] overflow-hidden rounded-sm bg-surface transition duration-300"
+                :class="
                   i === actif
                     ? 'opacity-100 ring-2 ring-ink'
-                    : 'opacity-40 grayscale hover:opacity-75 hover:grayscale-0',
-                ]"
+                    : 'opacity-45 grayscale hover:opacity-80 hover:grayscale-0'
+                "
               >
-                <LogoSource :source="v.source" :taille="26" />
+                <img
+                  :src="`/logements/${v.source}-vignette.jpg`"
+                  alt=""
+                  width="280"
+                  height="210"
+                  loading="lazy"
+                  class="size-full object-cover"
+                >
+                <span
+                  class="absolute bottom-1 left-1 grid size-6 place-items-center rounded-sm bg-white/90 backdrop-blur"
+                >
+                  <LogoSource :source="v.source" :taille="14" />
+                </span>
               </span>
             </button>
           </li>
