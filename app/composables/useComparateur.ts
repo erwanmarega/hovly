@@ -69,7 +69,6 @@ export function comparer(
 
   const vide = (v: number | null) => (v == null ? '—' : String(v))
 
-  // Une ligne par point d'ancrage : c'est souvent ce qui tranche.
   const lignesTrajets = (trajets?.ancres ?? []).map((ancre) =>
     ligne(
       `trajet-${ancre.id}`,

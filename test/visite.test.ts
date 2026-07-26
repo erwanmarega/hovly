@@ -112,7 +112,6 @@ describe('etatVisite', () => {
 
 describe('joursAvant et libelleVisite', () => {
   it('compte en jours calendaires, pas en tranches de 24 h', () => {
-    // 23 h d'écart mais on change de jour : c'est bien « demain ».
     expect(joursAvant('2026-07-26T08:00:00', MAINTENANT)).toBe(1)
     expect(joursAvant('2026-07-25T23:00:00', MAINTENANT)).toBe(0)
   })
@@ -153,7 +152,6 @@ describe('creneauxRapides', () => {
   })
 
   it('vise toujours un samedi futur', () => {
-    // 25/07/2026 est un samedi : le créneau doit pointer sur le suivant.
     const samedi = creneauxRapides(MAINTENANT).find((c) => c.label === 'Samedi 10 h')!
     const d = new Date(samedi.iso)
     expect(d.getDay()).toBe(6)

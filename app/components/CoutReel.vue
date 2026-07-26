@@ -10,7 +10,6 @@ const eur = (centimes: number) => Math.round(centimes / 100).toLocaleString('fr-
 
 const detailsOuverts = ref(false)
 
-/** Part de chaque poste, pour la barre empilée. */
 const parts = computed(() =>
   cout.value.postes
     .filter((p) => (p.montant ?? 0) > 0)

@@ -68,7 +68,6 @@ async function marquerVisite() {
       <BadgeVisite :visite-le="bien.visite_le" />
     </div>
 
-    <!-- Visite planifiée, pas encore passée -->
     <template v-if="bien.visite_le && !edition">
       <p class="mt-3 text-sm text-ink">
         {{ dateVisiteLongue(bien.visite_le) }}
@@ -106,7 +105,6 @@ async function marquerVisite() {
       </div>
     </template>
 
-    <!-- Saisie -->
     <template v-else>
       <div class="mt-3 flex flex-wrap gap-2">
         <button

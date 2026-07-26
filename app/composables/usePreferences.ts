@@ -4,7 +4,6 @@ const MODES: ModeTrajet[] = ['voiture', 'velo', 'marche', 'transport']
 
 export const MAX_ANCRES = 5
 
-/** L'identifiant part dans une requête PostgREST : on le garde alphanumérique. */
 const idPropre = (v: unknown) =>
   typeof v === 'string' ? v.replace(/[^a-z0-9-]/gi, '').slice(0, 32) : ''
 
@@ -57,11 +56,6 @@ function normaliser(brut: unknown): Preferences {
   }
 }
 
-/**
- * Après `updateUser`, le ref `user` peut encore porter les anciennes métadonnées.
- * Tant qu'il n'a pas rattrapé notre dernière écriture, on ne resynchronise pas :
- * sinon la valeur fraîchement enregistrée serait écrasée à l'écran.
- */
 export function doitSynchroniser(distant: Preferences, attendu: string): boolean {
   return !attendu || JSON.stringify(distant) === attendu
 }
@@ -72,12 +66,9 @@ export function usePreferences() {
 
   const preferences = useState<Preferences>('preferences', () => ({ ...PREFERENCES_DEFAUT }))
   const enregistrement = useState('preferences-saving', () => false)
-  /** Signature de la dernière valeur de référence, en attente côté `user`. */
   const attendu = useState('preferences-attendu', () => '')
   const hydratees = useState('preferences-hydratees', () => false)
 
-  // `useSupabaseUser()` expose les claims du JWT : une photo prise à l'émission
-  // du token, pas l'état courant du compte. Elle sert de valeur de départ.
   watchEffect(() => {
     const distant = normaliser(user.value?.user_metadata?.preferences)
     if (!doitSynchroniser(distant, attendu.value)) return
@@ -85,11 +76,6 @@ export function usePreferences() {
     preferences.value = distant
   })
 
-  /**
-   * Le JWT n'est réémis qu'au rafraîchissement du token : après un
-   * enregistrement, un rechargement de page relirait des préférences périmées.
-   * On interroge donc une fois le compte lui-même, qui fait autorité.
-   */
   async function hydrater() {
     if (hydratees.value) return
     hydratees.value = true
@@ -100,7 +86,6 @@ export function usePreferences() {
     const distant = normaliser(data.user.user_metadata?.preferences)
     if (!doitSynchroniser(distant, attendu.value)) return
 
-    // Fait aussi barrage aux claims périmés jusqu'à ce qu'ils rattrapent.
     attendu.value = JSON.stringify(distant)
     preferences.value = distant
   }
@@ -119,7 +104,6 @@ export function usePreferences() {
     attendu.value = JSON.stringify(propres)
     preferences.value = propres
 
-    // Sans nouveau token, le prochain chargement relirait les anciennes valeurs.
     await supabase.auth.refreshSession()
     return true
   }

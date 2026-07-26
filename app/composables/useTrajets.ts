@@ -9,15 +9,12 @@ export const LIBELLES_MODE: Record<ModeTrajet, string> = {
 
 export interface TrajetAffiche {
   ancre: Ancre
-  /** Durée en secondes, null si non calculée ou trajet impossible. */
   duree_s: number | null
   distance_m: number | null
-  /** Dépasse la durée maximale fixée sur l'ancre. */
   depasse: boolean
   calcule: boolean
 }
 
-/** « 8 min », « 1 h 05 ». */
 export function formatDuree(secondes: number | null): string {
   if (secondes == null) return '—'
   const minutes = Math.round(secondes / 60)
@@ -38,7 +35,6 @@ export function indexer(trajets: Trajet[]): Map<string, Trajet> {
   return new Map(trajets.map((t) => [cleTrajet(t.bien_id, t.ancre, t.mode), t]))
 }
 
-/** Les trajets d'un bien, un par ancre, dans l'ordre des préférences. */
 export function trajetsDuBien(
   bienId: string,
   ancres: Ancre[],
@@ -57,11 +53,19 @@ export function trajetsDuBien(
   })
 }
 
-/** Le trajet le plus long : c'est lui qui fait renoncer à un logement. */
 export function trajetLePlusLong(liste: TrajetAffiche[]): TrajetAffiche | null {
   const calcules = liste.filter((t) => t.duree_s != null)
   if (!calcules.length) return null
   return calcules.reduce((pire, t) => (t.duree_s! > pire.duree_s! ? t : pire))
+}
+
+export function trajetPourAncre(liste: TrajetAffiche[], ancreId: string): TrajetAffiche | null {
+  const t = liste.find((x) => x.ancre.id === ancreId)
+  return t && t.duree_s != null ? t : null
+}
+
+export function trajetRetenu(liste: TrajetAffiche[], ancreId: string | null): TrajetAffiche | null {
+  return ancreId ? trajetPourAncre(liste, ancreId) : trajetLePlusLong(liste)
 }
 
 export function nbDepassements(liste: TrajetAffiche[]): number {
@@ -70,22 +74,41 @@ export function nbDepassements(liste: TrajetAffiche[]): number {
 
 export type EtatModes = Record<ModeTrajet, boolean>
 
+const CLE_ANCRE_AFFICHEE = 'hovly:trajet-ancre'
+
 export function useTrajets() {
   const { preferences } = usePreferences()
 
   const trajets = useState<Trajet[]>('trajets', () => [])
   const calcul = useState('trajets-calcul', () => false)
   const erreur = useState('trajets-erreur', () => '')
-  /** Modes que le serveur sait calculer : dépend des clés d'API présentes. */
   const etat = useState<EtatModes | null>('trajets-etat', () => null)
 
   const index = computed(() => indexer(trajets.value))
   const ancres = computed(() => preferences.value.ancres)
   const actif = computed(() => ancres.value.length > 0)
 
+  const ancreAffichee = useState<string | null>('trajets-ancre-affichee', () => null)
+  const ancreHydratee = useState('trajets-ancre-hydratee', () => false)
+
+  if (import.meta.client && !ancreHydratee.value) {
+    ancreHydratee.value = true
+    ancreAffichee.value = localStorage.getItem(CLE_ANCRE_AFFICHEE) || null
+  }
+
+  const ancreChoisie = computed(
+    () => ancres.value.find((a) => a.id === ancreAffichee.value) ?? null
+  )
+
+  function choisirAncre(id: string | null) {
+    ancreAffichee.value = id
+    if (!import.meta.client) return
+    if (id) localStorage.setItem(CLE_ANCRE_AFFICHEE, id)
+    else localStorage.removeItem(CLE_ANCRE_AFFICHEE)
+  }
+
   const disponible = (mode: ModeTrajet) => etat.value?.[mode] !== false
 
-  /** Au moins une ancre dont le mode est réellement calculable. */
   const calculable = computed(() => ancres.value.some((a) => disponible(a.mode)))
 
   async function chargerEtat() {
@@ -93,7 +116,6 @@ export function useTrajets() {
     try {
       etat.value = await $fetch<EtatModes>('/api/trajets/etat')
     } catch {
-      // Indéterminé : on laisse l'utilisateur essayer plutôt que de bloquer.
     }
   }
 
@@ -104,7 +126,8 @@ export function useTrajets() {
 
   const pour = (bienId: string) => trajetsDuBien(bienId, ancres.value, index.value)
 
-  /** Relance le calcul côté serveur (API de routage) puis recharge. */
+  const retenu = (bienId: string) => trajetRetenu(pour(bienId), ancreChoisie.value?.id ?? null)
+
   async function calculer(): Promise<boolean> {
     calcul.value = true
     erreur.value = ''
@@ -136,6 +159,9 @@ export function useTrajets() {
     refresh,
     chargerEtat,
     calculer,
-    pour
+    pour,
+    retenu,
+    ancreChoisie,
+    choisirAncre
   }
 }

@@ -14,9 +14,7 @@ type Clef =
 
 const props = defineProps<{
   biens: Bien[]
-  /** Score calculé côté page (dépend du contexte ville + préférences). */
   score: (bien: Bien) => Score
-  /** id du bien → nombre d'annonces identiques. */
   doublons: Map<string, number>
   triClef: Clef
   triAsc: boolean
@@ -34,27 +32,26 @@ const emit = defineEmits<{
 
 const { prixMensuel, prixM2 } = useBiens()
 const { calculer: coutDe } = useCoutReel()
-const { actif: trajetsActifs, pour: trajetsDe } = useTrajets()
+const { actif: trajetsActifs, ancreChoisie } = useTrajets()
 
-// Calculés une fois par rendu plutôt qu'à chaque cellule.
 const couts = computed(() => new Map(props.biens.map((b) => [b.id, coutDe(b)])))
 
-/** Colonne trajet : on montre le plus long, c'est lui qui fait renoncer. */
-const pireTrajet = computed(
-  () => new Map(props.biens.map((b) => [b.id, trajetLePlusLong(trajetsDe(b.id))]))
-)
+const libelleTrajet = computed(() => ancreChoisie.value?.label ?? 'Trajet')
 const { complet: selectionComplete, estSelectionne, basculer } = useComparateur()
 
-const TRIS: { value: Clef, label: string }[] = [
+const TRIS = computed<{ value: Clef, label: string }[]>(() => [
   { value: 'date', label: 'Date d’ajout' },
   { value: 'prix', label: 'Loyer' },
   { value: 'surface', label: 'Surface' },
   { value: 'prix_m2', label: '€/m²' },
   { value: 'cout_reel', label: 'Coût réel' },
-  { value: 'trajet', label: 'Trajet le plus long' },
+  {
+    value: 'trajet',
+    label: ancreChoisie.value ? `Trajet — ${ancreChoisie.value.label}` : 'Trajet le plus long'
+  },
   { value: 'score', label: 'Score' },
   { value: 'visite', label: 'Date de visite' }
-]
+])
 
 const SOURCES: Record<string, string> = {
   seloger: 'SeLoger',
@@ -67,7 +64,6 @@ const SOURCES: Record<string, string> = {
 
 const eur = (n: number) => n.toLocaleString('fr-FR')
 
-/** Les dernières lignes ouvrent leur menu de statut vers le haut. */
 const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.length - 2
 </script>
 
@@ -75,7 +71,6 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
   <div
     class="overflow-hidden rounded-feature border border-hairline-soft bg-white shadow-[0_1px_2px_rgba(5,0,56,0.04)]"
   >
-    <!-- Tri explicite tant que toutes les colonnes ne tiennent pas à l'écran. -->
     <div class="flex items-center gap-2 border-b border-hairline-soft px-4 py-2.5 xl:hidden">
       <label class="text-xs font-medium text-stone" for="tri-liste">Trier par</label>
       <select
@@ -95,7 +90,6 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       </button>
     </div>
 
-    <!-- Mobile : cartes compactes -->
     <div class="divide-y divide-hairline-soft md:hidden">
       <CarteBienCompacte
         v-for="b in biens"
@@ -113,7 +107,6 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       />
     </div>
 
-    <!-- Desktop : tableau -->
     <div class="hidden overflow-x-auto md:block">
       <table class="w-full text-left text-sm">
         <thead class="bg-surface-soft">
@@ -150,11 +143,15 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
             </th>
             <th
               v-if="trajetsActifs"
-              class="hidden cursor-pointer font-semibold hover:text-ink lg:table-cell"
-              title="Temps de trajet le plus long vers tes points d’ancrage"
+              class="hidden max-w-[9rem] cursor-pointer truncate font-semibold hover:text-ink lg:table-cell"
+              :title="
+                ancreChoisie
+                  ? `Temps de trajet vers ${ancreChoisie.label}`
+                  : 'Temps de trajet le plus long vers tes points d’ancrage'
+              "
               @click="emit('tri', 'trajet')"
             >
-              Trajet <span v-if="triClef === 'trajet'">{{ triAsc ? '↑' : '↓' }}</span>
+              {{ libelleTrajet }} <span v-if="triClef === 'trajet'">{{ triAsc ? '↑' : '↓' }}</span>
             </th>
             <th
               class="hidden cursor-pointer font-semibold hover:text-ink xl:table-cell"
@@ -207,7 +204,6 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
                       class="rounded-full bg-brand-light px-1.5 py-0.5 text-[10px] font-semibold text-[#8a6d1c]"
                       :title="`Ce bien apparaît sur ${doublons.get(b.id)} annonces`"
                     >×{{ doublons.get(b.id) }}</span>
-                    <!-- La note vit dans l'infobulle plutôt que dans une colonne à elle. -->
                     <svg
                       v-if="b.note_perso"
                       class="size-3 shrink-0 text-steel"
@@ -238,20 +234,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
             <td class="hidden lg:table-cell"><BadgeDPE :dpe="b.dpe" /></td>
             <td class="whitespace-nowrap"><ScoreBien :score="score(b)" /></td>
             <td v-if="trajetsActifs" class="hidden whitespace-nowrap lg:table-cell">
-              <span
-                v-if="pireTrajet.get(b.id)"
-                class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                :class="
-                  pireTrajet.get(b.id)!.depasse
-                    ? 'bg-coral text-[#600000]'
-                    : 'bg-teal text-[#0a4a42]'
-                "
-                :title="`${pireTrajet.get(b.id)!.ancre.label} ${LIBELLES_MODE[pireTrajet.get(b.id)!.ancre.mode]}`"
-              >
-                <IconeMode :mode="pireTrajet.get(b.id)!.ancre.mode" class="size-3" />
-                {{ formatDuree(pireTrajet.get(b.id)!.duree_s) }}
-              </span>
-              <span v-else class="text-stone">—</span>
+              <PopoverTrajets :bien-id="b.id" />
             </td>
             <td class="hidden whitespace-nowrap xl:table-cell">
               <BadgeVisite v-if="b.visite_le" :visite-le="b.visite_le" compact />

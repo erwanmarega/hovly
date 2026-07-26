@@ -17,7 +17,6 @@ const sources: SiteSource[] = [
   'century21'
 ]
 
-
 </script>
 
 <template>

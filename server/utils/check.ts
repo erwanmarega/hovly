@@ -96,10 +96,6 @@ export async function notifier(
   return envois
 }
 
-/**
- * Notifications push, un envoi par alerte et par appareil abonné.
- * Sans clés VAPID configurées, ne fait rien (le push est optionnel).
- */
 export async function notifierPush(
   client: any,
   userId: string,

@@ -37,7 +37,6 @@ export default defineNuxtConfig({
     vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
     vapidSubject: process.env.VAPID_SUBJECT,
     public: {
-      // Clé publique VAPID : nécessaire côté navigateur pour s'abonner au push.
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY || ''
     }
   },

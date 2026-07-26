@@ -91,7 +91,6 @@ describe('payloadAlerte', () => {
   it('affiche l’ancien et le nouveau prix en euros pour une baisse', () => {
     const p = payloadAlerte(alerte())
     expect(p.titre).toContain('T2 lumineux')
-    // Intl insère des espaces insécables dans les milliers.
     expect(p.corps.replace(/\s/g, ' ')).toBe('1 000 € → 920 €')
     expect(p.url).toBe('/bien/b1')
     expect(p.tag).toBe('bien-b1')

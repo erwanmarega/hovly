@@ -51,6 +51,11 @@ const doublons = computed(() =>
   bien.value ? doublonsDe(bien.value, biens.value) : []
 );
 
+const filAriane = computed(() => [
+  { label: "Mes biens", to: "/dashboard" },
+  { label: bien.value?.titre ?? "Bien" },
+]);
+
 const photoActive = ref(0);
 
 const prixMensuel = computed(() =>
@@ -76,10 +81,6 @@ const dateAjout = computed(() =>
     : ""
 );
 
-/**
- * `useAsyncData` renvoie un shallowRef : muter une propriété de `bien.value` ne
- * déclenche rien. Toute écriture locale remplace donc l'objet entier.
- */
 function patcher(patch: Partial<Bien>) {
   if (bien.value) bien.value = { ...bien.value, ...patch };
 }
@@ -97,7 +98,6 @@ async function setStatut(s: Statut) {
   }
 }
 
-/** Les composants de visite écrivent en base ; la page recopie le patch localement. */
 const appliquerVisite = patcher;
 
 const afficherChecklist = computed(() => {
@@ -112,7 +112,6 @@ const afficherChecklist = computed(() => {
   );
 });
 
-/** La checklist apparaît en bas de page : on l'amène sous les yeux. */
 const blocChecklist = ref<HTMLElement | null>(null);
 watch(afficherChecklist, (visible, avant) => {
   if (!visible || avant) return;
@@ -204,6 +203,8 @@ async function supprimer() {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-6 py-8">
+      <FilAriane class="mb-5" :items="filAriane" />
+
       <div v-if="pending" class="py-24 text-center">
         <div
           class="mx-auto size-7 animate-spin rounded-full border-2 border-hairline border-t-ink"
@@ -321,8 +322,6 @@ async function supprimer() {
           </p>
         </Transition>
 
-        <!-- Les deux colonnes s'étirent : la carte et la zone de note absorbent
-             l'écart pour que les deux blocs se terminent à la même hauteur. -->
         <div class="mt-6 grid items-stretch gap-6 lg:grid-cols-5">
           <div class="flex flex-col lg:col-span-3">
             <div

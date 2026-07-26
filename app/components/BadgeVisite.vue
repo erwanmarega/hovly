@@ -2,7 +2,6 @@
 const props = withDefaults(
   defineProps<{
     visiteLe: string | null
-    /** Sans texte : seule l'icône et la date courte restent. */
     compact?: boolean
   }>(),
   { compact: false }

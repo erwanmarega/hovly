@@ -26,7 +26,6 @@ function surTouche(e: KeyboardEvent) {
   if (e.key === 'Escape') ouvert.value = false
 }
 
-/** Le service worker signale une notification push reçue : la liste se remet à jour. */
 function surMessageSw(e: MessageEvent) {
   if (e.data?.type === 'PUSH_ALERTE') charger()
 }

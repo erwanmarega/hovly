@@ -1,12 +1,5 @@
 import type { Bien, DPE, Preferences } from '~/types'
 
-/**
- * Le prix affiché dans une annonce ment : il ignore l'énergie, l'assurance, et
- * parfois les charges. On reconstitue ce que le logement coûte vraiment par mois.
- * Tout est en centimes, comme en base.
- */
-
-/** Consommation d'énergie primaire retenue par classe DPE (kWh EP/m²/an, milieu de plage). */
 export const KWH_EP_PAR_DPE: Record<DPE, number> = {
   A: 50,
   B: 90,
@@ -17,40 +10,31 @@ export const KWH_EP_PAR_DPE: Record<DPE, number> = {
   G: 470
 }
 
-/** Énergie primaire → énergie finale facturée (mix gaz/électricité du parc français). */
 export const COEF_ENERGIE_FINALE = 0.65
 
-/** Prix moyen du kWh, en centimes. Mix gaz ~12 c€ / électricité ~25 c€. */
 export const PRIX_KWH_DEFAUT = 16
 
-/** Assurance habitation : une part fixe + une part à la surface, en centimes par an. */
 export const ASSURANCE_FIXE_AN = 6000
 export const ASSURANCE_PAR_M2_AN = 160
 
 export interface PosteCout {
   cle: 'loyer' | 'charges' | 'energie' | 'assurance'
   label: string
-  /** Centimes par mois. `null` = non estimable (DPE absent, par exemple). */
   montant: number | null
   detail: string
 }
 
 export interface CoutReel {
   postes: PosteCout[]
-  /** Centimes par mois, postes estimables uniquement. */
   total: number
-  /** Loyer + charges, ce que l'annonce laisse croire. */
   affiche: number
-  /** Écart en % entre le coût réel et le prix affiché. */
   ecartPourcent: number
-  /** Vrai si un poste manque faute de donnée : le total est alors un plancher. */
   incomplet: boolean
   hypotheses: string[]
 }
 
 export interface OptionsCout {
   prixKwh?: number
-  /** Le chauffage est déjà facturé dans les charges : on ne le compte pas deux fois. */
   chauffageDansCharges?: boolean
 }
 
@@ -127,7 +111,6 @@ export function coutReel(bien: Bien, options: OptionsCout = {}): CoutReel {
   }
 }
 
-/** Options de calcul dérivées des préférences de l'utilisateur. */
 export function optionsDepuisPreferences(p: Preferences): OptionsCout {
   return {
     prixKwh: p.prixKwh ?? PRIX_KWH_DEFAUT,

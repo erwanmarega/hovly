@@ -148,10 +148,6 @@ async function enregistrerPrefs() {
   messageEphemere(prefsMsg)
 }
 
-/**
- * Ajouter ou retirer une ancre est une action à part entière : on enregistre
- * aussitôt, sans attendre le bouton des critères.
- */
 async function majAncres(ancres: Ancre[]) {
   brouillon.ancres = ancres
   trajetsMsg.value = ''
@@ -160,7 +156,6 @@ async function majAncres(ancres: Ancre[]) {
   messageEphemere(trajetsMsg)
 }
 
-/** Enregistre d'abord : le serveur calcule à partir des ancres envoyées. */
 async function majTrajets() {
   trajetsMsg.value = ''
   const ok = await enregistrer({ ...brouillon })
@@ -420,9 +415,9 @@ const inputCls =
             {{ calculTrajets ? 'Calcul…' : 'Calculer les trajets' }}
           </button>
           <p v-else-if="brouillon.ancres.length" class="max-w-xs text-xs text-stone">
-            Calcul indisponible : aucune clé d’API de trajet n’est configurée sur le serveur
-            (<code>ORS_API_KEY</code> pour voiture/vélo/marche, <code>NAVITIA_TOKEN</code> pour
-            les transports).
+            Calcul indisponible : la clé <code>ORS_API_KEY</code> (voiture, vélo, marche)
+            n’est pas configurée sur le serveur. Les transports en commun, eux, ne
+            demandent aucune clé.
           </p>
         </div>
 
@@ -434,6 +429,8 @@ const inputCls =
 
         <p v-if="erreurTrajets" class="mt-3 text-xs text-[#600000]">{{ erreurTrajets }}</p>
         <p v-else-if="trajetsMsg" class="mt-3 text-xs text-[#0a4a42]">{{ trajetsMsg }}</p>
+
+        <MentionTransitous class="mt-3" />
       </section>
 
       <section class="mt-6 rounded-feature border border-hairline-soft bg-white p-6">

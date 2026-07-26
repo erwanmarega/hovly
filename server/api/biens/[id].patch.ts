@@ -17,7 +17,6 @@ export default defineEventHandler(async (event) => {
     if (champ in body) patch[champ] = body[champ]
   }
 
-  // Replanifier une visite doit pouvoir redéclencher le rappel J-1.
   if ('visite_le' in patch) patch.rappel_envoye_le = null
   if (Object.keys(patch).length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Aucun champ à mettre à jour' })

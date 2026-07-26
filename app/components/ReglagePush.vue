@@ -1,7 +1,6 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    /** `carte` : bloc autonome (page profil). `ligne` : intégré dans un panneau. */
     variante?: 'carte' | 'ligne'
   }>(),
   { variante: 'carte' }

@@ -6,7 +6,6 @@ export interface CritereVisite {
   aide: string
 }
 
-/** Ce qu'on ne peut juger que sur place, et qu'on oublie une fois rentré. */
 export const CRITERES_VISITE: CritereVisite[] = [
   { id: 'luminosite', label: 'Luminosité', aide: 'Orientation, pièces sombres en journée' },
   { id: 'bruit', label: 'Bruit', aide: 'Rue, voisins, fenêtres ouvertes' },
@@ -52,7 +51,6 @@ export function normaliserChecklist(brut: Partial<Checklist> | null | undefined)
 export interface BilanVisite {
   remplis: number
   total: number
-  /** Note sur 100, calculée sur les seuls critères renseignés. */
   note: number | null
   mauvais: string[]
 }
@@ -80,7 +78,6 @@ export function etatVisite(bien: Bien, maintenant = new Date()): EtatVisite {
   return d.toDateString() === maintenant.toDateString() ? 'aujourdhui' : 'a_venir'
 }
 
-/** Nombre de jours calendaires d'écart (aujourd'hui = 0, demain = 1). */
 export function joursAvant(iso: string, maintenant = new Date()): number {
   const jour = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   return Math.round((jour(new Date(iso)) - jour(maintenant)) / 86_400_000)
@@ -89,7 +86,6 @@ export function joursAvant(iso: string, maintenant = new Date()): number {
 const heure = (d: Date) =>
   d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
-/** « Demain 18:30 », « Dans 4 j », « Il y a 2 j »… */
 export function libelleVisite(iso: string, maintenant = new Date()): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
@@ -117,7 +113,6 @@ export function dateVisiteLongue(iso: string): string {
   })
 }
 
-/** ISO → valeur d'un <input type="datetime-local"> (heure locale, sans zone). */
 export function versInputLocal(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -132,7 +127,6 @@ export function depuisInputLocal(valeur: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
-/** Créneaux rapides : demain 18 h, samedi 10 h, etc. */
 export function creneauxRapides(maintenant = new Date()): { label: string; iso: string }[] {
   const a = (jours: number, h: number) => {
     const d = new Date(maintenant)
@@ -149,7 +143,6 @@ export function creneauxRapides(maintenant = new Date()): { label: string; iso: 
   ].filter((c) => new Date(c.iso).getTime() > maintenant.getTime())
 }
 
-/** Visites à venir, la plus proche d'abord. */
 export function prochainesVisites(biens: Bien[], maintenant = new Date()): Bien[] {
   return biens
     .filter((b) => b.actif && b.visite_le && new Date(b.visite_le).getTime() >= maintenant.getTime())
@@ -160,7 +153,6 @@ export function useVisite() {
   const { mettreAJour } = useBiens()
 
   async function planifier(id: string, iso: string | null) {
-    // Poser une date fait entrer le bien dans le pipeline « visite planifiée ».
     await mettreAJour(id, iso ? { visite_le: iso, statut: 'planifie' } : { visite_le: null })
   }
 

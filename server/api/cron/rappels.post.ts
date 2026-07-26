@@ -2,11 +2,6 @@ import type { Bien } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { envoyerRappels } from '../../utils/rappels'
 
-/**
- * Rappels J-1 des visites planifiées.
- * À appeler souvent (toutes les heures) : la fenêtre est de 24 h et chaque bien
- * n'est notifié qu'une fois grâce à `rappel_envoye_le`.
- */
 export default defineEventHandler(async (event) => {
   const secret = process.env.CRON_SECRET
   const auth = getHeader(event, 'authorization')

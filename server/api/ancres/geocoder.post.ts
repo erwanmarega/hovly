@@ -1,4 +1,3 @@
-/** Adresse libre → coordonnées, pour poser un point d'ancrage. */
 export default defineEventHandler(async (event) => {
   await requireUser(event)
   const { adresse } = await readBody<{ adresse?: string }>(event)

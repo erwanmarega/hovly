@@ -8,12 +8,10 @@ export interface AbonnementPush {
   auth: string
 }
 
-/** Ce qui traverse le réseau jusqu'au service worker (`public/sw.js`). */
 export interface PayloadPush {
   titre: string
   corps: string
   url: string
-  /** Regroupe les notifications d'un même bien : la nouvelle remplace l'ancienne. */
   tag?: string
 }
 
@@ -22,7 +20,6 @@ const eur = (centimes: number | null) =>
 
 let configure = false
 
-/** Renvoie false si les clés VAPID manquent : le push est alors simplement désactivé. */
 export function pushDisponible(): boolean {
   const publique = process.env.VAPID_PUBLIC_KEY
   const privee = process.env.VAPID_PRIVATE_KEY
@@ -56,10 +53,6 @@ export function payloadAlerte(alerte: AlerteCreee): PayloadPush {
   }
 }
 
-/**
- * Envoie un payload à tous les appareils d'un utilisateur.
- * Un endpoint mort (404 / 410) est supprimé : le navigateur a révoqué l'abonnement.
- */
 export async function envoyerPush(
   client: any,
   userId: string,

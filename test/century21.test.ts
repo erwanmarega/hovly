@@ -45,7 +45,6 @@ describe('extraireCentury21 — prix', () => {
   })
 
   it('ne se laisse pas piéger par la référence collée au prix', () => {
-    // « Ref : 470 1 760 € » : l’extracteur générique lisait 4 701 760 €
     expect(extraireCentury21(FICHE).prix).not.toBe(47017600000)
   })
 

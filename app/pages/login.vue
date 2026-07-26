@@ -13,6 +13,9 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
+const route = useRoute()
+const inactivite = computed(() => route.query.raison === 'inactivite')
+
 async function handleLogin() {
   error.value = ''
   if (!email.value || !password.value) {
@@ -54,6 +57,13 @@ async function handleGoogle() {
         <div class="w-full max-w-sm">
           <h1 class="text-3xl font-bold tracking-tight text-ink-deep">Bon retour !</h1>
           <p class="mt-2 text-slate">Connecte-toi pour retrouver tes biens.</p>
+
+          <p
+            v-if="inactivite"
+            class="mt-6 rounded-lg border border-hairline-strong bg-surface px-4 py-3 text-sm text-slate"
+          >
+            Tu as été déconnecté après 15 minutes d'inactivité.
+          </p>
 
           <button
             type="button"

@@ -14,10 +14,11 @@ const manquants = computed(() =>
 )
 const localise = computed(() => props.bien.lat != null && props.bien.lon != null)
 
-/** Modes réclamés par les ancres mais que le serveur ne sait pas calculer. */
 const modesManquants = computed(() => [
   ...new Set(ancres.value.filter((a) => !disponible(a.mode)).map((a) => LIBELLES_MODE[a.mode]))
 ])
+
+const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport'))
 </script>
 
 <template>
@@ -91,5 +92,7 @@ const modesManquants = computed(() => [
     <p v-else-if="actif && ancres.length" class="mt-3 text-xs text-stone">
       Itinéraires porte à porte, hors trafic.
     </p>
+
+    <MentionTransitous v-if="actif && localise && aTransport" class="mt-2" />
   </section>
 </template>

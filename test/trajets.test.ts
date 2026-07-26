@@ -7,10 +7,12 @@ import {
   indexer,
   nbDepassements,
   trajetLePlusLong,
+  trajetPourAncre,
+  trajetRetenu,
   trajetsDuBien
 } from '../app/composables/useTrajets'
 import {
-  dureeDepuisJourneys,
+  dureeDepuisItineraires,
   paquets,
   prochainMardi8h30
 } from '../server/utils/routage'
@@ -77,7 +79,6 @@ describe('trajetsDuBien', () => {
     expect(liste.map((t) => t.ancre.id)).toEqual(['boulot', 'ecole'])
     expect(liste[0]!.calcule).toBe(true)
     expect(liste[0]!.duree_s).toBe(900)
-    // Pas encore calculé : la ligne existe quand même, marquée comme telle.
     expect(liste[1]!.calcule).toBe(false)
     expect(liste[1]!.duree_s).toBeNull()
   })
@@ -122,6 +123,50 @@ describe('trajetLePlusLong', () => {
   })
 })
 
+describe('trajetPourAncre', () => {
+  const ancres = [ancre(), ancre({ id: 'gare', label: 'Gare', mode: 'transport' })]
+
+  it('rend le trajet de l’ancre demandée, pas le plus long', () => {
+    const index = indexer([
+      trajet({ duree_s: 900 }),
+      trajet({ id: 't2', ancre: 'gare', mode: 'transport', duree_s: 2400 })
+    ])
+    const liste = trajetsDuBien('b1', ancres, index)
+
+    expect(trajetPourAncre(liste, 'boulot')?.duree_s).toBe(900)
+    expect(trajetPourAncre(liste, 'gare')?.duree_s).toBe(2400)
+  })
+
+  it('rend null quand l’ancre n’est pas calculée ou n’existe pas', () => {
+    const liste = trajetsDuBien('b1', ancres, indexer([trajet({ duree_s: 900 })]))
+
+    expect(trajetPourAncre(liste, 'gare')).toBeNull()
+    expect(trajetPourAncre(liste, 'inconnue')).toBeNull()
+  })
+})
+
+describe('trajetRetenu', () => {
+  const ancres = [ancre(), ancre({ id: 'gare', label: 'Gare', mode: 'transport' })]
+  const index = indexer([
+    trajet({ duree_s: 900 }),
+    trajet({ id: 't2', ancre: 'gare', mode: 'transport', duree_s: 2400 })
+  ])
+  const liste = trajetsDuBien('b1', ancres, index)
+
+  it('retombe sur le plus long sans ancre choisie', () => {
+    expect(trajetRetenu(liste, null)?.ancre.id).toBe('gare')
+  })
+
+  it('respecte l’ancre choisie même si elle n’est pas la plus longue', () => {
+    expect(trajetRetenu(liste, 'boulot')?.ancre.id).toBe('boulot')
+  })
+
+  it('rend null plutôt que de retomber sur une autre ancre', () => {
+    const partiel = trajetsDuBien('b1', ancres, indexer([trajet({ duree_s: 900 })]))
+    expect(trajetRetenu(partiel, 'gare')).toBeNull()
+  })
+})
+
 describe('nbDepassements', () => {
   it('compte les ancres hors limite', () => {
     const ancres = [
@@ -153,36 +198,59 @@ describe('paquets', () => {
   })
 })
 
-describe('dureeDepuisJourneys', () => {
+describe('dureeDepuisItineraires', () => {
+  const metro = [{ mode: 'WALK' }, { mode: 'SUBWAY' }, { mode: 'WALK' }]
+
   it('retient le trajet le plus court', () => {
     expect(
-      dureeDepuisJourneys({ journeys: [{ duration: 2400 }, { duration: 1800 }] })
+      dureeDepuisItineraires({
+        itineraries: [
+          { duration: 2400, legs: metro },
+          { duration: 1800, legs: metro }
+        ]
+      })
     ).toBe(1800)
   })
 
-  it('écarte la solution « tout à pied » proposée par Navitia', () => {
+  it('écarte un itinéraire sans aucun transport en commun', () => {
     expect(
-      dureeDepuisJourneys({
-        journeys: [{ duration: 5400, type: 'non_pt_walk' }, { duration: 1500, type: 'best' }]
+      dureeDepuisItineraires({
+        itineraries: [
+          { duration: 5400, legs: [{ mode: 'WALK' }] },
+          { duration: 1500, legs: metro }
+        ]
       })
     ).toBe(1500)
   })
 
+  it('accepte une durée sans détail des tronçons', () => {
+    expect(dureeDepuisItineraires({ itineraries: [{ duration: 1200 }] })).toBe(1200)
+  })
+
   it('rend null quand aucune solution n’est exploitable', () => {
-    expect(dureeDepuisJourneys({})).toBeNull()
-    expect(dureeDepuisJourneys({ journeys: [] })).toBeNull()
-    expect(dureeDepuisJourneys({ journeys: [{ duration: 0 }] })).toBeNull()
-    expect(dureeDepuisJourneys({ journeys: [{ duration: 900, type: 'non_pt_walk' }] })).toBeNull()
+    expect(dureeDepuisItineraires({})).toBeNull()
+    expect(dureeDepuisItineraires({ itineraries: [] })).toBeNull()
+    expect(dureeDepuisItineraires({ itineraries: [{ duration: 0, legs: metro }] })).toBeNull()
+    expect(
+      dureeDepuisItineraires({ itineraries: [{ duration: 900, legs: [{ mode: 'BIKE' }] }] })
+    ).toBeNull()
   })
 })
 
 describe('prochainMardi8h30', () => {
-  it('vise toujours un mardi 8 h 30 à venir', () => {
-    // 25/07/2026 est un samedi.
-    expect(prochainMardi8h30(new Date('2026-07-25T09:00:00'))).toBe('20260728T083000')
+  it('vise toujours un mardi 8 h 30 à venir, heure de Paris', () => {
+    expect(prochainMardi8h30(new Date('2026-07-25T09:00:00Z'))).toBe('2026-07-28T08:30:00+02:00')
   })
 
   it('saute au mardi suivant si on est déjà mardi', () => {
-    expect(prochainMardi8h30(new Date('2026-07-28T07:00:00'))).toBe('20260804T083000')
+    expect(prochainMardi8h30(new Date('2026-07-28T07:00:00Z'))).toBe('2026-08-04T08:30:00+02:00')
+  })
+
+  it('suit l’heure d’hiver', () => {
+    expect(prochainMardi8h30(new Date('2026-01-15T09:00:00Z'))).toBe('2026-01-20T08:30:00+01:00')
+  })
+
+  it('lit la date à Paris, pas en UTC', () => {
+    expect(prochainMardi8h30(new Date('2026-07-27T23:30:00Z'))).toBe('2026-08-04T08:30:00+02:00')
   })
 })

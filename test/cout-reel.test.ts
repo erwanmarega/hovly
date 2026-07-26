@@ -20,11 +20,11 @@ function bien(over: Partial<Bien> = {}): Bien {
     url_source: 'https://www.pap.fr/annonces/1',
     site_source: 'pap',
     titre: 'T2 Cachan',
-    prix: 95000, // 950 €
+    prix: 95000,
     surface: 45,
     nb_pieces: 2,
     etage: null,
-    charges: 8000, // 80 €
+    charges: 8000,
     dpe: 'D',
     adresse: null,
     ville: 'Cachan',
@@ -109,7 +109,6 @@ describe('coutReel', () => {
     const c = coutReel(bien({ dpe: null }))
     expect(poste(c, 'energie').montant).toBeNull()
     expect(c.incomplet).toBe(true)
-    // Le poste manquant ne casse pas le total : il vaut 0, pas NaN.
     expect(c.total).toBe(95000 + 8000 + coutAssuranceMensuel(bien()))
   })
 

@@ -6,7 +6,6 @@ export type GeoPrecision = 'exacte' | 'rue' | 'ville'
 
 export type ModeTrajet = 'voiture' | 'velo' | 'marche' | 'transport'
 
-/** Point d'ancrage du quotidien : boulot, école, gare, salle de sport… */
 export interface Ancre {
   id: string
   label: string
@@ -14,7 +13,6 @@ export interface Ancre {
   lat: number
   lon: number
   mode: ModeTrajet
-  /** Durée au-delà de laquelle le trajet est jugé rédhibitoire (minutes). */
   maxMinutes: number | null
 }
 
@@ -38,11 +36,8 @@ export interface Preferences {
   poidsPrix: number
   poidsDpe: number
   poidsCharges: number
-  /** Coût réel : prix du kWh en centimes. */
   prixKwh: number | null
-  /** Coût réel : le chauffage est déjà compris dans les charges. */
   chauffageDansCharges: boolean
-  /** Points d'ancrage pour les temps de trajet. */
   ancres: Ancre[]
 }
 
@@ -57,9 +52,7 @@ export type SiteSource =
 export type AvisVisite = 'bon' | 'moyen' | 'mauvais'
 
 export interface Checklist {
-  /** Avis par critère de visite (voir CRITERES_VISITE). */
   notes: Record<string, AvisVisite>
-  /** Identifiants des questions déjà posées à l'agent. */
   questions: string[]
 }
 

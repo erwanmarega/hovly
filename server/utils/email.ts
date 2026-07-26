@@ -37,7 +37,6 @@ export async function envoyerAlerteEmail(
   return envoyer(apiKey, from, to, subject, html)
 }
 
-/** Rappel J-1 avant une visite planifiée. */
 export async function envoyerRappelEmail(
   to: string | null,
   bien: Bien

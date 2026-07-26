@@ -1,6 +1,5 @@
 export type EtatPush = 'inconnu' | 'non_supporte' | 'non_configure' | 'refuse' | 'inactif' | 'actif'
 
-/** base64url (clé VAPID) → Uint8Array attendu par PushManager.subscribe. */
 export function base64UrlVersOctets(base64: string): Uint8Array {
   const remplissage = '='.repeat((4 - (base64.length % 4)) % 4)
   const brut = atob((base64 + remplissage).replace(/-/g, '+').replace(/_/g, '/'))

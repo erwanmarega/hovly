@@ -4,7 +4,6 @@ import { STATUTS } from '~/composables/useBiens'
 
 const props = defineProps<{
   statut: Statut
-  /** Ouvre le menu vers le haut (utile en bas de liste). */
   versLeHaut?: boolean
 }>()
 

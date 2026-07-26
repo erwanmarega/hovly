@@ -84,7 +84,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Place pour la barre de navigation basse (mobile, utilisateur connecté). */
 @media (max-width: 767px) {
   body.a-nav-mobile {
     padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));

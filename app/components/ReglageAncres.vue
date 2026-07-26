@@ -39,7 +39,6 @@ async function ajouter() {
     )
 
     const ancre: Ancre = {
-      // Identifiant stable et alphanumérique : il part dans les requêtes serveur.
       id: `a${Date.now().toString(36)}`,
       label: label.value.trim() || loc.label.split(' ').slice(0, 3).join(' ') || 'Ancre',
       adresse: loc.label || adresse.value.trim(),

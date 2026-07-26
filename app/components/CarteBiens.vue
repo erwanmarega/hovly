@@ -115,8 +115,6 @@ onMounted(async () => {
     attribution: '&copy; OpenStreetMap &copy; CARTO'
   }).addTo(carte)
 
-  // La hauteur peut changer après le montage (colonne étirée, images chargées) :
-  // sans invalidateSize, Leaflet laisse des tuiles grises.
   observateur = new ResizeObserver(() => carte?.invalidateSize())
   observateur.observe(conteneur.value)
 
@@ -146,8 +144,6 @@ watch(
 
 <template>
   <div class="flex min-h-0 flex-col">
-    <!-- hauteur="100%" : la carte remplit le conteneur parent (colonne étirée)
-         plutôt que d'imposer une hauteur fixe. -->
     <div
       ref="conteneur"
       class="w-full overflow-hidden rounded-2xl border border-hairline bg-white"

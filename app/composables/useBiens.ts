@@ -44,7 +44,6 @@ export function useBiens() {
     }
   }
 
-  /** Mise à jour optimiste d'un ou plusieurs champs, annulée si l'API refuse. */
   async function mettreAJour(id: string, patch: Partial<Bien>) {
     const b = biens.value.find((x) => x.id === id)
     const avant = b ? { ...b } : null

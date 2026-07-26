@@ -1,12 +1,5 @@
 import type { ModeTrajet } from '~/types'
 
-/**
- * Temps de trajet.
- * - voiture / vélo / marche : OpenRouteService (matrice, une requête pour N biens).
- * - transports en commun : Navitia (un itinéraire par bien, pas de matrice).
- * Chaque source est optionnelle : sans clé, le mode est simplement indisponible.
- */
-
 export interface Point {
   lat: number
   lon: number
@@ -23,16 +16,14 @@ const PROFILS_ORS: Record<Exclude<ModeTrajet, 'transport'>, string> = {
   marche: 'foot-walking'
 }
 
-/** Au-delà, ORS refuse la matrice : on découpe les biens par paquets. */
 export const MAX_ORIGINES = 40
 
-/** Requêtes Navitia menées de front : on reste poli avec l'API. */
-export const CONCURRENCE_TRANSPORT = 4
+export const CONCURRENCE_TRANSPORT = 2
 
 export function routageDisponible(mode?: ModeTrajet): boolean {
-  if (mode === 'transport') return !!process.env.NAVITIA_TOKEN
+  if (mode === 'transport') return true
   if (mode) return !!process.env.ORS_API_KEY
-  return !!process.env.ORS_API_KEY || !!process.env.NAVITIA_TOKEN
+  return true
 }
 
 function nombreOuNull(v: unknown): number | null {
@@ -45,8 +36,6 @@ export function paquets<T>(liste: T[], taille = MAX_ORIGINES): T[][] {
   return out
 }
 
-/* ---------- Voiture / vélo / marche : OpenRouteService ---------- */
-
 async function matriceOrs(
   origines: Point[],
   ancre: Point,
@@ -55,7 +44,6 @@ async function matriceOrs(
   const cle = process.env.ORS_API_KEY
   if (!cle) throw createError({ statusCode: 503, statusMessage: 'ORS_API_KEY absente' })
 
-  // ORS attend [lon, lat]. L'ancre est la dernière position, seule destination.
   const locations = [...origines.map((o) => [o.lon, o.lat]), [ancre.lon, ancre.lat]]
 
   const reponse = await $fetch<{ durations?: number[][]; distances?: number[][] }>(
@@ -78,80 +66,105 @@ async function matriceOrs(
   }))
 }
 
-/* ---------- Transports en commun : Navitia ---------- */
+const TRANSITOUS = 'https://api.transitous.org/api/v1/plan'
 
-export interface ReponseNavitia {
-  journeys?: { duration?: number; nb_transfers?: number; type?: string }[]
+const UA_TRANSITOUS = 'Hovly/1.0 (+https://hovly.app; contact@hovly.app)'
+
+const FUSEAU = 'Europe/Paris'
+
+export interface ReponseTransitous {
+  itineraries?: { duration?: number; transfers?: number; legs?: { mode?: string }[] }[]
 }
 
-/**
- * Un horaire de référence est obligatoire : un trajet en transports ne dure pas
- * la même chose à 8 h qu'à 3 h du matin. On prend le prochain mardi 8 h 30.
- */
-export function prochainMardi8h30(maintenant = new Date()): string {
-  const d = new Date(maintenant)
-  const versMardi = (2 - d.getDay() + 7) % 7 || 7
-  d.setDate(d.getDate() + versMardi)
-  d.setHours(8, 30, 0, 0)
+const MODES_HORS_TC = new Set(['WALK', 'BIKE', 'CAR', 'CAR_PARKING', 'RENTAL', 'ODM', 'FLEX'])
 
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`
+function utiliseTransport(legs?: { mode?: string }[]): boolean {
+  if (!legs?.length) return true
+  return legs.some((l) => !!l.mode && !MODES_HORS_TC.has(l.mode))
 }
 
-/** Retient le meilleur itinéraire réellement praticable. */
-export function dureeDepuisJourneys(reponse: ReponseNavitia): number | null {
-  const utiles = (reponse.journeys ?? []).filter(
-    (j) => typeof j.duration === 'number' && j.duration > 0 && j.type !== 'non_pt_walk'
+export function dureeDepuisItineraires(reponse: ReponseTransitous): number | null {
+  const utiles = (reponse.itineraries ?? []).filter(
+    (i) => typeof i.duration === 'number' && i.duration > 0 && utiliseTransport(i.legs)
   )
   if (!utiles.length) return null
-  return Math.round(Math.min(...utiles.map((j) => j.duration!)))
+  return Math.round(Math.min(...utiles.map((i) => i.duration!)))
 }
 
-async function itineraireNavitia(origine: Point, ancre: Point, datetime: string): Promise<Duree> {
-  const token = process.env.NAVITIA_TOKEN
-  if (!token) throw createError({ statusCode: 503, statusMessage: 'NAVITIA_TOKEN absent' })
+function offsetParis(d: Date): string {
+  const nom = new Intl.DateTimeFormat('en-US', { timeZone: FUSEAU, timeZoneName: 'longOffset' })
+    .formatToParts(d)
+    .find((p) => p.type === 'timeZoneName')?.value
+  const offset = nom?.replace('GMT', '') ?? ''
+  return offset || '+00:00'
+}
 
-  const url = new URL('https://api.navitia.io/v1/journeys')
-  url.searchParams.set('from', `${origine.lon};${origine.lat}`)
-  url.searchParams.set('to', `${ancre.lon};${ancre.lat}`)
-  url.searchParams.set('datetime', datetime)
-  url.searchParams.set('datetime_represents', 'departure')
-  url.searchParams.set('max_nb_journeys', '1')
+function jourParis(d: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: FUSEAU,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short'
+  }).formatToParts(d)
+
+  const champ = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  const JOURS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  return {
+    annee: Number(champ('year')),
+    mois: Number(champ('month')),
+    jour: Number(champ('day')),
+    semaine: JOURS.indexOf(champ('weekday'))
+  }
+}
+
+export function prochainMardi8h30(maintenant = new Date()): string {
+  const { annee, mois, jour, semaine } = jourParis(maintenant)
+  const versMardi = (2 - semaine + 7) % 7 || 7
+
+  const cible = new Date(Date.UTC(annee, mois - 1, jour + versMardi, 12))
+
+  const p = (n: number) => String(n).padStart(2, '0')
+  const date = `${cible.getUTCFullYear()}-${p(cible.getUTCMonth() + 1)}-${p(cible.getUTCDate())}`
+  return `${date}T08:30:00${offsetParis(cible)}`
+}
+
+async function itineraireTransitous(origine: Point, ancre: Point, time: string): Promise<Duree> {
+  const url = new URL(TRANSITOUS)
+  url.searchParams.set('fromPlace', `${origine.lat},${origine.lon}`)
+  url.searchParams.set('toPlace', `${ancre.lat},${ancre.lon}`)
+  url.searchParams.set('time', time)
+  url.searchParams.set('arriveBy', 'false')
+  url.searchParams.set('numItineraries', '2')
 
   try {
-    const reponse = await $fetch<ReponseNavitia>(url.toString(), {
-      headers: { Authorization: token }
+    const reponse = await $fetch<ReponseTransitous>(url.toString(), {
+      headers: { 'User-Agent': UA_TRANSITOUS }
     })
-    // Hors zone couverte ou aucune solution : pas d'erreur, juste pas de trajet.
-    return { duree_s: dureeDepuisJourneys(reponse), distance_m: null }
+    return { duree_s: dureeDepuisItineraires(reponse), distance_m: null }
   } catch {
     return { duree_s: null, distance_m: null }
   }
 }
 
-async function itinerairesNavitia(origines: Point[], ancre: Point): Promise<Duree[]> {
-  const datetime = prochainMardi8h30()
+async function itinerairesTransitous(origines: Point[], ancre: Point): Promise<Duree[]> {
+  const time = prochainMardi8h30()
   const resultats: Duree[] = []
 
   for (const lot of paquets(origines, CONCURRENCE_TRANSPORT)) {
-    resultats.push(...(await Promise.all(lot.map((o) => itineraireNavitia(o, ancre, datetime)))))
+    resultats.push(...(await Promise.all(lot.map((o) => itineraireTransitous(o, ancre, time)))))
   }
 
   return resultats
 }
 
-/* ---------- Point d'entrée ---------- */
-
-/**
- * Une origine par bien, une seule destination (l'ancre).
- * Renvoie un tableau aligné sur `origines` ; un trajet impossible vaut null.
- */
 export async function dureesVersAncre(
   origines: Point[],
   ancre: Point,
   mode: ModeTrajet
 ): Promise<Duree[]> {
   if (origines.length === 0) return []
-  if (mode === 'transport') return itinerairesNavitia(origines, ancre)
+  if (mode === 'transport') return itinerairesTransitous(origines, ancre)
   return matriceOrs(origines, ancre, mode)
 }

@@ -170,7 +170,6 @@ describe('comparer — calculs dérivés', () => {
   })
 
   it('classe sur le coût réel, pas sur le loyer affiché', () => {
-    // Même loyer, mais l'un est une passoire : c'est lui qui coûte cher.
     const liste = [bien({ prix: 100000, surface: 50, dpe: 'G' }), bien({ prix: 100000, surface: 50, dpe: 'A' })]
     const l = ligne(comparer(liste, scores(liste)), 'cout_reel')
     expect(l.sens).toBe('min')

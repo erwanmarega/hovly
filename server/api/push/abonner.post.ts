@@ -15,13 +15,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Abonnement push incomplet' })
   }
 
-  // Service role : l'endpoint est unique globalement, il peut appartenir à un
-  // autre compte (navigateur partagé) — cas que la RLS bloquerait à l'upsert.
-  // Le user_id vient de la session, jamais du corps de la requête.
   const client = serviceDb(event)
 
-  // Le même navigateur peut renvoyer un endpoint déjà connu (re-souscription) :
-  // on écrase les clés et on rattache l'abonnement à l'utilisateur courant.
   const { error } = await client.from('push_abonnements').upsert(
     {
       user_id: user.id,

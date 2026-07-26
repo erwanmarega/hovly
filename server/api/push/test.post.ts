@@ -1,6 +1,5 @@
 import { envoyerPush, pushDisponible } from '../../utils/push'
 
-/** Envoie une notification de vérification sur tous les appareils de l'utilisateur. */
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
 

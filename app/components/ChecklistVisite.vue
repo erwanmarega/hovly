@@ -40,7 +40,6 @@ async function sauver() {
 }
 
 function noter(critere: string, avis: AvisVisite) {
-  // Recliquer sur le même avis l'efface : un critère non jugé reste neutre.
   const efface = checklist.value.notes[critere] === avis
   const notes = Object.fromEntries(
     Object.entries(checklist.value.notes).filter(([id]) => id !== critere)

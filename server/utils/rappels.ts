@@ -10,7 +10,6 @@ export interface ResumeRappels {
   raisons: string[]
 }
 
-/** Fenêtre du rappel : la visite a lieu dans moins de 24 h et n'est pas passée. */
 export const FENETRE_MS = 24 * 60 * 60 * 1000
 
 export function aRappeler(bien: Bien, maintenant = new Date()): boolean {
@@ -32,10 +31,6 @@ const heure = (iso: string) =>
     minute: '2-digit'
   })
 
-/**
- * Envoie un rappel par bien à visiter dans les 24 h (email + push), puis marque
- * `rappel_envoye_le` pour ne pas repartir au passage suivant du cron.
- */
 export async function envoyerRappels(
   client: any,
   biens: Bien[],

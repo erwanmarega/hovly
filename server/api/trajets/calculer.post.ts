@@ -15,19 +15,10 @@ function ancresValides(brut: unknown): Ancre[] {
   )
 }
 
-/** Deux positions sont « les mêmes » à ~1 m près. */
 const memePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-
-  if (!routageDisponible()) {
-    throw createError({
-      statusCode: 503,
-      statusMessage:
-        'Temps de trajet non configurés sur le serveur (ORS_API_KEY / NAVITIA_TOKEN absents)'
-    })
-  }
 
   const body = await readBody<{ ancres?: unknown }>(event)
   const ancres = ancresValides(body?.ancres)
@@ -44,7 +35,6 @@ export default defineEventHandler(async (event) => {
 
   const biens = (biensBruts ?? []) as Pick<Bien, 'id' | 'lat' | 'lon'>[]
 
-  // Une ancre supprimée côté préférences laisse des lignes orphelines.
   if (ancres.length === 0) {
     await client.from('trajets').delete().not('id', 'is', null)
     return { ancres: 0, biens: biens.length, calcules: 0, ignores: 0, echecs: 0 }
@@ -66,19 +56,16 @@ export default defineEventHandler(async (event) => {
     calcules: 0,
     ignores: 0,
     echecs: 0,
-    /** Ancres laissées de côté faute de clé pour leur mode. */
     indisponibles: [] as string[]
   }
   const maintenant = new Date().toISOString()
 
   for (const ancre of ancres) {
-    // Chaque mode a sa source : voiture/vélo/marche via ORS, transports via Navitia.
     if (!routageDisponible(ancre.mode)) {
       resume.indisponibles.push(ancre.id)
       continue
     }
 
-    // On ne recalcule que ce qui manque ou dont l'ancre a bougé.
     const aFaire = biens.filter((b) => {
       const t = connus.get(cle(b.id, ancre.id, ancre.mode))
       if (!t) return true
