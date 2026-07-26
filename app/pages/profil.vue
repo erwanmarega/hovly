@@ -97,9 +97,13 @@ async function savePassword() {
   messageEphemere(pwdMsg)
 }
 
+const { couvrir } = useRideau()
+
 async function logout() {
-  await supabase.auth.signOut()
-  await navigateTo('/login')
+  await couvrir(async () => {
+    await supabase.auth.signOut()
+    await navigateTo('/login')
+  })
 }
 
 const { preferences, personnalise, enregistrement, enregistrer, reinitialiser } = usePreferences()

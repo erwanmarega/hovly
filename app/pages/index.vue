@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { SiteSource } from '~/types'
-
 useHead({
   title: 'Hovly — Tous tes biens immobiliers en un seul endroit',
   meta: [
@@ -8,43 +6,13 @@ useHead({
   ]
 })
 
-const sources: SiteSource[] = [
-  'seloger',
-  'leboncoin',
-  'pap',
-  'logic-immo',
-  'bienici',
-  'century21'
-]
-
 </script>
 
 <template>
   <div class="min-h-screen bg-white text-ink antialiased">
     <TheNavbar show-links />
 
-    <SectionHero />
-
-    <section id="sources" class="border-y border-hairline-soft bg-surface-soft">
-      <div class="mx-auto max-w-6xl px-6 py-10">
-        <p class="text-center text-xs font-semibold uppercase tracking-wider text-stone mb-6">
-          Fonctionne avec tes sites préférés
-        </p>
-        <div class="group relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <div
-            class="flex w-max items-center gap-10 animate-marquee group-hover:[animation-play-state:paused]"
-          >
-            <LogoSource
-              v-for="(s, i) in [...sources, ...sources, ...sources, ...sources]"
-              :key="i"
-              :source="s"
-              :taille="28"
-              class="opacity-70 transition hover:opacity-100"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
+    <SectionHeroGalerie />
 
     <SectionFeatures />
 

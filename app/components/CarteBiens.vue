@@ -198,7 +198,7 @@ watch(
   <div class="flex min-h-0 flex-col">
     <div
       ref="conteneur"
-      class="w-full overflow-hidden rounded-2xl border border-hairline bg-white"
+      class="relative isolate z-0 w-full overflow-hidden rounded-2xl border border-hairline bg-white"
       :class="hauteur === '100%' && 'min-h-0 flex-1'"
       :style="hauteur === '100%' ? undefined : { height: hauteur }"
     />

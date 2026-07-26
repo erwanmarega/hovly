@@ -11,23 +11,34 @@ watchEffect(() => {
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
+const envoiLien = ref(false)
 const error = ref('')
+const info = ref('')
 
 const route = useRoute()
 const inactivite = computed(() => route.query.raison === 'inactivite')
 
-async function handleLogin() {
+const occupe = computed(() => loading.value || envoiLien.value)
+
+function reinitialiserMessages() {
   error.value = ''
+  info.value = ''
+}
+
+async function handleLogin() {
+  reinitialiserMessages()
   if (!email.value || !password.value) {
     error.value = 'Renseigne ton email et ton mot de passe.'
     return
   }
+
   loading.value = true
   const { error: err } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value
   })
   loading.value = false
+
   if (err) {
     error.value = 'Email ou mot de passe incorrect.'
     return
@@ -35,102 +46,158 @@ async function handleLogin() {
   await navigateTo('/dashboard')
 }
 
-async function handleGoogle() {
-  error.value = ''
-  const { error: err } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: `${window.location.origin}/confirm` }
+async function motDePasseOublie() {
+  reinitialiserMessages()
+  if (!email.value) {
+    error.value = 'Renseigne ton email, on t’envoie un lien de réinitialisation.'
+    return
+  }
+
+  envoiLien.value = true
+  const { error: err } = await supabase.auth.resetPasswordForEmail(email.value, {
+    redirectTo: `${window.location.origin}/confirm`
   })
-  if (err) error.value = 'Connexion Google impossible.'
+  envoiLien.value = false
+
+  if (err) {
+    error.value = 'Envoi impossible pour le moment. Réessaie dans un instant.'
+    return
+  }
+  info.value = 'Lien envoyé. Regarde ta boîte mail, puis change ton mot de passe depuis ton profil.'
 }
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-white text-ink antialiased">
-
-    <div class="flex w-full lg:w-1/2 flex-col px-6 py-8">
+  <div class="flex min-h-screen bg-white text-ink antialiased">
+    <div class="flex w-full flex-col px-6 py-8 sm:px-10 lg:w-1/2">
       <header class="mx-auto w-full max-w-sm">
         <HovlyLink />
       </header>
 
-      <div class="flex flex-1 items-center justify-center">
+      <div class="flex flex-1 items-center justify-center py-10">
         <div class="w-full max-w-sm">
-          <h1 class="text-3xl font-bold tracking-tight text-ink-deep">Bon retour !</h1>
+          <h1 class="text-4xl font-light tracking-tight text-ink-deep">Bon retour</h1>
           <p class="mt-2 text-slate">Connecte-toi pour retrouver tes biens.</p>
 
           <p
             v-if="inactivite"
-            class="mt-6 rounded-lg border border-hairline-strong bg-surface px-4 py-3 text-sm text-slate"
+            class="mt-6 flex items-start gap-2.5 rounded-xl bg-surface-yellow px-4 py-3 text-sm text-ink-deep/70"
           >
-            Tu as été déconnecté après 15 minutes d'inactivité.
+            <svg
+              class="mt-0.5 size-4 shrink-0 text-brand-deep"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+            Tu as été déconnecté après 15 minutes d’inactivité.
           </p>
 
-          <button
-            type="button"
-            class="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-hairline-strong bg-white px-5 py-3 text-sm font-medium hover:bg-surface transition"
-            @click="handleGoogle"
-          >
-            <svg class="size-5" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.22V7.04H2.18a11 11 0 0 0 0 9.9l3.66-2.84z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/>
-            </svg>
-            Continuer avec Google
-          </button>
+          <BoutonGoogle
+            class="mt-8"
+            :disabled="occupe"
+            @erreur="error = $event"
+          />
 
-          <div class="my-6 flex items-center gap-4">
-            <span class="h-px flex-1 bg-hairline"/>
-            <span class="text-xs text-stone">ou</span>
-            <span class="h-px flex-1 bg-hairline"/>
+          <div class="my-7 flex items-center gap-4">
+            <span class="h-px flex-1 bg-hairline" />
+            <span class="text-xs uppercase tracking-wider text-stone">ou</span>
+            <span class="h-px flex-1 bg-hairline" />
           </div>
 
           <form class="space-y-4" @submit.prevent="handleLogin">
-            <div>
-              <label for="email" class="block text-sm font-medium text-ink mb-1.5">Email</label>
-              <input
-                id="email"
-                v-model="email"
-                type="email"
-                autocomplete="email"
-                placeholder="toi@exemple.com"
-                class="h-11 w-full rounded-lg border border-hairline-strong bg-white px-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-              >
-            </div>
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="password" class="block text-sm font-medium text-ink">Mot de passe</label>
-                <a href="#" class="text-xs font-medium text-blue hover:underline">Oublié ?</a>
-              </div>
-              <input
-                id="password"
-                v-model="password"
-                type="password"
-                autocomplete="current-password"
-                placeholder="••••••••"
-                class="h-11 w-full rounded-lg border border-hairline-strong bg-white px-4 text-sm outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition"
-              >
-            </div>
+            <ChampTexte
+              id="email"
+              v-model="email"
+              label="Email"
+              type="email"
+              autocomplete="email"
+              placeholder="toi@exemple.com"
+              autofocus
+              :invalide="!!error"
+            />
 
-            <p v-if="error" class="text-sm text-coral-soft font-medium">{{ error }}</p>
+            <ChampTexte
+              id="password"
+              v-model="password"
+              label="Mot de passe"
+              type="password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              :invalide="!!error"
+            >
+              <template #action>
+                <button
+                  type="button"
+                  class="text-xs font-medium text-blue transition hover:underline disabled:opacity-60"
+                  :disabled="occupe"
+                  @click="motDePasseOublie"
+                >
+                  {{ envoiLien ? 'Envoi…' : 'Oublié ?' }}
+                </button>
+              </template>
+            </ChampTexte>
+
+            <p
+              v-if="error"
+              role="alert"
+              class="flex items-start gap-2 rounded-xl bg-coral/60 px-4 py-3 text-sm font-medium text-[#600000]"
+            >
+              <svg
+                class="mt-0.5 size-4 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+              {{ error }}
+            </p>
+
+            <p
+              v-else-if="info"
+              role="status"
+              class="rounded-xl bg-teal/50 px-4 py-3 text-sm font-medium text-[#0a4a42]"
+            >
+              {{ info }}
+            </p>
 
             <button
               type="submit"
-              :disabled="loading"
-              class="h-11 w-full rounded-full bg-ink text-white text-sm font-medium hover:bg-black transition disabled:opacity-60"
+              :disabled="occupe"
+              class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink text-sm font-medium text-white transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-ink-deep/20 disabled:opacity-60"
             >
+              <span
+                v-if="loading"
+                class="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+              />
               {{ loading ? 'Connexion…' : 'Se connecter' }}
             </button>
           </form>
 
-          <p class="mt-6 text-center text-sm text-slate">
+          <p class="mt-8 text-center text-sm text-slate">
             Pas encore de compte ?
-            <NuxtLink to="/signup" class="font-medium text-blue hover:underline">Créer un compte</NuxtLink>
+            <NuxtLink to="/signup" class="font-medium text-blue hover:underline">
+              Créer un compte
+            </NuxtLink>
           </p>
         </div>
       </div>
+
+      <p class="mx-auto w-full max-w-sm text-center text-xs text-stone">
+        Hovly ne publie rien et ne contacte aucune agence à ta place.
+      </p>
     </div>
 
-    <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-brand relative overflow-hidden"/>
+    <PanneauMarque />
   </div>
 </template>

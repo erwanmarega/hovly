@@ -29,9 +29,13 @@ useHead({
   bodyAttrs: { class: computed(() => (user.value ? "a-nav-mobile" : "")) },
 });
 
+const { couvrir } = useRideau();
+
 async function logout() {
-  await supabase.auth.signOut();
-  await navigateTo("/");
+  await couvrir(async () => {
+    await supabase.auth.signOut();
+    await navigateTo("/");
+  });
 }
 </script>
 
