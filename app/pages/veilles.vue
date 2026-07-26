@@ -29,19 +29,16 @@ const ouverte = ref<string | null>(String(route.query.recherche ?? '') || null)
 const scanEnCours = ref<string | null>(null)
 const resultatOccupe = ref<string | null>(null)
 const message = ref('')
-const messageErreur = ref(false)
+const messageEstErreur = ref(false)
 
 if (urlInitiale.value) formulaireOuvert.value = true
 
 function annoncer(texte: string, erreur = false) {
   message.value = texte
-  messageErreur.value = erreur
+  messageEstErreur.value = erreur
 }
 
-const erreurLisible = (e: unknown) =>
-  (e as { statusMessage?: string; data?: { statusMessage?: string } })?.statusMessage ??
-  (e as { data?: { statusMessage?: string } })?.data?.statusMessage ??
-  'Une erreur est survenue.'
+const erreurLisible = (e: unknown) => messageErreur(e, 'Une erreur est survenue.')
 
 async function basculer(id: string) {
   if (ouverte.value === id) {
@@ -164,7 +161,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
       <p
         v-if="message"
         class="mt-5 rounded-xl px-4 py-3 text-sm"
-        :class="messageErreur ? 'bg-coral/20 text-[#600000]' : 'bg-teal/30 text-[#0a4a42]'"
+        :class="messageEstErreur ? 'bg-coral/20 text-[#600000]' : 'bg-teal/30 text-[#0a4a42]'"
       >
         {{ message }}
       </p>

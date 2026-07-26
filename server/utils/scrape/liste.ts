@@ -314,7 +314,8 @@ async function listeViaApi(url: string, source: SiteSource): Promise<PageData> {
   if (status !== 200 || !html) {
     throw createError({
       statusCode: 423,
-      statusMessage: `Page de résultats ${source} bloquée par l'anti-bot.`
+      statusMessage: 'Anti-bot',
+      message: `Page de résultats ${source} bloquée par l'anti-bot.`
     })
   }
   return htmlToPageData(html, MOTIF_FICHE[source])
@@ -337,7 +338,8 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
     if (status === 403 || status === 429) {
       throw createError({
         statusCode: 423,
-        statusMessage: 'Page de résultats bloquée par un anti-bot.'
+        statusMessage: 'Anti-bot',
+        message: 'Page de résultats bloquée par un anti-bot.'
       })
     }
 
@@ -466,7 +468,8 @@ export async function scrapeListe(url: string): Promise<ListeResult> {
   if (!annonces.length) {
     throw createError({
       statusCode: 422,
-      statusMessage:
+      statusMessage: 'Aucune annonce',
+      message:
         "Aucune annonce trouvée sur cette page. Vérifie que l'URL est bien une page de résultats."
     })
   }

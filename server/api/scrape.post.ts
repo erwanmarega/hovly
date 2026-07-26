@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
     if (e?.statusCode) throw e
     throw createError({
       statusCode: 502,
-      statusMessage: "Échec du scraping. L'annonce est peut-être protégée — saisis les infos manuellement."
+      statusMessage: 'Scraping impossible',
+      message: "Échec du scraping. L'annonce est peut-être protégée — saisis les infos manuellement."
     })
   }
 })

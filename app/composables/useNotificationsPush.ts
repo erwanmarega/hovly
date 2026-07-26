@@ -122,8 +122,7 @@ export function useNotificationsPush() {
       if (!r.ok) erreur.value = r.raisons.join(', ') || 'Aucun appareil abonné'
       return r.ok
     } catch (e: unknown) {
-      const err = e as { statusMessage?: string; message?: string }
-      erreur.value = err.statusMessage || err.message || 'Envoi impossible'
+      erreur.value = messageErreur(e, 'Envoi impossible')
       return false
     } finally {
       occupe.value = false

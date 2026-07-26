@@ -47,7 +47,8 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
   if (bloque) {
     throw createError({
       statusCode: 423,
-      statusMessage:
+      statusMessage: 'Anti-bot',
+      message:
         "Annonce protégée par un anti-bot. Impossible d'extraire automatiquement — saisis les infos manuellement."
     })
   }
@@ -55,7 +56,11 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
   if (estPageRecherche(raw)) {
     throw createError({
       statusCode: 422,
-      statusMessage:
+      statusMessage: 'Page de recherche',
+      // `data` sert de marqueur stable : le client ne doit pas reconnaître ce cas
+      // en cherchant une tournure française dans le message.
+      data: { code: 'page_recherche' },
+      message:
         "Cette URL est une page de recherche, pas une annonce. Ouvre l'annonce et copie son lien."
     })
   }
@@ -90,7 +95,8 @@ async function scrapeViaApiExtract(url: string, source: SiteSource): Promise<Scr
   if (status !== 200 || !html) {
     throw createError({
       statusCode: 423,
-      statusMessage:
+      statusMessage: 'Anti-bot',
+      message:
         "Annonce protégée par un anti-bot. Impossible d'extraire automatiquement — saisis les infos manuellement."
     })
   }

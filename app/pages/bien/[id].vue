@@ -181,9 +181,8 @@ async function rafraichir() {
       messageRefresh.value = `Mis à jour : ${noms.join(", ")}.`;
     }
   } catch (e: unknown) {
-    const err = e as { statusMessage?: string };
     refreshErreur.value = true;
-    messageRefresh.value = err?.statusMessage || "Rafraîchissement impossible.";
+    messageRefresh.value = messageErreur(e, "Rafraîchissement impossible.");
   } finally {
     rafraichissement.value = false;
   }

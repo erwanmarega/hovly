@@ -86,9 +86,8 @@ async function lancerImport() {
       entree.statut = 'ajoutee'
       entree.titre = b.titre ?? undefined
     } catch (e: unknown) {
-      const err = e as { statusMessage?: string; message?: string }
       entree.statut = 'echec'
-      entree.message = err?.statusMessage || err?.message || 'Extraction impossible'
+      entree.message = messageErreur(e, 'Extraction impossible')
     }
   }
 
@@ -202,15 +201,14 @@ async function analyser() {
     draft.photo = b.photos?.[0] ?? ''
     etape.value = 'edition'
   } catch (e: unknown) {
-    const err = e as { statusCode?: number; statusMessage?: string }
-
     // Une page de résultats n'est pas un bien : c'est une veille qui s'ouvre.
-    if (err?.statusCode === 422 && /page de recherche/i.test(err.statusMessage ?? '')) {
+    // Marqueur posé par le serveur, plutôt qu'une tournure française à reconnaître.
+    if (donneesErreur(e)?.code === 'page_recherche') {
       urlEstRecherche.value = true
       return
     }
 
-    error.value = err?.statusMessage || 'Extraction impossible. Complète à la main.'
+    error.value = messageErreur(e, 'Extraction impossible. Complète à la main.')
     etape.value = 'edition'
   } finally {
     clearInterval(minuteur)

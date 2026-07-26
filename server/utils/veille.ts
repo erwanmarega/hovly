@@ -147,7 +147,7 @@ export async function verifierRecherche(
   try {
     annonces = (await scrapeListe(recherche.url)).annonces
   } catch (e: any) {
-    resume.erreur = e?.statusMessage || e?.message || 'erreur inconnue'
+    resume.erreur = e?.message || e?.statusMessage || 'erreur inconnue'
     const echecs = recherche.echecs_consecutifs + 1
     await client
       .from('recherches')

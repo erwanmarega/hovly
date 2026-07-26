@@ -233,9 +233,13 @@ describe('verifierRecherche', () => {
     })
   })
 
+  // `createError` met le texte lisible dans `message` ; `statusMessage` n'est
+  // plus qu'un code court, et h3 le sanitisera à terme.
   it('compte l’échec et laisse la veille active tant que le plafond n’est pas atteint', async () => {
     scrapeListe.mockImplementation(() => {
-      throw Object.assign(new Error('bloqué'), { statusMessage: 'Page bloquée' })
+      throw Object.assign(new Error('Page de résultats bloquée par un anti-bot.'), {
+        statusMessage: 'Anti-bot'
+      })
     })
     const client = clientFactice()
 
@@ -246,7 +250,7 @@ describe('verifierRecherche', () => {
       t0
     )
 
-    expect(resume.erreur).toBe('Page bloquée')
+    expect(resume.erreur).toBe('Page de résultats bloquée par un anti-bot.')
     expect(resume.nouvelles).toEqual([])
     expect(client.majRecherches[0]).toMatchObject({ echecs_consecutifs: 3, active: true })
   })
@@ -260,5 +264,13 @@ describe('verifierRecherche', () => {
     await verifierRecherche(client as any, recherche({ echecs_consecutifs: 7 }), [], t0)
 
     expect(client.majRecherches[0]).toMatchObject({ echecs_consecutifs: 8, active: false })
+  })
+  it('retombe sur statusMessage quand l’erreur n’a pas de message', async () => {
+    scrapeListe.mockImplementation(() => {
+      throw { statusMessage: 'Anti-bot' }
+    })
+
+    const resume = await verifierRecherche(clientFactice() as any, recherche(), [], t0)
+    expect(resume.erreur).toBe('Anti-bot')
   })
 })

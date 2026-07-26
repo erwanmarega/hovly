@@ -17,7 +17,9 @@ export default defineEventHandler(async (event) => {
   if (!source) {
     throw createError({
       statusCode: 422,
-      statusMessage: 'Source non supportée. Sites gérés : SeLoger, Leboncoin, PAP, Logic-Immo, Bien’ici, Century 21.'
+      statusMessage: 'Source non supportee',
+      message:
+        'Source non supportée. Sites gérés : SeLoger, Leboncoin, PAP, Logic-Immo, Bien’ici, Century 21.'
     })
   }
 
@@ -31,7 +33,8 @@ export default defineEventHandler(async (event) => {
   if (MOTIF_FICHE[source].test(chemin)) {
     throw createError({
       statusCode: 422,
-      statusMessage:
+      statusMessage: 'Annonce, pas une liste',
+      message:
         "Cette URL est une annonce, pas une page de résultats. Ajoute-la comme bien depuis « Ajouter »."
     })
   }
@@ -44,7 +47,8 @@ export default defineEventHandler(async (event) => {
   if ((count ?? 0) >= MAX_RECHERCHES) {
     throw createError({
       statusCode: 422,
-      statusMessage: `Maximum ${MAX_RECHERCHES} veilles. Supprimes-en une pour en créer une nouvelle.`
+      statusMessage: 'Trop de veilles',
+      message: `Maximum ${MAX_RECHERCHES} veilles. Supprimes-en une pour en créer une nouvelle.`
     })
   }
 

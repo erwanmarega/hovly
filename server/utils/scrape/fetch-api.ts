@@ -12,7 +12,8 @@ export async function scrapeViaApi(url: string): Promise<ApiResult> {
   if (!key) {
     throw createError({
       statusCode: 423,
-      statusMessage:
+      statusMessage: 'Anti-bot',
+      message:
         "Annonce protégée par un anti-bot. Configure SCRAPINGBEE_API_KEY ou saisis les infos manuellement."
     })
   }

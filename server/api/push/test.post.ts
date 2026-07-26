@@ -6,7 +6,8 @@ export default defineEventHandler(async (event) => {
   if (!pushDisponible()) {
     throw createError({
       statusCode: 503,
-      statusMessage: 'Notifications push non configurées sur le serveur (clés VAPID absentes)'
+      statusMessage: 'Push non configure',
+      message: 'Notifications push non configurées sur le serveur (clés VAPID absentes)'
     })
   }
 
