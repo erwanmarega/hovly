@@ -127,8 +127,9 @@ describe('htmlToPageData — liens de cartes', () => {
     )
 
     const lien = d.liens!.find((l) => l.href.includes('274651193'))!
-    expect(lien.texte).toContain('1 517 €')
-    expect(lien.texte).toContain('41 m²')
+    expect(lien.texte).toBe('')
+    expect(lien.texteCarte).toContain('1 517 €')
+    expect(lien.texteCarte).toContain('41 m²')
     expect(lien.image).toBe('https://mms.seloger.com/a.jpg')
   })
 
@@ -142,8 +143,8 @@ describe('htmlToPageData — liens de cartes', () => {
     )
 
     const premier = d.liens!.find((l) => l.href.includes('111111111'))!
-    expect(premier.texte).toContain('1 000 €')
-    expect(premier.texte).not.toContain('2 000 €')
+    expect(premier.texteCarte).toContain('1 000 €')
+    expect(premier.texteCarte).not.toContain('2 000 €')
     expect(premier.image).toBe('https://mms.seloger.com/a.jpg')
   })
 
@@ -204,5 +205,35 @@ describe('htmlToPageData — logo d’agence en tête de carte', () => {
 
     const lien = d.liens!.find((l) => l.href.includes('555555555'))!
     expect(lien.image).toBe('https://mms.seloger.com/photo.jpg?w=525&h=394')
+  })
+})
+
+describe('htmlToPageData — deux liens vers la même fiche', () => {
+  const MOTIF = /\/trouver_logement\/detail\/\d{4,}/i
+
+  // Structure Century 21 : l'ancre étirée est vide, un bouton « Voir le détail »
+  // pointe vers la même fiche, l'un en relatif et l'autre en absolu. Comparer les
+  // href bruts comptait deux annonces et bloquait la remontée sur le badge.
+  const carteC21 = (id: string, texte: string) =>
+    `<div class="carte">
+       <div class="badge"><a href="/trouver_logement/detail/${id}/"></a>Exclusivité</div>
+       <div class="infos">${texte}</div>
+       <a class="bouton" href="https://www.century21.fr/trouver_logement/detail/${id}/?utm=x">Voir le détail du bien</a>
+     </div>`
+
+  it('remonte à la carte malgré le lien dupliqué', () => {
+    const d = htmlToPageData(
+      `<html><body><div class="liste">${carteC21(
+        '14920340077',
+        'SERRIS 77 62,93 m2, 3 pièces Appartement F3 à louer 1 620 € par mois'
+      )}${carteC21('15848211918', 'CHESSY 77 45 m2, 2 pièces Appartement F2 à louer 980 € par mois')}
+      </div></body></html>`,
+      MOTIF
+    )
+
+    const badge = d.liens!.find((l) => l.texte === '' && l.href.includes('14920340077'))!
+    expect(badge.texteCarte).toContain('1 620 €')
+    expect(badge.texteCarte).toContain('62,93 m2')
+    expect(badge.texteCarte).not.toContain('980 €')
   })
 })

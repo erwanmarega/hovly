@@ -7,6 +7,7 @@ import {
   normaliserUrlAnnonce,
   parseCarte,
   titreDepuisCarte,
+  meilleureLecture,
   MOTIF_FICHE
 } from '../server/utils/scrape/liste'
 import type { LienCarte, PageData } from '../server/utils/scrape/extract'
@@ -91,6 +92,25 @@ describe('parseCarte', () => {
     expect(c.prix).toBe(342600)
     expect(c.surface).toBe(54)
     expect(c.nb_pieces).toBe(2)
+  })
+
+  // Relevé sur une page Century 21 : abréviation « pcs », surface en « m2 »,
+  // décimale à la virgule, prix avant les caractéristiques.
+  it('lit l’abréviation « pcs » de Century 21', () => {
+    const c = parseCarte(
+      'Exclusivité CHESSY 77 2 780 € par mois charges comprises 95,3 m2 , Appartement , 4 pcs'
+    )
+    expect(c.prix).toBe(278000)
+    expect(c.surface).toBe(95)
+    expect(c.nb_pieces).toBe(4)
+  })
+
+  it('lit le singulier « pc »', () => {
+    expect(parseCarte('LAGNY 77 695 € par mois 21 m2 , Appartement , 1 pc').nb_pieces).toBe(1)
+  })
+
+  it('lit un loyer à décimale', () => {
+    expect(parseCarte('Appartement F4 à louer 1 583,80 € par mois').prix).toBe(158380)
   })
 
   it('accepte les deux écritures du millier et la décimale', () => {
@@ -325,5 +345,47 @@ describe('extraireAnnonces', () => {
     expect(
       extraireAnnonces(page({ liens: [{ href: '/aide', texte: 'Aide' }] }), 'pap', 'https://www.pap.fr/x')
     ).toEqual([])
+  })
+})
+
+describe('meilleureLecture', () => {
+  it('préfère la carte quand l’ancre n’est qu’un badge', () => {
+    const l = meilleureLecture({
+      href: '/trouver_logement/detail/176/',
+      texte: 'Exclusivité',
+      texteCarte: 'SERRIS 77 62,93 m2, 3 pièces Ref : 176 Appartement F3 à louer 1 620 € par mois'
+    })
+
+    expect(l.champs.prix).toBe(162000)
+    expect(l.champs.surface).toBe(63)
+    expect(l.champs.nb_pieces).toBe(3)
+    expect(l.titre).toContain('Appartement F3 à louer')
+  })
+
+  it('ignore un libellé de bouton au profit de la carte', () => {
+    const l = meilleureLecture({
+      href: '/trouver_logement/detail/176/',
+      texte: 'Voir le détail du bien',
+      texteCarte: 'CHESSY 45 m2, 2 pièces Appartement F2 à louer 980 € par mois'
+    })
+
+    expect(l.champs.prix).toBe(98000)
+    expect(l.titre).not.toContain('Voir le détail')
+  })
+
+  it('garde l’ancre à égalité de signal — elle est plus étroite', () => {
+    const l = meilleureLecture({
+      href: '/annonces/x-r123456789',
+      texte: 'Appartement 3 pièces 62 m²',
+      texteCarte: 'Trier par prix Appartement 3 pièces 62 m²'
+    })
+
+    expect(l.titre).toBe('Appartement 3 pièces 62 m²')
+  })
+
+  it('fonctionne sans carte (ancre porteuse, aucun motif)', () => {
+    const l = meilleureLecture({ href: '/x', texte: 'Studio 20 m² 700 €' })
+    expect(l.champs.prix).toBe(70000)
+    expect(l.signal).toBe(2)
   })
 })

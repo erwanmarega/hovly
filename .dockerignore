@@ -1,0 +1,30 @@
+# Artefacts de build : régénérés dans l'image
+.output
+.nuxt
+.nitro
+.data
+.cache
+dist
+
+# Dépendances : réinstallées depuis package-lock.json
+node_modules
+
+# Secrets — jamais dans une image
+.env
+.env.*
+!.env.example
+
+# Inutile au runtime
+.git
+.github
+test
+md
+*.md
+!package.json
+.DS_Store
+.idea
+.fleet
+eslint.config.mjs
+vitest.config.ts
+Dockerfile*
+.dockerignore

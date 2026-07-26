@@ -23,6 +23,10 @@ function plusGrande(srcset: string): string {
  */
 function carteDe(ancre: any, motifFiche: RegExp | null): any {
   if (!motifFiche) return ancre
+  // Une ancre qui ne pointe pas vers une fiche (navigation, footer) n'a pas de
+  // carte : sans ce garde-fou, chacune des ~600 ancres d'une page remonterait
+  // 5 niveaux en balayant des sous-arbres de plus en plus gros pour rien.
+  if (!motifFiche.test(ancre.getAttribute('href') || '')) return ancre
 
   let courant = ancre
   let carte = ancre
@@ -30,10 +34,15 @@ function carteDe(ancre: any, motifFiche: RegExp | null): any {
   for (let i = 0; i < 5 && courant.parentElement; i++) {
     courant = courant.parentElement
 
+    // Clé = la portion d'URL qui identifie l'annonce, pas le href brut. Une
+    // carte contient souvent deux liens vers la même fiche (l'ancre étirée et un
+    // bouton « Voir le détail »), l'un relatif et l'autre absolu : comparer les
+    // href bruts les compterait comme deux annonces et stopperait la remontée
+    // avant d'atteindre la carte.
     const annonces = new Set<string>()
     courant.querySelectorAll('a[href]').forEach((a: any) => {
-      const href = a.getAttribute('href') || ''
-      if (motifFiche.test(href)) annonces.add(href.split('?')[0])
+      const cible = (a.getAttribute('href') || '').match(motifFiche)
+      if (cible) annonces.add(cible[0])
     })
 
     if (annonces.size > 1) break
@@ -130,18 +139,20 @@ export function htmlToPageData(html: string, motifFiche: RegExp | null = null): 
     const href = a.getAttribute('href') || ''
     if (!href) return
 
-    // L'ancre porte parfois tout (PAP), parfois rien (SeLoger) : on élargit à
-    // la carte seulement quand l'ancre est muette, pour ne pas polluer le reste.
+    // L'ancre porte parfois tout (PAP), parfois rien (SeLoger), parfois un
+    // simple badge trompeur (« Exclusivité » chez Century 21). On remonte les
+    // deux textes sans arbitrer ici : c'est annoncesDepuisLiens qui garde celui
+    // qui produit le plus de signal, car lui seul sait parser une carte.
     const propre = (a.textContent || '').replace(/\s+/g, ' ').trim()
-    const source = propre.length >= 10 ? a : carteDe(a, motifFiche)
+    const carte = carteDe(a, motifFiche)
+    const texteCarte =
+      carte === a ? '' : (carte.textContent || '').replace(/\s+/g, ' ').trim()
 
     liens.push({
       href,
-      texte:
-        source === a
-          ? propre.slice(0, 300)
-          : (source.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300),
-      image: premiereImage(source)
+      texte: propre.slice(0, 300),
+      ...(texteCarte && texteCarte !== propre ? { texteCarte: texteCarte.slice(0, 400) } : {}),
+      image: premiereImage(carte)
     })
   })
 

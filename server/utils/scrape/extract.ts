@@ -2,7 +2,10 @@ import type { Bien, DPE } from '~/types'
 
 export interface LienCarte {
   href: string
+  /** Texte propre à l'ancre. Vide sur un lien étiré. */
   texte: string
+  /** Texte de la carte englobante, quand elle diffère de l'ancre. */
+  texteCarte?: string
   image?: string
 }
 

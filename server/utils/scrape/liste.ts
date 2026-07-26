@@ -42,7 +42,8 @@ const MAX_ANNONCES = 60
 // démarrer au milieu d'un mot (« T2 1 100 € »). `\s` couvre les espaces insécables.
 const RE_PRIX = /(?<!\w)(\d{1,3}(?:[\s.]\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)\s*€/
 const RE_SURFACE = /(\d+(?:[.,]\d+)?)\s*m(?:²|2(?!\d)|\^2)/i
-const RE_PIECES = /(\d+)\s*pi[eè]ces?/i
+// « 3 pièces », mais aussi l'abréviation « 3 pcs » / « 1 pc » de Century 21.
+const RE_PIECES = /(\d+)\s*(?:pi[eè]ces?|pcs?)\b/i
 const RE_PIECES_COURT = /\b[TF](\d)\b/
 const RE_CP = /\b(\d{5})\b(?!\s*(?:€|EUR|euros?))/i
 
@@ -133,6 +134,35 @@ export function titreDepuisCarte(texte: string): string | null {
   return (i > 0 ? propre.slice(i) : propre).slice(0, 200) || null
 }
 
+interface Lecture {
+  champs: Partial<AnnonceListe>
+  titre: string | null
+  signal: number
+}
+
+const lire = (texte: string): Lecture => {
+  const champs = parseCarte(texte)
+  return {
+    champs,
+    titre: titreDepuisCarte(texte),
+    signal: [champs.prix, champs.surface, champs.nb_pieces].filter((v) => v != null).length
+  }
+}
+
+/**
+ * L'ancre ou la carte ? On ne devine pas d'après la longueur du texte — un badge
+ * « Exclusivité » est plus long qu'un seuil arbitraire et pourtant vide de sens.
+ * On lit les deux et on garde celle qui livre le plus de champs. À égalité,
+ * l'ancre gagne : elle est plus étroite, donc moins susceptible d'avoir happé le
+ * texte d'un voisin.
+ */
+export function meilleureLecture(lien: LienCarte): Lecture {
+  return [lien.texte, lien.texteCarte]
+    .filter((t): t is string => !!t)
+    .map(lire)
+    .sort((a, b) => b.signal - a.signal)[0] ?? lire('')
+}
+
 export function annoncesDepuisLiens(
   liens: LienCarte[],
   source: SiteSource,
@@ -162,13 +192,16 @@ export function annoncesDepuisLiens(
     if (!url) continue
 
     // Une même annonce a souvent deux liens : la photo (sans texte) et le titre.
-    const carte = parseCarte(lien.texte)
+    const meilleur = meilleureLecture(lien)
     const image = lien.image && imgValide(lien.image) ? lien.image : null
-    const titre = titreDepuisCarte(lien.texte)
 
     parUrl.set(
       url,
-      fusionner(parUrl.get(url) ?? vide(url), { ...carte, titre, photo: image })
+      fusionner(parUrl.get(url) ?? vide(url), {
+        ...meilleur.champs,
+        titre: meilleur.titre,
+        photo: image
+      })
     )
   }
 
@@ -326,15 +359,22 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
       const motif = new RegExp(motifFiche, 'i')
 
       const carteDe = (ancre: Element): Element => {
+        // Voir carteDe() dans html.ts : on ne remonte que depuis une ancre de
+        // fiche, sinon chaque lien de navigation coûterait 5 balayages du DOM.
+        if (!motif.test(ancre.getAttribute('href') || '')) return ancre
+
         let courant: Element = ancre
         let carte: Element = ancre
 
         for (let i = 0; i < 5 && courant.parentElement; i++) {
           courant = courant.parentElement
+          // Clé = la portion d'URL identifiant l'annonce, pas le href brut :
+          // deux liens vers la même fiche (ancre étirée + bouton) sont souvent
+          // l'un relatif et l'autre absolu.
           const annonces = new Set<string>()
           courant.querySelectorAll('a[href]').forEach((x) => {
-            const h = x.getAttribute('href') || ''
-            if (motif.test(h)) annonces.add(h.split('?')[0]!)
+            const cible = (x.getAttribute('href') || '').match(motif)
+            if (cible) annonces.add(cible[0])
           })
           if (annonces.size > 1) break
           carte = courant
@@ -366,24 +406,25 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
         return ''
       }
 
-      const liens: { href: string; texte: string; image: string }[] = []
+      const liens: { href: string; texte: string; texteCarte?: string; image: string }[] = []
       document.querySelectorAll('a[href]').forEach((a) => {
         if (liens.length >= 600) return
         const el = a as HTMLAnchorElement
 
         const propre = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim()
-        const source = propre.length >= 10 ? el : carteDe(el)
-        const texte =
-          source === el
-            ? propre
-            : ((source as HTMLElement).innerText || source.textContent || '')
+        const carte = carteDe(el)
+        const texteCarte =
+          carte === el
+            ? ''
+            : ((carte as HTMLElement).innerText || carte.textContent || '')
                 .replace(/\s+/g, ' ')
                 .trim()
 
         liens.push({
           href: el.getAttribute('href') || '',
-          texte: texte.slice(0, 300),
-          image: premiereImage(source)
+          texte: propre.slice(0, 300),
+          ...(texteCarte && texteCarte !== propre ? { texteCarte: texteCarte.slice(0, 400) } : {}),
+          image: premiereImage(carte)
         })
       })
 

@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+
+# Volontairement minimal. Railway démarre un conteneur à chaque exécution
+# planifiée : réutiliser l'image Playwright (~1,5 Go) ferait payer un démarrage
+# lourd 24 fois par jour pour lancer trois requêtes HTTP. Le scraping se fait
+# dans le service web, dont le navigateur est déjà chaud.
+FROM alpine:3.21
+
+RUN apk add --no-cache curl
+
+COPY cron.sh /usr/local/bin/cron.sh
+RUN chmod +x /usr/local/bin/cron.sh
+
+CMD ["/usr/local/bin/cron.sh"]
