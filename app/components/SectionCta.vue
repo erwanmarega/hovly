@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { SiteSource } from '~/types'
+import type { SiteSource } from "~/types";
 
-const SOURCES: SiteSource[] = ['seloger', 'leboncoin', 'pap', 'logic-immo', 'bienici']
+const SOURCES: SiteSource[] = [
+  "seloger",
+  "leboncoin",
+  "pap",
+  "logic-immo",
+  "bienici",
+];
 
-const titre = ['Arrête', 'de', 'jongler.', 'Commence', 'à', 'comparer.']
+const titre = ["Arrête", "de", "jongler.", "Commence", "à", "comparer."];
 
-const gages = ['Gratuit', 'Sans carte bancaire', '5 sites supportés']
-
-const cartesFlottantes = [
-  { classe: 'left-[6%] top-[18%]', delai: '0s', label: '1 240 €', detail: '48 m² · Lyon 6e' },
-  { classe: 'right-[7%] top-[26%]', delai: '1.4s', label: '82', detail: 'Score Hovly' },
-  { classe: 'left-[11%] bottom-[16%]', delai: '2.6s', label: '−150 €', detail: 'Baisse détectée' }
-]
+const gages = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
 </script>
 
 <template>
@@ -22,17 +22,6 @@ const cartesFlottantes = [
     >
       <span class="halo pointer-events-none absolute -inset-1/2" />
       <span class="grille pointer-events-none absolute inset-0" />
-
-      <span
-        v-for="c in cartesFlottantes"
-        :key="c.label"
-        class="fiche pointer-events-none absolute hidden rounded-2xl bg-white/85 px-3.5 py-2 text-left shadow-[0_8px_24px_rgba(5,0,56,0.10)] backdrop-blur-sm lg:block"
-        :class="c.classe"
-        :style="{ animationDelay: c.delai }"
-      >
-        <span class="block text-sm font-bold text-ink-deep">{{ c.label }}</span>
-        <span class="block text-[11px] text-steel">{{ c.detail }}</span>
-      </span>
 
       <h2
         class="relative mx-auto max-w-2xl text-4xl md:text-5xl font-light tracking-tight text-ink"
@@ -56,7 +45,9 @@ const cartesFlottantes = [
           href="/login"
           class="bouton group inline-flex items-center gap-2.5 rounded-full bg-ink px-8 py-3.5 font-medium text-white transition hover:bg-black active:scale-95"
         >
-          <span class="reflet pointer-events-none absolute inset-0 rounded-full" />
+          <span
+            class="reflet pointer-events-none absolute inset-0 rounded-full"
+          />
           Commencer gratuitement
           <svg
             class="fleche size-4"
@@ -71,13 +62,18 @@ const cartesFlottantes = [
         </a>
       </div>
 
-      <ul class="gages relative mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+      <ul
+        class="gages relative mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+      >
         <li
           v-for="(g, i) in gages"
           :key="g"
           class="flex items-center gap-1.5 text-sm font-medium text-ink/60"
         >
-          <span v-if="i > 0" class="mr-3 hidden size-1 rounded-full bg-ink/25 sm:block" />
+          <span
+            v-if="i > 0"
+            class="mr-3 hidden size-1 rounded-full bg-ink/25 sm:block"
+          />
           <svg
             class="size-3.5"
             viewBox="0 0 24 24"
@@ -91,7 +87,9 @@ const cartesFlottantes = [
         </li>
       </ul>
 
-      <div class="logos relative mt-8 flex flex-wrap items-center justify-center gap-5">
+      <div
+        class="logos relative mt-8 flex flex-wrap items-center justify-center gap-5"
+      >
         <LogoSource
           v-for="s in SOURCES"
           :key="s"
@@ -125,8 +123,11 @@ const cartesFlottantes = [
 }
 
 .grille {
-  background-image:
-    linear-gradient(to right, rgb(5 0 56 / 6%) 1px, transparent 1px),
+  background-image: linear-gradient(
+      to right,
+      rgb(5 0 56 / 6%) 1px,
+      transparent 1px
+    ),
     linear-gradient(to bottom, rgb(5 0 56 / 6%) 1px, transparent 1px);
   background-size: 46px 46px;
   mask-image: radial-gradient(circle at 50% 45%, black, transparent 72%);
@@ -148,8 +149,7 @@ const cartesFlottantes = [
 .mot {
   opacity: 0;
   transform: translateY(14px);
-  transition:
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--retard),
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--retard),
     transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--retard);
 }
 .panneau.is-visible .mot {
@@ -163,8 +163,7 @@ const cartesFlottantes = [
 .logos {
   opacity: 0;
   transform: translateY(16px);
-  transition:
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .panneau.is-visible .sous-titre {
@@ -190,10 +189,8 @@ const cartesFlottantes = [
 .bouton {
   position: relative;
   overflow: hidden;
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background-color 0.3s ease,
-    box-shadow 0.35s ease;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.3s ease, box-shadow 0.35s ease;
 }
 .bouton:hover {
   transform: translateY(-2px) scale(1.03);
@@ -201,7 +198,12 @@ const cartesFlottantes = [
 }
 
 .reflet {
-  background: linear-gradient(115deg, transparent 42%, rgb(255 255 255 / 30%) 50%, transparent 58%);
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgb(255 255 255 / 30%) 50%,
+    transparent 58%
+  );
   transform: translateX(-130%);
 }
 .bouton:hover .reflet {
