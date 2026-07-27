@@ -44,6 +44,8 @@ const indexCourant = ref(0)
 
 const resume = computed(() => resumeImport(entrees.value))
 
+const masseAvecLeboncoin = computed(() => entrees.value.some((e) => e.source === 'leboncoin'))
+
 watch(collageMasse, (texte) => {
   if (importEnCours.value) return
   entrees.value = parserUrls(
@@ -352,6 +354,8 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               class="w-full resize-y rounded-xl border border-hairline-strong bg-white px-4 py-3 font-mono text-xs outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:opacity-60"
             />
 
+            <MentionLeboncoin v-if="masseAvecLeboncoin" class="mt-4" />
+
             <div v-if="entrees.length" class="mt-5">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <p class="text-sm text-slate">
@@ -489,6 +493,8 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                 <span v-else key="rien" />
               </Transition>
 
+              <MentionLeboncoin v-if="sourceDetectee === 'leboncoin'" class="mt-3" />
+
               <p v-if="error" class="mt-3 text-sm font-medium text-[#600000]">{{ error }}</p>
 
               <div
@@ -557,8 +563,15 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               >
                 <LogoSource :source="s" :avec-nom="false" :taille="18" />
                 {{ LABELS[s] }}
+                <span v-if="s === 'leboncoin'" class="text-xs font-normal text-stone">
+                  · extraction limitée
+                </span>
               </span>
             </div>
+            <p class="mt-3 text-xs text-stone">
+              Toutes les sources sont lues par Hovly. Leboncoin passe par un extracteur tiers,
+              plus lent et parfois incomplet : à source équivalente, préfère les autres sites.
+            </p>
           </div>
         </section>
 

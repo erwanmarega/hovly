@@ -86,6 +86,8 @@ function soumettre() {
         Century 21.
       </p>
 
+      <MentionLeboncoin v-if="source === 'leboncoin'" contexte="veille" class="-mt-1" />
+
       <ChampTexte
         id="veille-label"
         v-model="label"
