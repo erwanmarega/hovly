@@ -1,54 +1,107 @@
 <script setup lang="ts">
-import type { Statut } from '~/types'
-import { STATUTS } from '~/composables/useBiens'
+import type { Statut } from "~/types";
+import { STATUTS } from "~/composables/useBiens";
 
 const props = defineProps<{
-  statut: Statut
-  versLeHaut?: boolean
-}>()
+  statut: Statut;
+  versLeHaut?: boolean;
+}>();
 
-const emit = defineEmits<{ change: [statut: Statut] }>()
+const emit = defineEmits<{ change: [statut: Statut] }>();
 
-const ouvert = ref(false)
+const LARGEUR = 176; // w-44
+const MARGE = 8;
+const ECART = 4;
+
+const ouvert = ref(false);
+const place = ref(false);
+const declencheur = ref<HTMLElement | null>(null);
+const menu = ref<HTMLElement | null>(null);
+const position = ref({ top: 0, left: 0 });
+
+function placer() {
+  const el = declencheur.value;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const hauteur = menu.value?.offsetHeight ?? 0;
+  position.value = {
+    top: props.versLeHaut ? r.top - hauteur - ECART : r.bottom + ECART,
+    left: Math.max(
+      MARGE,
+      Math.min(r.left, window.innerWidth - LARGEUR - MARGE)
+    ),
+  };
+  place.value = true;
+}
+
+async function basculer() {
+  if (ouvert.value) return fermer();
+  ouvert.value = true;
+  await nextTick();
+  placer();
+}
+
+function fermer() {
+  ouvert.value = false;
+  place.value = false;
+}
 
 function choisir(s: Statut) {
-  ouvert.value = false
-  if (s !== props.statut) emit('change', s)
+  fermer();
+  if (s !== props.statut) emit("change", s);
 }
-</script>
 
+function ecouter(actif: boolean) {
+  const methode = actif ? "addEventListener" : "removeEventListener";
+  window[methode]("scroll", placer, true);
+  window[methode]("resize", placer);
+}
+
+watch(ouvert, ecouter);
+onBeforeUnmount(() => ecouter(false));
+</script>
 <template>
   <div class="relative">
     <button
+      ref="declencheur"
       type="button"
       :aria-expanded="ouvert"
       aria-label="Changer le statut"
-      @click="ouvert = !ouvert"
+      @click="basculer"
     >
       <BadgeStatut :statut="statut" />
     </button>
 
-    <template v-if="ouvert">
-      <button
-        class="fixed inset-0 z-20 cursor-default"
-        tabindex="-1"
-        aria-label="Fermer le menu"
-        @click="ouvert = false"
-      />
-      <div
-        class="absolute z-30 w-44 rounded-xl border border-hairline bg-white p-1 shadow-lg"
-        :class="versLeHaut ? 'bottom-full mb-1' : 'mt-1'"
-      >
+    <Teleport to="body">
+      <template v-if="ouvert">
         <button
-          v-for="s in STATUTS"
-          :key="s.value"
-          class="block w-full rounded-lg px-3 py-1.5 text-left text-sm hover:bg-surface"
-          :class="statut === s.value ? 'font-semibold text-ink' : 'text-slate'"
-          @click="choisir(s.value)"
+          class="fixed inset-0 z-20 cursor-default"
+          tabindex="-1"
+          aria-label="Fermer le menu"
+          @click="fermer"
+        />
+        <div
+          ref="menu"
+          class="fixed z-30 w-44 rounded-xl border border-hairline bg-white p-1 shadow-lg"
+          :style="{
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            visibility: place ? 'visible' : 'hidden',
+          }"
         >
-          {{ s.label }}
-        </button>
-      </div>
-    </template>
+          <button
+            v-for="s in STATUTS"
+            :key="s.value"
+            class="block w-full rounded-lg px-3 py-1.5 text-left text-sm hover:bg-surface"
+            :class="
+              statut === s.value ? 'font-semibold text-ink' : 'text-slate'
+            "
+            @click="choisir(s.value)"
+          >
+            {{ s.label }}
+          </button>
+        </div>
+      </template>
+    </Teleport>
   </div>
 </template>
