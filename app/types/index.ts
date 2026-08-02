@@ -1,5 +1,11 @@
 export type Statut = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_coeur'
 
+export type Transaction = 'location' | 'achat'
+
+// Au-delà de ce prix, une annonce sans transaction connue est traitée comme
+// une vente (repli utilisé par la détection au scraping et par la carte DVF).
+export const SEUIL_PRIX_VENTE_EUROS = 50_000
+
 export type DPE = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
 export type GeoPrecision = 'exacte' | 'rue' | 'ville'
@@ -38,6 +44,10 @@ export interface Preferences {
   poidsCharges: number
   prixKwh: number | null
   chauffageDansCharges: boolean
+  budgetAchatMax: number | null
+  apport: number | null
+  tauxEmprunt: number | null // % annuel (ex. 3,5)
+  dureeEmpruntAns: number | null
   ancres: Ancre[]
 }
 
@@ -78,6 +88,7 @@ export interface Bien {
   photos: string[]
   description: string | null
   statut: Statut
+  transaction: Transaction
   note_perso: string | null
   visite_le: string | null
   compte_rendu: string | null
@@ -122,6 +133,19 @@ export interface ResultatVeille {
   etat: EtatResultat
   bien_id: string | null
   trouve_le: string
+}
+
+export interface MarcheQuartier {
+  mediane: number // €/m² médian des ventes comparables
+  q1: number
+  q3: number
+  min: number
+  max: number
+  nbVentes: number
+  barres: number[] // histogramme des prix au m², de min à max
+  du: string // date de la vente la plus ancienne
+  au: string // date de la plus récente
+  maj: string // statistiques calculées le
 }
 
 export type TypeAlerte = 'baisse_prix' | 'annonce_supprimee'

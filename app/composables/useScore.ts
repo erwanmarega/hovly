@@ -1,4 +1,5 @@
 import type { Bien, DPE, Preferences } from '~/types'
+import { estAchat } from './useBiens'
 
 export interface ScorePart {
   label: string
@@ -33,6 +34,10 @@ export const PREFERENCES_DEFAUT: Preferences = {
   poidsCharges: 20,
   prixKwh: null,
   chauffageDansCharges: false,
+  budgetAchatMax: null,
+  apport: null,
+  tauxEmprunt: null,
+  dureeEmpruntAns: null,
   ancres: []
 }
 
@@ -68,6 +73,7 @@ function pm2(b: Bien): number {
 export function estPersonnalise(p: Preferences): boolean {
   return (
     p.budgetMax != null ||
+    p.budgetAchatMax != null ||
     p.surfaceMin != null ||
     p.piecesMin != null ||
     p.dpeMin != null ||
@@ -95,12 +101,14 @@ function criteres(bien: Bien, prefs: Preferences): Critere[] {
   const out: Critere[] = []
   const eur = (n: number) => n.toLocaleString('fr-FR')
 
-  if (prefs.budgetMax != null) {
-    const loyer = Math.round(bien.prix / 100)
+  const budget =
+    bien.transaction === 'achat' ? prefs.budgetAchatMax : prefs.budgetMax
+  if (budget != null) {
+    const prix = Math.round(bien.prix / 100)
     out.push({
       label: 'Budget',
-      ok: loyer <= prefs.budgetMax,
-      detail: `${eur(loyer)} € / max ${eur(prefs.budgetMax)} €`
+      ok: prix <= budget,
+      detail: `${eur(prix)} € / max ${eur(budget)} €`
     })
   }
   if (prefs.surfaceMin != null) {
@@ -137,8 +145,11 @@ export function scoreBien(
   const parts: ScorePart[] = []
 
   const p = pm2(bien)
-  const memeVille = contexte.filter((b) => b.actif && b.surface > 0 && b.ville === bien.ville)
-  const refs = memeVille.length >= 2 ? memeVille : contexte.filter((b) => b.actif && b.surface > 0)
+  // On ne compare des €/m² qu'entre biens de même nature : un prix de vente
+  // au m² n'a rien à voir avec un loyer au m².
+  const comparables = contexte.filter((b) => estAchat(b) === estAchat(bien))
+  const memeVille = comparables.filter((b) => b.actif && b.surface > 0 && b.ville === bien.ville)
+  const refs = memeVille.length >= 2 ? memeVille : comparables.filter((b) => b.actif && b.surface > 0)
   const med = mediane(refs.map(pm2))
 
   let ptsPrix: number
@@ -172,6 +183,12 @@ export function scoreBien(
   if (bien.charges == null || !bien.prix) {
     ptsCharges = Math.round(poids.charges * 0.5)
     hintCharges = 'Charges non renseignées'
+  } else if (estAchat(bien)) {
+    // Charges de copropriété : jugées en €/m²/mois (le ratio charges/prix
+    // de vente serait toujours proche de 0 et ne dirait rien).
+    const cpm2 = bien.charges / 100 / (bien.surface || 1)
+    ptsCharges = Math.round(clamp01((4 - cpm2) / 2.5) * poids.charges)
+    hintCharges = `${cpm2.toFixed(1).replace('.', ',')} €/m²/mois de copropriété`
   } else {
     const c = bien.charges / bien.prix
     ptsCharges = Math.round(clamp01((0.3 - c) / 0.25) * poids.charges)

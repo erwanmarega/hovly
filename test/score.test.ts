@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scoreBien } from '../app/composables/useScore'
+import { scoreBien, PREFERENCES_DEFAUT } from '../app/composables/useScore'
 import type { Bien, DPE } from '../app/types'
 
 function bien(over: Partial<Bien> = {}): Bien {
@@ -21,6 +21,7 @@ function bien(over: Partial<Bien> = {}): Bien {
     photos: [],
     description: null,
     statut: 'a_visiter',
+    transaction: 'location',
     note_perso: null,
     actif: true,
     created_at: '2026-06-20T10:00:00.000Z',
@@ -214,5 +215,53 @@ describe('scoreBien — total et libellé', () => {
     const s2 = scoreBien(bien({ prix: 220000, surface: 50, dpe: 'C', charges: null }), ctxMedian)
     expect(s2.total).toBe(46)
     expect(s2.label).toBe('Moyen')
+  })
+})
+
+describe('scoreBien — biens en achat', () => {
+  const prefsAchat = {
+    ...PREFERENCES_DEFAUT,
+    budgetAchatMax: 200000
+  }
+
+  it('vérifie le budget d’achat contre le prix total, pas le budget location', () => {
+    const b = bien({ transaction: 'achat', prix: 25000000 }) // 250 000 €
+    const critere = scoreBien(b, [], prefsAchat).criteres.find((c) => c.label === 'Budget')!
+    expect(critere.ok).toBe(false)
+    expect(critere.detail).toContain((250000).toLocaleString('fr-FR'))
+    expect(critere.detail).toContain((200000).toLocaleString('fr-FR'))
+
+    const ok = scoreBien(b, [], { ...prefsAchat, budgetAchatMax: 300000 }).criteres[0]!
+    expect(ok.ok).toBe(true)
+  })
+
+  it('ignore le budget location pour un achat, et réciproquement', () => {
+    const location = bien({ prix: 150000 }) // 1 500 €/mois
+    const avecAchat = scoreBien(location, [], prefsAchat)
+    expect(avecAchat.criteres.find((c) => c.label === 'Budget')).toBeUndefined()
+
+    const achat = bien({ transaction: 'achat', prix: 25000000 })
+    const avecLocation = scoreBien(achat, [], { ...PREFERENCES_DEFAUT, budgetMax: 1000 })
+    expect(avecLocation.criteres.find((c) => c.label === 'Budget')).toBeUndefined()
+  })
+
+  it('ne compare les €/m² qu’entre biens de même nature', () => {
+    const cible = bien({ prix: 100000, surface: 50 })
+    const ctxAchats = [
+      bien({ id: 'x', transaction: 'achat', prix: 30000000 }),
+      bien({ id: 'y', transaction: 'achat', prix: 32000000 })
+    ]
+    const p = partPrix(cible, ctxAchats)
+    expect(p.points).toBe(25)
+    expect(p.hint).toBe('Pas assez de comparables')
+  })
+
+  it('note les charges de copropriété en €/m²/mois', () => {
+    const legere = partCharges(bien({ transaction: 'achat', charges: 7500 }), [])
+    expect(legere.points).toBe(20) // 1,5 €/m²/mois → excellent
+    expect(legere.hint).toContain('€/m²/mois')
+
+    const lourde = partCharges(bien({ transaction: 'achat', charges: 20000 }), [])
+    expect(lourde.points).toBe(0) // 4 €/m²/mois → mauvais
   })
 })

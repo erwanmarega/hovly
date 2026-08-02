@@ -63,7 +63,9 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             >
           </p>
           <p class="mt-1 text-base font-semibold tabular-nums">
-            {{ eur(prixMensuel) }} €<span class="text-xs font-normal text-stone"
+            {{ eur(prixMensuel) }} €<span
+              v-if="!estAchat(bien)"
+              class="text-xs font-normal text-stone"
               >/mois</span
             >
           </p>

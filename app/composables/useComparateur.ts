@@ -2,6 +2,7 @@ import type { Ancre, Bien, DPE, Trajet } from '~/types'
 import type { Score } from '~/composables/useScore'
 import type { OptionsCout } from '~/composables/useCoutReel'
 import { coutReel } from '~/composables/useCoutReel'
+import { estAchat } from '~/composables/useBiens'
 import { cleTrajet, formatDuree } from '~/composables/useTrajets'
 
 export const MAX_COMPARAISON = 4
@@ -53,12 +54,22 @@ export function comparer(
   biens: Bien[],
   scores: Score[],
   optionsCout: OptionsCout = {},
-  trajets?: ContexteTrajets
+  trajets?: ContexteTrajets,
+  dvf?: (number | null)[]
 ): LigneComparaison[] {
+  const couts = biens.map((b) => coutReel(b, optionsCout))
   const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
   const charges = biens.map((b) => (b.charges != null ? Math.round(b.charges / 100) : null))
-  const totaux = biens.map((b, i) => (loyers[i] == null ? null : loyers[i]! + (charges[i] ?? 0)))
-  const coutsReels = biens.map((b) => Math.round(coutReel(b, optionsCout).total / 100) || null)
+  // Pour un achat, le « total mensuel » est la mensualité estimée + charges ;
+  // pour une location, le loyer + charges comme avant.
+  const totaux = biens.map((b, i) => {
+    if (estAchat(b)) {
+      const credit = couts[i]!.postes.find((p) => p.cle === 'credit')?.montant ?? 0
+      return Math.round((credit + (b.charges ?? 0)) / 100) || null
+    }
+    return loyers[i] == null ? null : loyers[i]! + (charges[i] ?? 0)
+  })
+  const coutsReels = couts.map((c) => Math.round(c.total / 100) || null)
   const surfaces = biens.map((b) => b.surface || null)
   const auM2 = biens.map((b) => (b.surface && b.prix ? Math.round(b.prix / 100 / b.surface) : null))
   const pieces = biens.map((b) => b.nb_pieces || null)
@@ -80,14 +91,21 @@ export function comparer(
   )
 
   return [
-    ligne('loyer', 'Loyer', 'min', loyers, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('loyer', 'Prix', 'min', loyers, (v) => (v == null ? '—' : `${eur(v)} €`)),
     ligne('charges', 'Charges', 'min', charges, (v) => (v == null ? '—' : `${eur(v)} €`)),
-    ligne('total', 'Total mensuel', 'min', totaux, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('total', 'Total /mois', 'min', totaux, (v) => (v == null ? '—' : `${eur(v)} €`)),
     ligne('cout_reel', 'Coût réel', 'min', coutsReels, (v) =>
       v == null ? '—' : `${eur(v)} €`
     ),
     ligne('surface', 'Surface', 'max', surfaces, (v) => (v == null ? '—' : `${v} m²`)),
     ligne('m2', 'Prix au m²', 'min', auM2, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ...(dvf
+      ? [
+          ligne('dvf', 'Écart marché (DVF)', 'min', dvf, (v) =>
+            v == null ? '—' : `${v > 0 ? '+' : ''}${v} %`
+          )
+        ]
+      : []),
     ligne('pieces', 'Pièces', 'max', pieces, vide),
     ligne('etage', 'Étage', null, etages, vide),
     ligne('dpe', 'DPE', 'min', dpes, (v) => (v == null ? '—' : DPE_ORDRE[v]!)),

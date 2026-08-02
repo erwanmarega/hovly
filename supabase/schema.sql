@@ -22,6 +22,8 @@ create table if not exists public.biens (
   photos      text[] default '{}',
   description text,
   statut      text not null default 'a_visiter',
+  transaction text not null default 'location'
+    check (transaction in ('location', 'achat')),
   note_perso  text,
   actif       boolean not null default true,
   visite_le        timestamptz,
@@ -207,3 +209,15 @@ create policy "recherche_resultats_own" on public.recherche_resultats
   for all using (
     exists (select 1 from public.recherches r where r.id = recherche_id and r.user_id = auth.uid())
   );
+
+-- Cache des statistiques de marché DVF par maille géographique (~1 km).
+-- Données de référence publiques partagées : accès serveur uniquement
+-- (clé service), d'où l'absence de policy.
+
+create table if not exists public.marche_quartier (
+  cle        text primary key,
+  donnees    jsonb,
+  calcule_le timestamptz not null default now()
+);
+
+alter table public.marche_quartier enable row level security;

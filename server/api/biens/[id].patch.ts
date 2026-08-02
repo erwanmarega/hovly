@@ -8,6 +8,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Statut invalide' })
   }
 
+  if (body?.transaction && !['location', 'achat'].includes(body.transaction)) {
+    throw createError({ statusCode: 400, statusMessage: 'Transaction invalide' })
+  }
+
   if (body?.visite_le != null && Number.isNaN(new Date(body.visite_le).getTime())) {
     throw createError({ statusCode: 400, statusMessage: 'Date de visite invalide' })
   }

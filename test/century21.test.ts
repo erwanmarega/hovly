@@ -63,6 +63,30 @@ describe('extraireCentury21 — prix', () => {
     expect(d.prix).toBe(145700)
   })
 
+  it('extrait le prix de vente après la référence', () => {
+    const d = extraireCentury21(
+      page({
+        bodyText:
+          'Ref : 28123 207 000 € Honoraires charge vendeur Surface habitable : 79,57 m2'
+      })
+    )
+    expect(d.prix).toBe(20700000)
+  })
+
+  it('ne recolle pas la référence au prix de vente', () => {
+    const d = extraireCentury21(
+      page({ bodyText: 'Ref : 3997 199 900 € Honoraires charge vendeur' })
+    )
+    expect(d.prix).toBe(19990000)
+  })
+
+  it('le loyer de base prime sur le prix collé à la référence', () => {
+    const d = extraireCentury21(
+      page({ bodyText: 'Ref : 470 1 760 € par mois Loyer de base : 1 700 € par mois' })
+    )
+    expect(d.prix).toBe(170000)
+  })
+
   it('laisse le prix absent si le libellé manque', () => {
     expect(extraireCentury21(page({ bodyText: 'Aucune information' })).prix).toBeUndefined()
   })

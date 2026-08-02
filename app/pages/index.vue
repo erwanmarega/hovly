@@ -1,11 +1,18 @@
 <script setup lang="ts">
 useHead({
-  title: 'Hovly — Tous tes biens immobiliers en un seul endroit',
+  title: "Hovly — Tous tes biens immobiliers en un seul endroit",
   meta: [
-    { name: 'description', content: 'Colle une URL d\'annonce, Hovly extrait tout automatiquement. Compare, suis les prix, prends ta décision.' }
-  ]
-})
+    {
+      name: "description",
+      content:
+        "Colle une URL d'annonce, Hovly extrait tout automatiquement. Compare, suis les prix, prends ta décision.",
+    },
+  ],
+});
 
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 </script>
 
 <template>
@@ -20,25 +27,44 @@ useHead({
 
     <SectionCta />
 
+    <ArrowReturnToTop @scroll-to-top="scrollToTop" />
+
     <footer class="bg-ink text-white">
       <div class="mx-auto max-w-6xl px-6 py-14">
         <div class="flex flex-col md:flex-row justify-between gap-8">
           <div>
             <p class="text-xl font-bold">Hovly</p>
             <p class="mt-2 text-sm text-stone max-w-xs">
-              L'agrégateur de biens immobiliers. Tous tes favoris, un seul tableau.
+              L'agrégateur de biens immobiliers. Tous tes favoris, un seul
+              tableau.
             </p>
           </div>
           <div class="flex gap-16 text-sm">
             <div class="space-y-3">
               <p class="font-semibold text-stone">Produit</p>
-              <a href="#features" class="block text-white/70 hover:text-white transition">Fonctionnalités</a>
-              <a href="#how" class="block text-white/70 hover:text-white transition">Comment ça marche</a>
+              <a
+                href="#features"
+                class="block text-white/70 hover:text-white transition"
+                >Fonctionnalités</a
+              >
+              <a
+                href="#how"
+                class="block text-white/70 hover:text-white transition"
+                >Comment ça marche</a
+              >
             </div>
             <div class="space-y-3">
               <p class="font-semibold text-stone">Légal</p>
-              <a href="#" class="block text-white/70 hover:text-white transition">Confidentialité</a>
-              <a href="#" class="block text-white/70 hover:text-white transition">CGU</a>
+              <a
+                href="#"
+                class="block text-white/70 hover:text-white transition"
+                >Confidentialité</a
+              >
+              <a
+                href="#"
+                class="block text-white/70 hover:text-white transition"
+                >CGU</a
+              >
             </div>
           </div>
         </div>

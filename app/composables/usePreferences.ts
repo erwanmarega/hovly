@@ -52,6 +52,10 @@ function normaliser(brut: unknown): Preferences {
     poidsCharges: p.poidsCharges ?? PREFERENCES_DEFAUT.poidsCharges,
     prixKwh: nombre(p.prixKwh),
     chauffageDansCharges: p.chauffageDansCharges === true,
+    budgetAchatMax: nombre(p.budgetAchatMax),
+    apport: nombre(p.apport),
+    tauxEmprunt: nombre(p.tauxEmprunt),
+    dureeEmpruntAns: nombre(p.dureeEmpruntAns),
     ancres: ancresValides(p.ancres)
   }
 }

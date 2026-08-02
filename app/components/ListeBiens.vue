@@ -41,7 +41,7 @@ const { complet: selectionComplete, estSelectionne, basculer } = useComparateur(
 
 const TRIS = computed<{ value: Clef, label: string }[]>(() => [
   { value: 'date', label: 'Date d’ajout' },
-  { value: 'prix', label: 'Loyer' },
+  { value: 'prix', label: 'Prix' },
   { value: 'surface', label: 'Surface' },
   { value: 'prix_m2', label: '€/m²' },
   { value: 'cout_reel', label: 'Coût réel' },
@@ -117,12 +117,12 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
             <th class="font-semibold">Bien</th>
             <th class="font-semibold">
               <button class="transition hover:text-ink" @click="emit('tri', 'prix')">
-                Loyer <span v-if="triClef === 'prix'">{{ triAsc ? '↑' : '↓' }}</span>
+                Prix <span v-if="triClef === 'prix'">{{ triAsc ? '↑' : '↓' }}</span>
               </button>
               <span class="px-1 text-hairline-strong">/</span>
               <button
                 class="font-normal transition hover:text-ink"
-                title="Loyer + charges + énergie estimée + assurance"
+                title="Prix + charges + énergie estimée + assurance"
                 @click="emit('tri', 'cout_reel')"
               >
                 réel <span v-if="triClef === 'cout_reel'">{{ triAsc ? '↑' : '↓' }}</span>
@@ -222,7 +222,9 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
               </NuxtLink>
             </td>
             <td class="whitespace-nowrap tabular-nums">
-              <p class="font-semibold">{{ eur(prixMensuel(b)) }} €</p>
+              <p class="font-semibold">
+                {{ eur(prixMensuel(b)) }} €<span v-if="!estAchat(b)" class="text-xs font-normal text-stone">/mois</span>
+              </p>
               <p class="text-xs text-stone">
                 réel {{ eur(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
               </p>

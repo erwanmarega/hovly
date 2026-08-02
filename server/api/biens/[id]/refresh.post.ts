@@ -1,6 +1,7 @@
 import type { Bien } from '~/types'
 import { scrapeUrl } from '../../../utils/scrape'
 import { geocoder } from '../../../utils/geocode'
+import { prixPlausible } from '../../../utils/check'
 
 const CHAMPS_RAFRAICHIS = [
   'titre',
@@ -67,6 +68,15 @@ export default defineEventHandler(async (event) => {
 
     maj[champ] = valeur
     changements.push({ champ, avant: actuel[champ], apres: valeur })
+  }
+
+  // Un re-scrape peut produire un prix aberrant : on le retire de la mise à
+  // jour plutôt que d'écraser un prix correct (même garde-fou que le cron).
+  if (typeof maj.prix === 'number' && !prixPlausible(actuel.prix, maj.prix as number)) {
+    console.warn('[refresh] prix aberrant ignoré', { id, ancien: actuel.prix, nouveau: maj.prix })
+    delete maj.prix
+    const i = changements.findIndex((c) => c.champ === 'prix')
+    if (i >= 0) changements.splice(i, 1)
   }
 
   const nouveauPrix = typeof maj.prix === 'number' ? maj.prix : null

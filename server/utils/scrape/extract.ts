@@ -303,7 +303,17 @@ export function extraireCentury21(data: PageData): Partial<Bien> {
   const out: Partial<Bien> = {}
 
   const loyer = montantEuros(txt, /Loyer de base\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
-  if (loyer != null) out.prix = loyer * 100
+  if (loyer != null) {
+    out.prix = loyer * 100
+  } else {
+    // Vente : le prix suit la référence (« Ref : 28123 » puis « 207 000 € »).
+    // Le loyer prime : sur une location « Ref : 470 1 760 € par mois », le motif
+    // vente capturerait « 1 760 » à tort. La référence est un seul jeton sans
+    // espace et le prix exige un groupage strict : sinon la capture pouvait
+    // démarrer au milieu d'un nombre et recoller référence + prix.
+    const vente = montantEuros(txt, /Ref\s*:\s*\d[\d.,\u00a0\u202f]*[ \u00a0\u202f]+(\d{1,3}(?:[ .\u00a0\u202f]\d{3})+|\d+)\s*€/i)
+    if (vente != null) out.prix = vente * 100
+  }
 
   const charges = montantEuros(txt, /Provision pour charges\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
   if (charges != null) out.charges = charges * 100
@@ -348,7 +358,13 @@ export function extraire(data: PageData): Partial<Bien> {
 
   let prixEuros = prixJsonLd(flat)
   if (!prixEuros) {
-    const m = txt.match(/(\d[\d\s.\u00a0]{2,9})\s*€/)
+    // Groupage strict à la française : un montant est soit des chiffres collés,
+    // soit des groupes de 3 chiffres séparés. Sans ça, le repli démarre au
+    // milieu d'un nombre et recolle référence + prix (« Ref : 3997 199 900 € »
+    // donnait 97 199 900 €). Le lookbehind évite de démarrer après un chiffre,
+    // et le saut de ligne reste une frontière (sinon « Ref : 28123\n207 000 € »
+    // se lirait « 3 207 000 »).
+    const m = txt.match(/(?<!\w)(\d{1,3}(?:[ .\u00a0\u202f]\d{3})+|\d+)\s*€/)
     if (m) prixEuros = entier(m[1])
   }
   const prix = prixEuros ? prixEuros * 100 : null

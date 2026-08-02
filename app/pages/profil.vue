@@ -302,7 +302,7 @@ const inputCls =
 
             <div class="mt-4 grid grid-cols-2 gap-4">
               <div>
-                <label :class="labelCls">Budget max €/mois</label>
+                <label :class="labelCls">Budget max €/mois (location)</label>
                 <input
                   v-model.number="brouillon.budgetMax"
                   type="number"
@@ -377,6 +377,61 @@ const inputCls =
                   >
                   Chauffage compris dans les charges
                 </label>
+              </div>
+            </div>
+
+            <div class="mt-6 border-t border-hairline-soft pt-5">
+              <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+                Achat
+              </p>
+              <p class="mt-1 text-xs text-stone">
+                Budget vérifié par le score pour les biens en vente, et hypothèses de la
+                mensualité estimée (prix + frais de notaire − apport).
+              </p>
+
+              <div class="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <label :class="labelCls">Budget d'achat max €</label>
+                  <input
+                    v-model.number="brouillon.budgetAchatMax"
+                    type="number"
+                    min="0"
+                    placeholder="—"
+                    :class="inputCls"
+                  >
+                </div>
+                <div>
+                  <label :class="labelCls">Apport €</label>
+                  <input
+                    v-model.number="brouillon.apport"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    :class="inputCls"
+                  >
+                </div>
+                <div>
+                  <label :class="labelCls">Taux d'emprunt %</label>
+                  <input
+                    v-model.number="brouillon.tauxEmprunt"
+                    type="number"
+                    min="0"
+                    step="0.05"
+                    :placeholder="String(TAUX_DEFAUT)"
+                    :class="inputCls"
+                  >
+                </div>
+                <div>
+                  <label :class="labelCls">Durée années</label>
+                  <input
+                    v-model.number="brouillon.dureeEmpruntAns"
+                    type="number"
+                    min="1"
+                    max="30"
+                    :placeholder="String(DUREE_DEFAUT_ANS)"
+                    :class="inputCls"
+                  >
+                </div>
               </div>
             </div>
           </div>

@@ -130,6 +130,30 @@ describe('extraire', () => {
     expect(r.photos).toEqual(['https://cdn.x.fr/photos/1.jpg'])
   })
 
+  it('ne fusionne pas une référence et un prix séparés par un saut de ligne', () => {
+    const data: PageData = {
+      title: '',
+      ogTitle: 'Appartement F4',
+      ogImages: [],
+      jsonLd: [],
+      h1: '',
+      bodyText: 'Ref : 28123\n207 000 €\nHonoraires charge vendeur'
+    }
+    expect(extraire(data).prix).toBe(20700000)
+  })
+
+  it('ne recolle pas la référence au prix sur une ligne unique', () => {
+    const data: PageData = {
+      title: '',
+      ogTitle: '',
+      ogImages: [],
+      jsonLd: [],
+      h1: '',
+      bodyText: 'Ref : 3997 199 900 € Honoraires charge vendeur'
+    }
+    expect(extraire(data).prix).toBe(19990000)
+  })
+
   it('priorise le prix JSON-LD sur le regex body', () => {
     const data: PageData = {
       title: '',

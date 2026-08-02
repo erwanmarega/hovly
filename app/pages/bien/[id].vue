@@ -41,6 +41,13 @@ useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
 
 const { refresh: refreshTrajets } = useTrajets();
 useAsyncData("trajets-bien", () => refreshTrajets(), { server: false });
+
+const { charger: chargerMarche, pour: marchePour } = useMarche();
+watch(bien, (b) => {
+  if (b) void chargerMarche(b);
+}, { immediate: true });
+const marche = computed(() => (bien.value ? marchePour(bien.value.id) : null));
+
 const score = computed(() =>
   bien.value
     ? scoreBien(bien.value, representants(biens.value), preferences.value)
@@ -452,6 +459,7 @@ async function supprimer() {
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <p class="text-3xl font-bold tracking-tight">
                 {{ eur(prixMensuel) }} €<span
+                  v-if="bien.transaction !== 'achat'"
                   class="text-base font-medium text-stone"
                 >
                   /mois</span
@@ -461,6 +469,10 @@ async function supprimer() {
                 <div class="flex justify-between">
                   <span class="text-steel">Prix au m²</span>
                   <span class="font-semibold">{{ eur(prixM2) }} €</span>
+                </div>
+                <div v-if="marche" class="flex justify-between">
+                  <span class="text-steel">Marché (DVF)</span>
+                  <span class="font-semibold">{{ eur(marche.mediane) }} €/m²</span>
                 </div>
                 <div v-if="charges" class="flex justify-between">
                   <span class="text-steel">Charges</span>
@@ -474,6 +486,8 @@ async function supprimer() {
             <TrajetsBien :bien="bien" />
 
             <ScoreBreakdown v-if="score" :score="score" />
+
+            <MarcheQuartier :marche="marche" :prix-m2="prixM2 || null" />
 
             <div
               v-if="doublons.length"

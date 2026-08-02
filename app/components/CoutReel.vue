@@ -21,10 +21,21 @@ const parts = computed(() =>
 
 const TEINTES: Record<string, string> = {
   loyer: 'bg-ink',
+  credit: 'bg-ink',
   charges: 'bg-steel',
   energie: 'bg-brand-deep',
   assurance: 'bg-stone'
 }
+
+const estAchatBien = computed(() => props.bien.transaction === 'achat')
+const titreEcart = computed(() =>
+  estAchatBien.value
+    ? 'Écart avec la mensualité estimée'
+    : 'Écart avec le loyer charges comprises affiché dans l’annonce'
+)
+const libelleAnnonce = computed(() =>
+  estAchatBien.value ? 'Mensualité estimée' : 'Annonce : loyer charges compris'
+)
 </script>
 
 <template>
@@ -34,7 +45,7 @@ const TEINTES: Record<string, string> = {
       <span
         v-if="cout.ecartPourcent > 0"
         class="rounded-full bg-coral px-2.5 py-1 text-xs font-bold text-[#600000]"
-        title="Écart avec le loyer charges comprises affiché dans l’annonce"
+        :title="titreEcart"
       >
         +{{ cout.ecartPourcent }} %
       </span>
@@ -44,7 +55,7 @@ const TEINTES: Record<string, string> = {
       {{ eur(cout.total) }} €<span class="text-base font-medium text-stone">/mois</span>
     </p>
     <p class="mt-1 text-xs text-stone">
-      Annonce : {{ eur(cout.affiche) }} € charges comprises
+      {{ libelleAnnonce }} : {{ eur(cout.affiche) }} €
     </p>
 
     <div class="mt-4 flex h-2 overflow-hidden rounded-full bg-surface">

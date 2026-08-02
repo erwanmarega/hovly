@@ -103,7 +103,7 @@ function soumettre() {
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <label class="block">
-            <span class="text-xs text-stone">Loyer min (€)</span>
+            <span class="text-xs text-stone">Prix min (€)</span>
             <input
               v-model.number="prixMin"
               type="number"
@@ -112,7 +112,7 @@ function soumettre() {
             >
           </label>
           <label class="block">
-            <span class="text-xs text-stone">Loyer max (€)</span>
+            <span class="text-xs text-stone">Prix max (€)</span>
             <input
               v-model.number="prixMax"
               type="number"

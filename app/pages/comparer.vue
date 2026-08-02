@@ -20,11 +20,21 @@ const scores = computed(() => choisis.value.map((b) => scoreBien(b, contexte.val
 const { trajets, ancres, refresh: refreshTrajets } = useTrajets()
 useAsyncData('trajets-comparer', () => refreshTrajets(), { server: false })
 
+const { chargerTous: chargerMarches, pour: marchePour } = useMarche()
+watch(choisis, (liste) => chargerMarches(liste), { immediate: true })
+const ecartsDvf = computed(() =>
+  choisis.value.map((b) => {
+    const m = marchePour(b.id)
+    const pm2 = prixAuM2(b)
+    return ressembleVente(b) && m && pm2 ? ecartPct(pm2, m) : null
+  })
+)
+
 const lignes = computed(() =>
   comparer(choisis.value, scores.value, optionsDepuisPreferences(preferences.value), {
     ancres: ancres.value,
     index: indexer(trajets.value)
-  })
+  }, ecartsDvf.value)
 )
 
 const gagnant = computed(() => {

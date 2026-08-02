@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { comparer, MAX_COMPARAISON } from '../app/composables/useComparateur'
 import { scoreBien } from '../app/composables/useScore'
+import {
+  DUREE_DEFAUT_ANS,
+  FRAIS_NOTAIRE,
+  TAUX_DEFAUT,
+  mensualiteCredit
+} from '../app/composables/useCoutReel'
 import type { Bien } from '../app/types'
 
 let compteur = 0
@@ -28,6 +34,7 @@ function bien(over: Partial<Bien> = {}): Bien {
     photos: [],
     description: null,
     statut: 'a_visiter',
+    transaction: 'location',
     note_perso: null,
     visite_le: null,
     compte_rendu: null,
@@ -182,5 +189,34 @@ describe('comparer — calculs dérivés', () => {
     const l = ligne(comparer(liste, scores(liste)), 'score')
     expect(l.sens).toBe('max')
     expect(l.meilleurs).toEqual([1])
+  })
+})
+
+describe('comparer — biens en achat', () => {
+  it('libelle « Prix » et « Total /mois » plutôt que « Loyer »', () => {
+    const liste = [bien(), bien({ prix: 120000 })]
+    const lignes = comparer(liste, scores(liste))
+    expect(ligne(lignes, 'loyer').label).toBe('Prix')
+    expect(ligne(lignes, 'total').label).toBe('Total /mois')
+  })
+
+  it('le total mensuel d’un achat est la mensualité estimée + charges', () => {
+    const b = bien({ transaction: 'achat', prix: 20000000, charges: 10000 })
+    const liste = [b, bien({ transaction: 'achat', prix: 24000000, charges: 10000 })]
+    const l = ligne(comparer(liste, scores(liste)), 'total')
+
+    const attendu = Math.round(
+      (mensualiteCredit(Math.round(20000000 * (1 + FRAIS_NOTAIRE)), TAUX_DEFAUT, DUREE_DEFAUT_ANS) +
+        10000) /
+        100
+    )
+    expect(l.affichage[0]).toBe(`${attendu.toLocaleString('fr-FR')} €`)
+    expect(l.meilleurs).toEqual([0])
+  })
+
+  it('le total mensuel d’une location reste loyer + charges', () => {
+    const liste = [bien({ prix: 100000, charges: 8000 }), bien({ prix: 120000, charges: 8000 })]
+    const l = ligne(comparer(liste, scores(liste)), 'total')
+    expect(l.affichage[0]).toBe(`${(1080).toLocaleString('fr-FR')} €`)
   })
 })

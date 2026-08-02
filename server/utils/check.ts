@@ -6,6 +6,15 @@ import { envoyerAlertePush, pushDisponible } from './push'
 
 export type { AlerteCreee, CheckResume, ResumeEnvois }
 
+// Un re-scrape peut produire un prix aberrant (repli regex sur une page mal
+// rendue). Au-delà d'un ratio ×0,5–×2 la variation est considérée suspecte :
+// mieux vaut rater une vraie grosse baisse que persister un prix fantaisiste.
+export function prixPlausible(ancien: number, nouveau: number): boolean {
+  if (ancien <= 0) return true
+  const ratio = nouveau / ancien
+  return ratio >= 0.5 && ratio <= 2
+}
+
 export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckResume> {
   const resume: CheckResume = { verifies: 0, baisses: 0, supprimes: 0, erreurs: 0, alertes: [] }
 
@@ -40,6 +49,17 @@ export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckRe
 
     const nouveauPrix = res.data.prix ?? null
     if (nouveauPrix == null) continue
+
+    if (!prixPlausible(bien.prix, nouveauPrix)) {
+      console.warn('[check] prix aberrant ignoré', {
+        bien_id: bien.id,
+        ancien: bien.prix,
+        nouveau: nouveauPrix
+      })
+      continue
+    }
+
+    if (nouveauPrix === bien.prix) continue
 
     await client.from('prix_historique').insert({ bien_id: bien.id, prix: nouveauPrix })
 

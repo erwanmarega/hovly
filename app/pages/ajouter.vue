@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bien, DPE, SiteSource, Statut } from '~/types'
+import type { Bien, DPE, SiteSource, Statut, Transaction } from '~/types'
 import type { EntreeImport } from '~/composables/useImportMasse'
 import { detecterSource, STATUTS } from '~/composables/useBiens'
 
@@ -109,6 +109,7 @@ const urlInvalide = computed(() => url.value.trim().length > 8 && !sourceDetecte
 
 const draft = reactive({
   titre: '',
+  transaction: 'location' as Transaction,
   prix: 0,
   charges: 0,
   surface: 0,
@@ -133,6 +134,7 @@ const scoreApercu = computed(() => {
     url_source: url.value,
     site_source: sourceDetectee.value ?? 'pap',
     titre: draft.titre,
+    transaction: draft.transaction,
     prix: Math.round(draft.prix * 100),
     surface: draft.surface,
     nb_pieces: draft.nb_pieces,
@@ -150,6 +152,10 @@ const scoreApercu = computed(() => {
     description: null,
     statut: draft.statut,
     note_perso: null,
+    visite_le: null,
+    compte_rendu: null,
+    checklist: null,
+    rappel_envoye_le: null,
     actif: true,
     created_at: new Date().toISOString()
   } satisfies Bien
@@ -191,6 +197,7 @@ async function analyser() {
       body: { url: url.value }
     })
     draft.titre = b.titre ?? ''
+    draft.transaction = b.transaction ?? 'location'
     draft.prix = b.prix ? Math.round(b.prix / 100) : 0
     draft.charges = b.charges ? Math.round(b.charges / 100) : 0
     draft.surface = b.surface ?? 0
@@ -230,7 +237,7 @@ onBeforeUnmount(() => clearInterval(minuteur))
 const manquants = computed(() => {
   const m: string[] = []
   if (!draft.titre) m.push('titre')
-  if (!draft.prix) m.push('loyer')
+  if (!draft.prix) m.push(draft.transaction === 'achat' ? 'prix de vente' : 'loyer')
   if (!draft.surface) m.push('surface')
   return m
 })
@@ -248,6 +255,7 @@ async function enregistrer() {
       url_source: url.value,
       site_source: source,
       titre: draft.titre,
+      transaction: draft.transaction,
       prix: Math.round(draft.prix * 100),
       surface: draft.surface,
       nb_pieces: draft.nb_pieces,
@@ -589,7 +597,24 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
 
             <div class="mt-5 space-y-5">
               <div class="rounded-feature border border-hairline-soft bg-white p-6">
-                <h2 class="text-sm font-semibold text-ink-deep">Le bien</h2>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <h2 class="text-sm font-semibold text-ink-deep">Le bien</h2>
+                  <div class="flex items-center gap-1 rounded-full bg-surface p-1">
+                    <button
+                      v-for="t in [
+                        { value: 'location' as Transaction, label: 'Location' },
+                        { value: 'achat' as Transaction, label: 'Achat' }
+                      ]"
+                      :key="t.value"
+                      type="button"
+                      class="rounded-full px-3.5 py-1.5 text-xs font-medium transition"
+                      :class="draft.transaction === t.value ? 'bg-ink text-white' : 'text-steel hover:text-ink'"
+                      @click="draft.transaction = t.value"
+                    >
+                      {{ t.label }}
+                    </button>
+                  </div>
+                </div>
 
                 <div class="mt-4">
                   <label :class="labelCls">Titre</label>
@@ -598,7 +623,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
 
                 <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div>
-                    <label :class="labelCls">Loyer €/mois</label>
+                    <label :class="labelCls">{{ draft.transaction === 'achat' ? 'Prix de vente €' : 'Loyer €/mois' }}</label>
                     <input v-model.number="draft.prix" type="number" min="0" :class="inputCls">
                   </div>
                   <div>
@@ -734,7 +759,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                   </p>
 
                   <p class="mt-4 text-3xl font-light tracking-tight">
-                    {{ eur(draft.prix) }} €<span class="text-base text-stone">/mois</span>
+                    {{ eur(draft.prix) }} €<span v-if="draft.transaction !== 'achat'" class="text-base text-stone">/mois</span>
                   </p>
 
                   <div class="mt-4 grid grid-cols-3 gap-2 text-center">

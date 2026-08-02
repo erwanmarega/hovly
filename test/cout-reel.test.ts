@@ -4,11 +4,15 @@ import {
   ASSURANCE_FIXE_AN,
   ASSURANCE_PAR_M2_AN,
   COEF_ENERGIE_FINALE,
+  DUREE_DEFAUT_ANS,
+  FRAIS_NOTAIRE,
   KWH_EP_PAR_DPE,
   PRIX_KWH_DEFAUT,
+  TAUX_DEFAUT,
   coutAssuranceMensuel,
   coutEnergieMensuel,
   coutReel,
+  mensualiteCredit,
   optionsDepuisPreferences
 } from '../app/composables/useCoutReel'
 import { PREFERENCES_DEFAUT } from '../app/composables/useScore'
@@ -43,6 +47,7 @@ function bien(over: Partial<Bien> = {}): Bien {
     rappel_envoye_le: null,
     actif: true,
     created_at: '2026-07-01T10:00:00.000Z',
+    transaction: 'location',
     ...over
   }
 }
@@ -150,5 +155,61 @@ describe('optionsDepuisPreferences', () => {
         chauffageDansCharges: true
       })
     ).toEqual({ prixKwh: 22, chauffageDansCharges: true })
+  })
+})
+
+describe('mensualiteCredit', () => {
+  it('taux zéro : simple division du capital par les mensualités', () => {
+    expect(mensualiteCredit(24000000, 0, 20)).toBe(100000) // 240 000 € / 240 mois
+  })
+
+  it('un taux positif alourdit la mensualité', () => {
+    const m0 = mensualiteCredit(24000000, 0, 20)
+    const m = mensualiteCredit(24000000, TAUX_DEFAUT, DUREE_DEFAUT_ANS)
+    expect(m).toBeGreaterThan(m0)
+  })
+
+  it('vaut zéro sans capital', () => {
+    expect(mensualiteCredit(0, TAUX_DEFAUT, 20)).toBe(0)
+    expect(mensualiteCredit(-100, TAUX_DEFAUT, 20)).toBe(0)
+  })
+})
+
+describe('coutReel — bien en achat', () => {
+  const achat = (over: Partial<Bien> = {}) =>
+    bien({ transaction: 'achat', prix: 20000000, charges: 15000, ...over })
+
+  it('remplace le loyer par une mensualité estimée', () => {
+    const c = coutReel(achat(), { tauxEmprunt: 0, dureeEmpruntAns: 20 })
+    const attendu = Math.round(Math.round(20000000 * (1 + FRAIS_NOTAIRE)) / 240)
+    const credit = poste(c, 'credit')
+    expect(credit.label).toBe('Mensualité estimée')
+    expect(credit.montant).toBe(attendu)
+    expect(c.affiche).toBe(attendu)
+    expect(poste(c, 'loyer')).toBeUndefined()
+  })
+
+  it('déduit l’apport du capital emprunté', () => {
+    const sansApport = coutReel(achat(), { tauxEmprunt: 0 })
+    const avec = coutReel(achat(), { tauxEmprunt: 0, apport: 20000 })
+    expect(poste(sansApport, 'credit').montant! - poste(avec, 'credit').montant!).toBe(
+      Math.round(2000000 / 240)
+    )
+  })
+
+  it('libelle les charges en copropriété et documente les hypothèses', () => {
+    const c = coutReel(achat())
+    expect(poste(c, 'charges').label).toBe('Charges de copropriété')
+    expect(c.hypotheses.join(' ')).toContain('notaire')
+    expect(c.hypotheses.join(' ')).toContain(`${TAUX_DEFAUT} % sur ${DUREE_DEFAUT_ANS} ans`)
+  })
+
+  it('garde énergie et assurance, et mesure l’écart avec la mensualité', () => {
+    const c = coutReel(achat())
+    expect(poste(c, 'energie').montant).toBe(coutEnergieMensuel(achat()))
+    expect(poste(c, 'assurance').montant).toBe(coutAssuranceMensuel(achat()))
+    const credit = poste(c, 'credit').montant!
+    expect(c.total).toBe(credit + 15000 + coutEnergieMensuel(achat())! + coutAssuranceMensuel(achat()))
+    expect(c.ecartPourcent).toBe(Math.round(((c.total - credit) / credit) * 100))
   })
 })

@@ -8,6 +8,10 @@ export const STATUTS: { value: Statut; label: string }[] = [
   { value: 'elimine', label: 'Éliminé' }
 ]
 
+export function estAchat(b: Pick<Bien, 'transaction'>): boolean {
+  return b.transaction === 'achat'
+}
+
 export function useBiens() {
   const biens = useState<Bien[]>('biens', () => [])
 

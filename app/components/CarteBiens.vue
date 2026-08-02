@@ -66,7 +66,7 @@ function echapper(s: string): string {
 
 function popup(b: Bien): string {
   const prix = b.prix
-    ? `${eur(Math.round(b.prix / 100))} €/mois`
+    ? `${eur(Math.round(b.prix / 100))} €${estAchat(b) ? "" : "/mois"}`
     : "Prix inconnu";
   const m2 = b.surface
     ? ` · ${eur(Math.round(b.prix / 100 / b.surface))} €/m²`

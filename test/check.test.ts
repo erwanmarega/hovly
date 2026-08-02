@@ -119,16 +119,35 @@ describe('verifierBiens', () => {
     })
   })
 
-  it('n’écrit que l’historique quand le prix est inchangé', async () => {
+  it('n’écrit rien quand le prix est inchangé', async () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 100000 } })
     const { client, calls } = fakeClient()
 
     const resume = await verifierBiens(client, [bien()])
 
     expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
-    expect(calls).toEqual([
-      { table: 'prix_historique', op: 'insert', row: { bien_id: 'b1', prix: 100000 } }
-    ])
+    expect(calls).toEqual([])
+  })
+
+  it('ignore un prix aberrant sans rien écrire', async () => {
+    scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 97199900 } })
+    const { client, calls } = fakeClient()
+
+    const resume = await verifierBiens(client, [bien()])
+
+    expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
+    expect(resume.alertes).toEqual([])
+    expect(calls).toEqual([])
+  })
+
+  it('ignore une baisse aberrante sans rien écrire', async () => {
+    scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 30000 } })
+    const { client, calls } = fakeClient()
+
+    const resume = await verifierBiens(client, [bien()])
+
+    expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
+    expect(calls).toEqual([])
   })
 
   it('désactive le bien et alerte quand l’annonce est supprimée', async () => {

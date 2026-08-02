@@ -148,7 +148,11 @@ watch(biensAffiches, (liste) => {
 
 const stats = computed(() => {
   const actifs = biens.value.filter((b) => b.actif);
-  const loyers = actifs.map(prixMensuel).filter((p) => p > 0);
+  // La fourchette ne mélange pas loyers et prix de vente : locations en
+  // priorité, achats seulement si la liste n'en contient que ça.
+  const locations = actifs.filter((b) => !estAchat(b));
+  const groupe = locations.length ? locations : actifs;
+  const prix = groupe.map(prixMensuel).filter((p) => p > 0);
   const meilleur = actifs.reduce<{ score: Score; bien: Bien } | null>(
     (best, b) => {
       const score = scoreDe(b);
@@ -161,8 +165,9 @@ const stats = computed(() => {
 
   return {
     total: actifs.length,
-    loyerMin: loyers.length ? Math.min(...loyers) : 0,
-    loyerMax: loyers.length ? Math.max(...loyers) : 0,
+    prixMin: prix.length ? Math.min(...prix) : 0,
+    prixMax: prix.length ? Math.max(...prix) : 0,
+    fourchetteLabel: locations.length ? "locations" : "achats",
     meilleur,
     coups: actifs.filter((b) => b.statut === "coup_de_coeur").length,
   };
@@ -240,14 +245,14 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             <dt
               class="text-[11px] font-semibold uppercase tracking-wider text-black"
             >
-              Fourchette
+              Fourchette <span class="font-normal normal-case">({{ stats.fourchetteLabel }})</span>
             </dt>
             <dd
-              v-if="stats.loyerMax"
+              v-if="stats.prixMax"
               class="mt-1.5 text-3xl font-light tabular-nums"
             >
-              {{ eur(stats.loyerMin) }}<span class="text-black"> – </span
-              >{{ eur(stats.loyerMax) }}
+              {{ eur(stats.prixMin) }}<span class="text-black"> – </span
+              >{{ eur(stats.prixMax) }}
               <span class="text-lg text-black">€</span>
             </dd>
             <dd v-else class="mt-1.5 text-3xl font-light text-black">—</dd>

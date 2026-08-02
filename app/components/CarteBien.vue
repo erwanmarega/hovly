@@ -47,7 +47,7 @@ const eur = (n: number) => n.toLocaleString('fr-FR')
       </p>
 
       <p class="mt-3 text-2xl font-light tracking-tight">
-        {{ eur(prixMensuel) }} €<span class="text-sm text-stone">/mois</span>
+        {{ eur(prixMensuel) }} €<span v-if="!estAchat(bien)" class="text-sm text-stone">/mois</span>
       </p>
 
       <div class="mt-4 flex flex-wrap items-center gap-1.5 text-xs">

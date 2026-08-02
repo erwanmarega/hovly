@@ -8,6 +8,7 @@ import {
   type PageData
 } from './extract'
 import { detecterSource } from './source'
+import { detecterTransaction } from './transaction'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
 
@@ -81,6 +82,7 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
   }
   data.url_source = url
   data.site_source = source
+  data.transaction = detecterTransaction(url, data.prix ?? null)
 
   const indisponible =
     status === 404 ||
