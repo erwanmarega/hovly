@@ -189,6 +189,11 @@ const inputCls =
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-4xl px-6 py-8">
+      <FilAriane
+        class="mb-5"
+        :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Mon profil' }]"
+      />
+
       <section
         class="bandeau relative isolate overflow-hidden rounded-feature bg-brand px-7 py-8 md:px-10 md:py-10"
       >

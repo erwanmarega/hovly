@@ -3,5 +3,6 @@
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <RideauPage />
+    <ToastGlobal />
   </div>
 </template>

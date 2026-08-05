@@ -195,11 +195,20 @@ async function rafraichir() {
   }
 }
 
+const confirmationSuppression = ref(false);
 const deleting = ref(false);
-async function supprimer() {
-  if (!confirm("Supprimer ce bien ?")) return;
+const { annoncer: annoncerToast } = useToast();
+async function confirmerSuppression() {
   deleting.value = true;
-  await $fetch(`/api/biens/${id}`, { method: "DELETE" });
+  try {
+    await $fetch(`/api/biens/${id}`, { method: "DELETE" });
+  } catch {
+    deleting.value = false;
+    confirmationSuppression.value = false;
+    annoncerToast("Suppression impossible. Réessaie.", "erreur");
+    return;
+  }
+  annoncerToast(`« ${bien.value?.titre} » supprimé.`);
   await navigateTo("/dashboard");
 }
 </script>
@@ -309,7 +318,7 @@ async function supprimer() {
             <button
               :disabled="deleting"
               class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-4 py-2.5 text-sm font-medium text-steel hover:bg-coral hover:text-[#600000] transition disabled:opacity-60 sm:px-5"
-              @click="supprimer"
+              @click="confirmationSuppression = true"
             >
               <svg
                 class="size-4"
@@ -596,6 +605,14 @@ async function supprimer() {
           </div>
         </Transition>
       </template>
+
+      <ModalSuppressionBien
+        :ouvert="confirmationSuppression"
+        :bien="bien ?? null"
+        :en-cours="deleting"
+        @annuler="confirmationSuppression = false"
+        @confirmer="confirmerSuppression"
+      />
     </main>
   </div>
 </template>

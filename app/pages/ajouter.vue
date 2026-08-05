@@ -119,7 +119,7 @@ const draft = reactive({
   adresse: '',
   ville: '',
   code_postal: '',
-  photo: '',
+  photos: [] as string[],
   statut: 'a_visiter' as Statut,
   note_perso: ''
 })
@@ -148,7 +148,7 @@ const scoreApercu = computed(() => {
     lon: null,
     geo_precision: null,
     geocode_le: null,
-    photos: draft.photo ? [draft.photo] : [],
+    photos: draft.photos,
     description: null,
     statut: draft.statut,
     note_perso: null,
@@ -207,7 +207,7 @@ async function analyser() {
     draft.adresse = b.adresse ?? ''
     draft.ville = b.ville ?? ''
     draft.code_postal = b.code_postal ?? ''
-    draft.photo = b.photos?.[0] ?? ''
+    draft.photos = b.photos ?? []
     etape.value = 'edition'
   } catch (e: unknown) {
     // Une page de résultats n'est pas un bien : c'est une veille qui s'ouvre.
@@ -265,7 +265,7 @@ async function enregistrer() {
       adresse: draft.adresse || null,
       ville: draft.ville,
       code_postal: draft.code_postal,
-      photos: draft.photo ? [draft.photo] : [],
+      photos: draft.photos,
       statut: draft.statut,
       note_perso: draft.note_perso || null
     })
@@ -288,6 +288,11 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-6 py-10">
+      <FilAriane
+        class="mb-5"
+        :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Ajouter un bien' }]"
+      />
+
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 class="text-3xl font-light tracking-tight text-ink-deep">Ajouter un bien</h1>
@@ -735,14 +740,20 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               <div class="overflow-hidden rounded-feature border border-hairline-soft bg-white">
                 <div class="relative aspect-[4/3] bg-surface">
                   <img
-                    v-if="draft.photo"
-                    :src="draft.photo"
+                    v-if="draft.photos.length"
+                    :src="draft.photos[0]"
                     alt=""
                     class="size-full object-cover"
                   >
                   <div v-else class="grid size-full place-items-center text-sm text-stone">
                     Aucune photo
                   </div>
+                  <span
+                    v-if="draft.photos.length > 1"
+                    class="absolute bottom-3 right-3 rounded-full bg-ink/80 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+                  >
+                    {{ draft.photos.length }} photos
+                  </span>
                   <span
                     v-if="sourceDetectee"
                     class="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink backdrop-blur-sm"

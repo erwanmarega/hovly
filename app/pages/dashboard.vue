@@ -8,6 +8,30 @@ useHead({ title: "Mes biens — Hovly" });
 const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } =
   useBiens();
 
+const bienASupprimer = ref<Bien | null>(null);
+const suppressionEnCours = ref(false);
+const { annoncer: annoncerToast } = useToast();
+
+function demanderSuppression(id: string) {
+  bienASupprimer.value = biens.value.find((b) => b.id === id) ?? null;
+}
+
+async function confirmerSuppression() {
+  const b = bienASupprimer.value;
+  if (!b) return;
+  suppressionEnCours.value = true;
+  await supprimer(b.id);
+  suppressionEnCours.value = false;
+  bienASupprimer.value = null;
+  // useBiens.supprimer restaure la liste en cas d'échec : si le bien est
+  // encore là, la suppression a échoué.
+  if (biens.value.some((x) => x.id === b.id)) {
+    annoncerToast('Suppression impossible. Réessaie.', 'erreur');
+  } else {
+    annoncerToast(`« ${b.titre} » supprimé.`);
+  }
+}
+
 const { pending } = useAsyncData("biens", () => refresh(), { server: false });
 
 const VUES = [
@@ -516,7 +540,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             :prix-mensuel="prixMensuel(b)"
             :prix-m2="prixM2(b)"
             :style="{ '--i': i }"
-            @supprimer="supprimer"
+            @supprimer="demanderSuppression"
           />
         </div>
 
@@ -542,7 +566,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
         :par-page="PAR_PAGE"
         @tri="toggleTri"
         @update:page="page = $event"
-        @supprimer="supprimer"
+        @supprimer="demanderSuppression"
         @statut="setStatut"
       />
 
@@ -570,6 +594,14 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
           </NuxtLink>
         </div>
       </Transition>
+
+      <ModalSuppressionBien
+        :ouvert="bienASupprimer !== null"
+        :bien="bienASupprimer"
+        :en-cours="suppressionEnCours"
+        @annuler="bienASupprimer = null"
+        @confirmer="confirmerSuppression"
+      />
     </main>
   </div>
 </template>

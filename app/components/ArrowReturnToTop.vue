@@ -3,7 +3,7 @@ const emit = defineEmits(["scrollToTop"]);
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative align-right">
     <button
       class="cursor-pointer relative after:content-['scroll_to_top'] after:text-black after:absolute after:text-nowrap after:scale-0 hover:after:scale-100 after:duration-200 w-16 h-16 rounded-full bg-brand pointer flex items-center justify-center duration-300 hover:rounded-[50px] hover:w-36 group/button overflow-hidden active:scale-90"
       @click="emit('scrollToTop')"
