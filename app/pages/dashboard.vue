@@ -224,39 +224,46 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
 
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <section
-        class="bandeau relative isolate overflow-hidden rounded-feature bg-brand px-7 py-8 text-black md:px-10 md:py-10"
+        class="bandeau relative isolate overflow-hidden rounded-feature bg-brand px-7 py-8 md:px-10 md:py-10"
       >
-        <span
-          class="halo pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-white/50 blur-3xl"
-        />
-        <span
-          class="halo pointer-events-none absolute -bottom-40 -left-24 size-96 rounded-full bg-brand-deep/40 blur-3xl"
-          style="animation-delay: 3s"
-        />
         <span class="quadrillage pointer-events-none absolute inset-0" />
 
-        <div class="relative flex flex-wrap items-start justify-between gap-6">
-          <div>
+        <div class="relative flex flex-wrap items-center gap-5">
+          <div class="min-w-0">
             <p
               class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50"
             >
               Tableau de bord
             </p>
-            <h1 class="mt-2 text-4xl font-light tracking-tight md:text-5xl">
+            <h1 class="mt-1.5 text-3xl font-light tracking-tight text-ink md:text-4xl">
               Mes biens
             </h1>
-            <p class="mt-2 max-w-sm text-ink/60">
+            <p class="mt-1 text-ink/60">
               Compare, suis les prix, prends ta décision.
             </p>
           </div>
+
+          <NuxtLink
+            to="/ajouter"
+            class="ajouter ml-auto flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Ajouter un bien
+          </NuxtLink>
         </div>
 
-        <dl
-          class="tuiles relative mt-9 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink/10 lg:grid-cols-4"
-        >
-          <div class="tuile bg-white px-5 py-4" style="--i: 0">
+        <dl class="relative mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="tuile rounded-2xl bg-white px-5 py-4" style="--i: 0">
             <dt
-              class="text-[11px] font-semibold uppercase tracking-wider text-black"
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
             >
               Biens suivis
             </dt>
@@ -265,31 +272,30 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             </dd>
           </div>
 
-          <div class="tuile bg-white px-5 py-4" style="--i: 1">
+          <div class="tuile rounded-2xl bg-white px-5 py-4" style="--i: 1">
             <dt
-              class="text-[11px] font-semibold uppercase tracking-wider text-black"
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
             >
               Fourchette <span class="font-normal normal-case">({{ stats.fourchetteLabel }})</span>
             </dt>
             <dd
               v-if="stats.prixMax"
-              class="mt-1.5 text-3xl font-light tabular-nums"
+              class="mt-1.5 text-2xl font-light tabular-nums"
             >
-              {{ eur(stats.prixMin) }}<span class="text-black"> – </span
-              >{{ eur(stats.prixMax) }}
-              <span class="text-lg text-black">€</span>
+              {{ eur(stats.prixMin) }} – {{ eur(stats.prixMax) }}
+              <span class="text-base text-stone">€</span>
             </dd>
-            <dd v-else class="mt-1.5 text-3xl font-light text-black">—</dd>
+            <dd v-else class="mt-1.5 text-3xl font-light text-stone">—</dd>
           </div>
 
           <component
             :is="stats.meilleur ? 'NuxtLink' : 'div'"
             :to="stats.meilleur ? `/bien/${stats.meilleur.bien.id}` : undefined"
-            class="tuile group block bg-white px-5 py-4"
+            class="tuile group block rounded-2xl bg-white px-5 py-4"
             style="--i: 2"
           >
             <dt
-              class="text-[11px] font-semibold uppercase tracking-wider text-black"
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
             >
               Meilleur score
             </dt>
@@ -312,9 +318,9 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             </p>
           </component>
 
-          <div class="tuile bg-white px-5 py-4" style="--i: 3">
+          <div class="tuile rounded-2xl bg-white px-5 py-4" style="--i: 3">
             <dt
-              class="text-[11px] font-semibold uppercase tracking-wider text-black"
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
             >
               Coups de cœur
             </dt>
@@ -343,97 +349,103 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
       </div>
 
       <div
-        class="barre sticky top-[4.5rem] z-20 mt-6 md:top-3 flex flex-wrap items-center gap-3 rounded-2xl border border-hairline-soft bg-white/85 p-3 backdrop-blur-xl"
+        class="barre sticky top-[4.5rem] z-20 mt-6 rounded-2xl border border-hairline-soft bg-white/85 backdrop-blur-xl md:top-3"
       >
-        <div class="relative min-w-[200px] flex-1">
-          <input
-            v-model="recherche"
-            type="search"
-            placeholder="Rechercher un bien, une ville…"
-            class="h-10 w-full rounded-full border border-hairline bg-surface-soft pl-10 pr-9 text-sm outline-none transition focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20"
-          />
-          <svg
-            class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <button
-            v-if="recherche"
-            class="absolute right-3 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full text-stone transition hover:bg-surface hover:text-ink"
-            aria-label="Effacer la recherche"
-            @click="recherche = ''"
-          >
-            ×
-          </button>
-        </div>
-
-        <div class="filtres -mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 py-0.5 sm:w-auto">
-          <button
-            class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
-            :class="
-              filtreStatut === 'tous'
-                ? 'bg-ink text-white'
-                : 'border border-hairline bg-white text-steel hover:bg-surface'
-            "
-            @click="filtreStatut = 'tous'"
-          >
-            Tous
-            <span
-              class="rounded-full px-1.5 text-[11px] tabular-nums"
-              :class="filtreStatut === 'tous' ? 'bg-white/20' : 'bg-surface'"
-              >{{ compteurs.tous }}</span
+        <div class="flex flex-wrap items-center gap-3 p-3">
+          <div class="relative min-w-[200px] flex-1">
+            <input
+              v-model="recherche"
+              type="search"
+              placeholder="Rechercher un bien, une ville…"
+              class="h-10 w-full rounded-full border border-hairline bg-surface-soft pl-10 pr-9 text-sm outline-none transition focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20"
             >
-          </button>
-          <button
-            v-for="s in STATUTS"
-            :key="s.value"
-            class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
-            :class="
-              filtreStatut === s.value
-                ? 'bg-ink text-white'
-                : 'border border-hairline bg-white text-steel hover:bg-surface'
-            "
-            @click="filtreStatut = s.value"
-          >
-            {{ s.label }}
-            <span
-              class="rounded-full px-1.5 text-[11px] tabular-nums"
-              :class="filtreStatut === s.value ? 'bg-white/20' : 'bg-surface'"
-              >{{ compteurs[s.value] }}</span
+            <svg
+              class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
             >
-          </button>
-        </div>
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <button
+              v-if="recherche"
+              class="absolute right-3 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full text-stone transition hover:bg-surface hover:text-ink"
+              aria-label="Effacer la recherche"
+              @click="recherche = ''"
+            >
+              ×
+            </button>
+          </div>
 
-        <SelecteurAncreTrajet />
+          <div
+            class="segments relative flex w-full items-center rounded-full bg-surface p-1 sm:w-auto"
+          >
+            <span
+              class="pastille absolute inset-y-1 rounded-full bg-ink"
+              :style="{
+                width: `calc((100% - 0.5rem) / ${VUES.length})`,
+                transform: `translateX(calc(${VUES.findIndex(
+                  (v) => v.value === vue
+                )} * 100%))`,
+              }"
+            />
+            <button
+              v-for="v in VUES"
+              :key="v.value"
+              class="relative z-10 flex-1 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition"
+              :class="
+                vue === v.value ? 'text-white' : 'text-steel hover:text-ink'
+              "
+              @click="vue = v.value"
+            >
+              {{ v.label }}
+            </button>
+          </div>
+        </div>
 
         <div
-          class="segments relative flex w-full items-center rounded-full bg-surface p-1 sm:ml-auto sm:w-auto"
+          class="flex flex-wrap items-center gap-3 border-t border-hairline-soft px-3 py-2.5"
         >
-          <span
-            class="pastille absolute inset-y-1 rounded-full bg-ink"
-            :style="{
-              width: `calc((100% - 0.5rem) / ${VUES.length})`,
-              transform: `translateX(calc(${VUES.findIndex(
-                (v) => v.value === vue
-              )} * 100%))`,
-            }"
-          />
-          <button
-            v-for="v in VUES"
-            :key="v.value"
-            class="relative z-10 flex-1 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition"
-            :class="
-              vue === v.value ? 'text-white' : 'text-steel hover:text-ink'
-            "
-            @click="vue = v.value"
-          >
-            {{ v.label }}
-          </button>
+          <div class="filtres -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
+            <button
+              class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
+              :class="
+                filtreStatut === 'tous'
+                  ? 'bg-ink text-white'
+                  : 'border border-hairline bg-white text-steel hover:bg-surface'
+              "
+              @click="filtreStatut = 'tous'"
+            >
+              Tous
+              <span
+                class="rounded-full px-1.5 text-[11px] tabular-nums"
+                :class="filtreStatut === 'tous' ? 'bg-white/20' : 'bg-surface'"
+                >{{ compteurs.tous }}</span
+              >
+            </button>
+            <button
+              v-for="s in STATUTS"
+              :key="s.value"
+              class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
+              :class="
+                filtreStatut === s.value
+                  ? 'bg-ink text-white'
+                  : 'border border-hairline bg-white text-steel hover:bg-surface'
+              "
+              @click="filtreStatut = s.value"
+            >
+              {{ s.label }}
+              <span
+                class="rounded-full px-1.5 text-[11px] tabular-nums"
+                :class="filtreStatut === s.value ? 'bg-white/20' : 'bg-surface'"
+                >{{ compteurs[s.value] }}</span
+              >
+            </button>
+          </div>
+
+          <SelecteurAncreTrajet class="ml-auto" />
         </div>
       </div>
 
@@ -612,21 +624,6 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
   animation: monter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.halo {
-  animation: respirer 9s ease-in-out infinite;
-}
-@keyframes respirer {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: translate(-18px, 16px) scale(1.08);
-    opacity: 1;
-  }
-}
-
 .quadrillage {
   background-image: linear-gradient(
       to right,
@@ -661,8 +658,24 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
   }
 }
 
+.tuile {
+  opacity: 0;
+  animation: monter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(0.15s + var(--i) * 0.07s);
+}
+
 .filtre:hover {
   transform: translateY(-1px);
+}
+
+.ajouter {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.3s ease;
+}
+.ajouter:hover {
+  transform: translateY(-2px);
+  background: #000;
 }
 
 .grille > * {
@@ -723,7 +736,6 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
     opacity: 1;
     animation: none;
   }
-  .halo,
   .squelette {
     animation: none;
   }

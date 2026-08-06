@@ -15,9 +15,12 @@ onBeforeUnmount(() => clearTimeout(minuteur))
     <Transition name="toast">
       <div
         v-if="toast"
-        class="fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] items-center gap-2.5 rounded-full border border-hairline bg-white/95 py-2.5 pl-3 pr-4 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl"
+        class="pointer-events-none fixed inset-x-4 bottom-6 z-50 flex justify-center sm:justify-end sm:pr-2"
         role="status"
       >
+        <div
+          class="pointer-events-auto flex w-fit max-w-full items-center gap-2.5 rounded-full border border-hairline bg-white/95 py-2.5 pl-3 pr-4 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl"
+        >
         <span
           class="grid size-7 shrink-0 place-items-center rounded-full"
           :class="toast.type === 'erreur' ? 'bg-coral text-[#600000]' : 'bg-teal text-[#0a4a42]'"
@@ -43,7 +46,8 @@ onBeforeUnmount(() => clearTimeout(minuteur))
             <path d="m5 13 4 4L19 7" />
           </svg>
         </span>
-        <p class="text-sm font-medium text-ink">{{ toast.texte }}</p>
+          <p class="text-sm font-medium text-ink">{{ toast.texte }}</p>
+        </div>
       </div>
     </Transition>
   </Teleport>
