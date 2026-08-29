@@ -57,3 +57,41 @@ L'utilisateur colle l'URL d'une **page de résultats** (pas une annonce) ; le cr
 - Une annonce dont on n'a pas su lire le prix ou la surface **passe** les filtres :
   mieux vaut une à écarter à la main qu'une perdue en silence.
 - Backoff exponentiel sur échec, mise en pause automatique après 8 échecs d'affilée.
+
+### Sécurité et rate limiting
+
+Deux niveaux de protection côté serveur, implémentés en mémoire (store global au
+processus Nuxt) :
+
+1. **Rate limit global par IP** (`server/middleware/rate-limit.global.ts`) sur
+   toutes les routes `/api/*`, sauf `/api/cron/*` : 120 requêtes / minute / IP.
+2. **Rate limit par utilisateur authentifié** (`server/utils/rate-limit.ts`) sur
+   les routes coûteuses (scraping, trajets, check). L'identifiant combine `userId`
+   et IP pour limiter à la fois l'abus de session et les faux positifs en NAT.
+
+| Route | Quota |
+|---|---|
+| `POST /api/scrape` | 10/min, 50/h |
+| `POST /api/biens/:id/refresh` | 10/min, 50/h |
+| `POST /api/recherches/:id/scan` | 5/min, 30/h |
+| `POST /api/trajets/calculer` | 10/min, 100/h |
+| `POST /api/check` | 5/min, 20/h |
+| `PATCH /api/resultats/:id` | 10/min, 50/h |
+
+Autres limites et validations :
+
+- Maximum **10 veilles** par utilisateur (`MAX_RECHERCHES`).
+- Maximum **100 biens actifs** par utilisateur (`MAX_BIENS_ACTIFS`).
+- Les URLs sources sont validées (protocole HTTP/HTTPS, longueur ≤ 2048).
+- Les corps de requête POST sont limités à 128 KiB.
+- Des headers de sécurité basiques sont appliqués via `nitro.routeRules`.
+- Protection SSRF sur le scraping : `detecterSource()` (`server/utils/scrape/source.ts`)
+  fait un match de domaine exact (pas de sous-chaîne), et `assertHostnamePublique()`
+  (`server/utils/validation.ts`) résout l'hostname et rejette toute IP privée/loopback/
+  link-local (dont le endpoint de métadonnées cloud `169.254.169.254`) avant tout
+  scraping — appelée dans `scrapeUrl()` et `scrapeListe()`, donc couvre création,
+  refresh, scan manuel/cron et validation d'un résultat de veille.
+
+En environnement serverless ou multi-instance, le store en mémoire se réinitialise
+à chaque worker. Pour scale horizontalement, il faudra remplacer le store par Redis
+ou un backend partagé.

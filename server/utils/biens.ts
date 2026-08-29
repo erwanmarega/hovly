@@ -29,6 +29,10 @@ export const STATUTS_VALIDES = [
   'a_visiter', 'planifie', 'visite', 'elimine', 'coup_de_coeur'
 ] as const
 
+/** Nombre maximum de biens actifs par utilisateur. Protège contre les scripts
+ *  qui créeraient des milliers de lignes et les coûts de scraping associés. */
+export const MAX_BIENS_ACTIFS = 100
+
 /**
  * Insère un bien, amorce son historique de prix et le géocode.
  * Partagé par l'ajout manuel et la conversion d'un résultat de veille.

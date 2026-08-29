@@ -1,17 +1,16 @@
 import { MOTIF_FICHE } from '../../utils/scrape/liste'
 import { detecterSource } from '../../utils/scrape/source'
+import { assertTailleCorps, validerUrlSource } from '../../utils/validation'
 
 export const MAX_RECHERCHES = 10
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
+  assertTailleCorps(event)
   const client = await db(event)
   const body = await readBody(event)
 
-  const url = String(body?.url ?? '').trim()
-  if (!url) {
-    throw createError({ statusCode: 400, statusMessage: 'url requise' })
-  }
+  const url = validerUrlSource(body?.url)
 
   const source = detecterSource(url)
   if (!source) {
@@ -23,12 +22,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  let chemin: string
-  try {
-    chemin = new URL(url).pathname
-  } catch {
-    throw createError({ statusCode: 400, statusMessage: 'URL invalide' })
-  }
+  const chemin = new URL(url).pathname
 
   if (MOTIF_FICHE[source].test(chemin)) {
     throw createError({

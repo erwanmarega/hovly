@@ -1,7 +1,9 @@
 import type { Bien, Recherche } from '~/types'
+import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
 
 export default defineEventHandler(async (event) => {
-  await requireUser(event)
+  const user = await requireUser(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.scan, QUOTAS.scanHeure)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
 

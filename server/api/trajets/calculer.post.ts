@@ -1,5 +1,6 @@
 import type { Ancre, Bien, ModeTrajet, Trajet } from '~/types'
 import { dureesVersAncre, paquets, routageDisponible } from '../../utils/routage'
+import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 
 const MODES: ModeTrajet[] = ['voiture', 'velo', 'marche', 'transport']
 
@@ -19,6 +20,7 @@ const memePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.trajets, QUOTAS.trajetsHeure)
 
   const body = await readBody<{ ancres?: unknown }>(event)
   const ancres = ancresValides(body?.ancres)

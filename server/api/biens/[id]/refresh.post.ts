@@ -2,6 +2,7 @@ import type { Bien } from '~/types'
 import { scrapeUrl } from '../../../utils/scrape'
 import { geocoder } from '../../../utils/geocode'
 import { prixPlausible } from '../../../utils/check'
+import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
 
 const CHAMPS_RAFRAICHIS = [
   'titre',
@@ -34,7 +35,8 @@ function aChange(avant: unknown, apres: unknown): boolean {
 }
 
 export default defineEventHandler(async (event) => {
-  await requireUser(event)
+  const user = await requireUser(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.refresh, QUOTAS.refreshHeure)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
 

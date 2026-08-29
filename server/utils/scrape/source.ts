@@ -1,17 +1,23 @@
 import type { SiteSource } from '~/types'
 
+const DOMAINES: Record<string, SiteSource> = {
+  'seloger.com': 'seloger',
+  'leboncoin.fr': 'leboncoin',
+  'pap.fr': 'pap',
+  'logic-immo.com': 'logic-immo',
+  'bienici.com': 'bienici',
+  'century21.fr': 'century21'
+}
+
 export function detecterSource(url: string): SiteSource | null {
   let host: string
   try {
-    host = new URL(url).hostname.replace(/^www\./, '')
+    host = new URL(url).hostname.replace(/^www\./, '').toLowerCase()
   } catch {
     return null
   }
-  if (host.includes('seloger')) return 'seloger'
-  if (host.includes('leboncoin')) return 'leboncoin'
-  if (host.includes('pap.fr')) return 'pap'
-  if (host.includes('logic-immo')) return 'logic-immo'
-  if (host.includes('bienici')) return 'bienici'
-  if (host.includes('century21')) return 'century21'
+  for (const [domaine, source] of Object.entries(DOMAINES)) {
+    if (host === domaine || host.endsWith(`.${domaine}`)) return source
+  }
   return null
 }

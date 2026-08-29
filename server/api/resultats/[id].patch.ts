@@ -1,6 +1,7 @@
 import type { ResultatVeille } from '~/types'
 import { scrapeUrl } from '../../utils/scrape'
 import { detecterSource } from '../../utils/scrape/source'
+import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 
 /** Ce que la carte de résultat nous a déjà appris, si la fiche est illisible. */
 function depuisResultat(r: ResultatVeille) {
@@ -19,6 +20,7 @@ function depuisResultat(r: ResultatVeille) {
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapeHeure)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
