@@ -29,12 +29,15 @@ const ecart = computed(() => {
 const libelle = computed(() =>
   baisse.value ? "Baisse de prix" : "Annonce supprimée"
 );
+
+const { marquerLue } = useAlertes();
 </script>
 
 <template>
   <NuxtLink
     :to="`/bien/${alerte.bien_id}`"
     class="carte flex items-center gap-4 border bg-white"
+    @click="marquerLue(alerte.id)"
     :class="[
       compact ? 'gap-3 rounded-xl p-2.5' : 'rounded-2xl p-4',
       alerte.vue

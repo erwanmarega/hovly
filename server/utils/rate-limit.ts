@@ -196,5 +196,8 @@ export const QUOTAS = {
   trajetsHeure: { windowMs: 60 * 60_000, max: 100 },
   /** Vérification manuelle des biens (check). */
   check: { windowMs: 60_000, max: 5 },
-  checkHeure: { windowMs: 60 * 60_000, max: 20 }
+  checkHeure: { windowMs: 60 * 60_000, max: 20 },
+  /** Création d'un lien de partage. */
+  partage: { windowMs: 60_000, max: 10 },
+  partageHeure: { windowMs: 60 * 60_000, max: 30 }
 } as const

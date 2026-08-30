@@ -72,11 +72,38 @@ const scoreDe = (b: Bien) => scoreBien(b, contexteScore.value, preferences.value
 const groupesDoublons = computed(() => grouperDoublons(biens.value.filter((b) => b.actif)));
 
 const {
+  selection: selectionComparaison,
   nombre: nbCompares,
   complet: selectionComplete,
   comparable,
   vider: viderComparaison
 } = useComparateur();
+
+const { creer: creerPartage } = usePartages();
+const partageOuvert = ref(false);
+const partageEnCours = ref(false);
+const partageErreur = ref("");
+const partageLien = ref<string | null>(null);
+
+async function creerLienPartage(titre: string) {
+  partageEnCours.value = true;
+  partageErreur.value = "";
+  try {
+    const partage = await creerPartage(selectionComparaison.value, titre || undefined);
+    partageLien.value = `${window.location.origin}/partage/${partage.token}`;
+  } catch {
+    partageErreur.value = "Impossible de créer le lien. Réessaie.";
+  } finally {
+    partageEnCours.value = false;
+  }
+}
+
+function fermerPartage() {
+  const avaitLien = partageLien.value !== null;
+  partageOuvert.value = false;
+  partageLien.value = null;
+  if (avaitLien) viderComparaison();
+}
 const doublonsParId = computed(() => {
   const map = new Map<string, number>();
   for (const groupe of groupesDoublons.value) {
@@ -85,11 +112,17 @@ const doublonsParId = computed(() => {
   return map;
 });
 
+const { zone, dansZone, effacer: effacerZone } = useZoneCarte();
+
 const biensAffiches = computed(() => {
   let list = biens.value.filter((b) => b.actif);
 
   if (filtreStatut.value !== "tous") {
     list = list.filter((b) => b.statut === filtreStatut.value);
+  }
+
+  if (zone.value) {
+    list = list.filter(dansZone);
   }
 
   const q = recherche.value.trim().toLowerCase();
@@ -161,7 +194,7 @@ const biensPage = computed(() =>
   biensAffiches.value.slice((page.value - 1) * PAR_PAGE, page.value * PAR_PAGE)
 );
 
-watch([recherche, filtreStatut, triClef, triAsc], () => {
+watch([recherche, filtreStatut, triClef, triAsc, zone], () => {
   page.value = 1;
 });
 
@@ -445,6 +478,15 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             </button>
           </div>
 
+          <button
+            v-if="zone"
+            class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full border border-blue/30 bg-blue/10 px-3.5 py-1.5 text-sm font-medium text-blue transition hover:bg-blue/15"
+            @click="effacerZone"
+          >
+            Zone de la carte active
+            <span class="text-blue/70">✕</span>
+          </button>
+
           <SelecteurAncreTrajet class="ml-auto" />
         </div>
       </div>
@@ -522,6 +564,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
           @click="
             recherche = '';
             filtreStatut = 'tous';
+            effacerZone();
           "
         >
           Réinitialiser les filtres
@@ -533,7 +576,9 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
           class="mt-5"
           :biens="biensAffiches"
           :selection="selection"
+          :zone="zone"
           @select="selection = $event"
+          @zone-changee="zone = $event"
         />
         <template #fallback>
           <div
@@ -597,6 +642,12 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
           >
             Vider
           </button>
+          <button
+            class="rounded-full border border-hairline px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface"
+            @click="partageOuvert = true"
+          >
+            Partager
+          </button>
           <NuxtLink
             :to="comparable ? '/comparer' : ''"
             class="rounded-full px-4 py-2 text-sm font-medium transition"
@@ -613,6 +664,16 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
         :en-cours="suppressionEnCours"
         @annuler="bienASupprimer = null"
         @confirmer="confirmerSuppression"
+      />
+
+      <ModalPartage
+        :ouvert="partageOuvert"
+        :nb-biens="nbCompares"
+        :en-cours="partageEnCours"
+        :erreur="partageErreur"
+        :lien="partageLien"
+        @creer="creerLienPartage"
+        @fermer="fermerPartage"
       />
     </main>
   </div>

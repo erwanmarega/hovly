@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import "leaflet/dist/leaflet.css";
-import type { Circle, CircleMarker, Map as LeafletMap } from "leaflet";
+import type {
+  Circle,
+  CircleMarker,
+  LatLng,
+  LeafletMouseEvent,
+  Map as LeafletMap,
+} from "leaflet";
 import type { Bien } from "~/types";
+import type { ZoneCarte } from "~/composables/useZoneCarte";
 
 const props = withDefaults(
   defineProps<{
@@ -9,11 +16,15 @@ const props = withDefaults(
     selection?: string | null;
     hauteur?: string;
     zoomBien?: number;
+    zone?: ZoneCarte | null;
   }>(),
-  { selection: null, hauteur: "32rem", zoomBien: 15 }
+  { selection: null, hauteur: "32rem", zoomBien: 15, zone: null }
 );
 
-const emit = defineEmits<{ select: [id: string] }>();
+const emit = defineEmits<{
+  select: [id: string];
+  "zone-changee": [zone: ZoneCarte | null];
+}>();
 
 const conteneur = ref<HTMLElement | null>(null);
 const { biens: contexte } = useBiens();
@@ -22,6 +33,12 @@ let carte: LeafletMap | null = null;
 let observateur: ResizeObserver | null = null;
 let couche: (CircleMarker | Circle)[] = [];
 const marqueurs = new Map<string, CircleMarker>();
+
+const modeDessin = ref(false);
+let cercleZone: Circle | null = null;
+let debutDessin: LatLng | null = null;
+/** En dessous, le rayon est trop petit pour être une zone voulue — on l'ignore. */
+const RAYON_MIN_M = 50;
 
 const localises = computed(() =>
   props.biens.filter((b) => b.lat != null && b.lon != null)
@@ -143,6 +160,78 @@ async function dessiner() {
   }
 }
 
+async function dessinerZone() {
+  if (!carte) return;
+  const L = await import("leaflet");
+
+  cercleZone?.remove();
+  cercleZone = null;
+  if (!props.zone) return;
+
+  cercleZone = L.circle([props.zone.lat, props.zone.lon], {
+    radius: props.zone.rayonM,
+    color: "#2563eb",
+    weight: 2,
+    fillColor: "#2563eb",
+    fillOpacity: 0.08,
+  }).addTo(carte);
+}
+
+function annulerDessin() {
+  window.removeEventListener("mouseup", surRelacheGlobale);
+  carte?.dragging.enable();
+  debutDessin = null;
+}
+
+async function surRelacheGlobale() {
+  // Le relâchement a eu lieu hors de la carte : le mouseup de Leaflet ne
+  // s'est jamais déclenché. On annule le tracé et on réaffiche la zone active
+  // (ou son absence) telle qu'elle était avant ce geste avorté.
+  if (!debutDessin) return;
+  modeDessin.value = false;
+  annulerDessin();
+  await dessinerZone();
+}
+
+async function surAppui(e: LeafletMouseEvent) {
+  if (!modeDessin.value || !carte) return;
+  const L = await import("leaflet");
+
+  debutDessin = e.latlng;
+  cercleZone?.remove();
+  cercleZone = L.circle(e.latlng, {
+    radius: 0,
+    color: "#2563eb",
+    weight: 2,
+    fillColor: "#2563eb",
+    fillOpacity: 0.08,
+  }).addTo(carte);
+  carte.dragging.disable();
+  window.addEventListener("mouseup", surRelacheGlobale);
+}
+
+function surDeplacement(e: LeafletMouseEvent) {
+  if (!debutDessin || !carte || !cercleZone) return;
+  cercleZone.setRadius(carte.distance(debutDessin, e.latlng));
+}
+
+function surRelache(e: LeafletMouseEvent) {
+  if (!debutDessin || !carte || !cercleZone) return;
+  const rayon = carte.distance(debutDessin, e.latlng);
+  const zoneFinale: ZoneCarte | null =
+    rayon >= RAYON_MIN_M
+      ? { lat: debutDessin.lat, lon: debutDessin.lng, rayonM: Math.round(rayon) }
+      : null;
+
+  if (!zoneFinale) {
+    cercleZone.remove();
+    cercleZone = null;
+  }
+  modeDessin.value = false;
+  annulerDessin();
+  emit("zone-changee", zoneFinale);
+}
+
 onMounted(async () => {
   if (!conteneur.value) return;
   const L = await import("leaflet");
@@ -157,23 +246,29 @@ onMounted(async () => {
     passive: false,
   });
 
-  L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    {
-      subdomains: "abcd",
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap &copy; CARTO",
-    }
-  ).addTo(carte);
+  // Tuiles OSM standard : gratuites, sans clé, mais soumises à la politique
+  // d'usage OSM (trafic modéré) — https://operations.osmfoundation.org/policies/tiles/
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    subdomains: "abc",
+    maxZoom: 19,
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(carte);
 
   observateur = new ResizeObserver(() => carte?.invalidateSize());
   observateur.observe(conteneur.value);
 
+  carte.on("mousedown", surAppui);
+  carte.on("mousemove", surDeplacement);
+  carte.on("mouseup", surRelache);
+
   await dessiner();
+  await dessinerZone();
 });
 
 onBeforeUnmount(() => {
   conteneur.value?.removeEventListener("wheel", zoomerAuPincement);
+  window.removeEventListener("mouseup", surRelacheGlobale);
   observateur?.disconnect();
   observateur = null;
   carte?.remove();
@@ -181,6 +276,7 @@ onBeforeUnmount(() => {
 });
 
 watch(() => props.biens, dessiner, { deep: true });
+watch(() => props.zone, dessinerZone);
 
 watch(
   () => props.selection,
@@ -197,11 +293,36 @@ watch(
 <template>
   <div class="flex min-h-0 flex-col">
     <div
-      ref="conteneur"
       class="relative isolate z-0 w-full overflow-hidden rounded-2xl border border-hairline bg-white"
       :class="hauteur === '100%' && 'min-h-0 flex-1'"
       :style="hauteur === '100%' ? undefined : { height: hauteur }"
-    />
+    >
+      <div ref="conteneur" class="size-full" />
+
+      <button
+        type="button"
+        class="absolute right-3 top-3 z-[1000] rounded-full border border-hairline bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-surface"
+        :class="modeDessin && 'bg-blue text-white hover:bg-blue'"
+        @click="modeDessin = !modeDessin"
+      >
+        {{
+          modeDessin
+            ? "Clique-glisse pour dessiner…"
+            : zone
+              ? "Redessiner la zone"
+              : "Dessiner une zone"
+        }}
+      </button>
+
+      <button
+        v-if="zone"
+        type="button"
+        class="absolute right-3 top-11 z-[1000] rounded-full border border-hairline bg-white px-3 py-1.5 text-xs font-medium text-slate shadow-sm transition hover:bg-surface"
+        @click="emit('zone-changee', null)"
+      >
+        Effacer la zone
+      </button>
+    </div>
 
     <p v-if="sansPosition > 0" class="mt-2 text-xs text-stone">
       {{ sansPosition }} bien{{ sansPosition > 1 ? "s" : "" }} sans localisation

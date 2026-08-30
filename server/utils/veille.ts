@@ -20,6 +20,8 @@ export const FREQUENCE_MIN_PLANCHER = 30
 export const MAX_ECHECS_BACKOFF = 4
 /** Une veille désactivée d'office après trop d'échecs d'affilée (site qui a changé, URL morte). */
 export const MAX_ECHECS_AVANT_PAUSE = 8
+/** Un résultat traité (gardé ou ignoré) n'est plus jamais affiché : pas besoin de le garder en base indéfiniment. */
+export const PURGE_RESULTATS_JOURS = 30
 
 const entierPositif = (v: unknown): number | null => {
   const n = typeof v === 'string' ? Number(v) : v
@@ -202,6 +204,25 @@ export async function verifierRecherche(
     .eq('id', recherche.id)
 
   return resume
+}
+
+/**
+ * Supprime les résultats de veille traités (gardés ou ignorés) de plus de
+ * `PURGE_RESULTATS_JOURS` jours. Un résultat `garde` est de toute façon
+ * dupliqué dans `biens` au moment de la conversion — rien n'est perdu.
+ */
+export async function purgerResultatsTraites(client: any): Promise<number> {
+  const seuil = new Date(Date.now() - PURGE_RESULTATS_JOURS * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data, error } = await client
+    .from('recherche_resultats')
+    .delete()
+    .in('etat', ['garde', 'ignore'])
+    .lt('trouve_le', seuil)
+    .select('id')
+
+  if (error) return 0
+  return data?.length ?? 0
 }
 
 const eur = (centimes: number | null) =>

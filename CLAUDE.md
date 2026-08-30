@@ -5,6 +5,26 @@ Colle une URL d'annonce → scrape → compare, suit les prix, décide.
 
 ## Conventions
 
+### Nommage du code : anglais (nouveau code uniquement)
+
+**Toute fonction, méthode, variable, type/interface ou nom de fichier de code
+nouvellement écrit est en anglais.** Règle permanente à partir de maintenant.
+
+- S'applique au code applicatif (JS/TS : composables, composants, routes API,
+  utils, tests) — nouveaux identifiants uniquement.
+- Le code existant en français (`scoreBien`, `useVeilles`, `verifierRecherche`,
+  etc.) **n'est pas renommé rétroactivement** ; on ne le touche pas juste pour
+  le traduire à l'occasion d'une tâche sans rapport.
+- La base de données Supabase (tables/colonnes : `biens`, `recherches`,
+  `prix_historique`...) **reste en français** — hors périmètre de cette règle
+  (renommer des colonnes en prod est une opération à risque, traitée à part
+  si un jour décidée).
+- Les commentaires et tout texte visible par l'utilisateur final (labels,
+  messages d'erreur, UI) restent en français — l'app est en français pour
+  ses utilisateurs, seul le code source change de langue.
+- Dans un fichier existant qu'on modifie pour une autre raison : le code
+  ajouté suit la règle (anglais), le code français alentour n'est pas touché.
+
 ### Composants réutilisables (règle principale)
 
 **On extrait au maximum en composants réutilisables.** C'est une des conventions
@@ -33,15 +53,23 @@ centrales de Vue.js et la règle par défaut de ce projet.
 - `CarteVeille` — une recherche sauvegardée : critères, dernier scan, actions. Slot = résultats.
 - `CarteResultat` — une annonce trouvée par une veille, avec Garder / Ignorer.
 - `FormulaireVeille` — création d'une veille depuis une URL de page de résultats.
+- `ModalPartage` — modale de création d'un lien de partage (titre optionnel →
+  lien copiable). Utilisée depuis le dashboard et `comparer.vue`.
+- `CarteBienPartage` — carte de bien en lecture seule pour la page de partage
+  publique (prop `bien: BienPartage`, jamais `Bien` en entier).
 
 ### Composables
 
 - `useBiens` — état + CRUD des biens, helpers `prixMensuel` / `prixM2`.
-- `useAlertes` — état alertes (`useState` partagé), `nonVues`, refresh, vérif.
+- `useAlertes` — état alertes (`useState` partagé), `nonVues`, refresh, vérif,
+  `marquerLue(id)` pour un marquage individuel (en plus du `marquerLues` global).
 - `useScore` — `scoreBien(bien, contexte)` : score rule-based /100
   (prix/m² vs médiane ville 50pts, DPE 30pts, charges 20pts). Type `Score` exporté.
 - `useVeilles` — recherches sauvegardées : CRUD, scan manuel, garder/ignorer un résultat.
   Les filtres de prix sont en centimes comme `biens.prix` (`enCentimes` / `enEuros`).
+- `usePartages` — CRUD des liens de partage (`creer`, `refresh`, `revoquer`).
+- `useZoneCarte` — état partagé de la zone dessinée sur `CarteBiens` (`zone`,
+  `dansZone(bien)`, `effacer`), formule de distance en mètres sans dépendance.
 
 ### Veille (recherches sauvegardées)
 
@@ -57,6 +85,26 @@ L'utilisateur colle l'URL d'une **page de résultats** (pas une annonce) ; le cr
 - Une annonce dont on n'a pas su lire le prix ou la surface **passe** les filtres :
   mieux vaut une à écarter à la main qu'une perdue en silence.
 - Backoff exponentiel sur échec, mise en pause automatique après 8 échecs d'affilée.
+- Les résultats traités (`garde`/`ignore`) de plus de 30 jours sont purgés par
+  le cron (`purgerResultatsTraites`, `server/utils/veille.ts`) : jamais réaffichés
+  après traitement, pas de raison de les garder indéfiniment en base.
+
+### Partage de liste
+
+Un utilisateur peut partager une sélection de biens (`useComparateur().selection`,
+donc jusqu'à `MAX_COMPARAISON` biens) via un **lien public en lecture seule** —
+pas de compte requis côté destinataire.
+
+- Token aléatoire (`randomBytes(18).toString('base64url')`), seule porte d'entrée
+  publique : les tables `partages`/`partage_biens` n'ont **aucune policy RLS
+  pour le rôle anonyme** (même idiome que `marche_quartier`) — l'accès public
+  passe uniquement par `server/api/partages/[token].get.ts`, via le client
+  service-role, avec un `select` explicite qui n'expose jamais `Bien` en entier.
+- `server/api/partages/index.post.ts` vérifie l'appartenance des biens via les
+  policies RLS de `partage_biens` (jointure sur `biens.user_id`) ; en cas de
+  refus, le partage tout juste créé est annulé plutôt que laissé à moitié rempli.
+- Un token expiré ou inexistant renvoie la même 404 générique, pour ne pas
+  confirmer à un attaquant qui bruteforce qu'un token a existé.
 
 ### Sécurité et rate limiting
 
@@ -77,6 +125,7 @@ processus Nuxt) :
 | `POST /api/trajets/calculer` | 10/min, 100/h |
 | `POST /api/check` | 5/min, 20/h |
 | `PATCH /api/resultats/:id` | 10/min, 50/h |
+| `POST /api/partages` | 10/min, 30/h |
 
 Autres limites et validations :
 

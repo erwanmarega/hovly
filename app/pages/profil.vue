@@ -44,8 +44,30 @@ const SECTIONS = [
   { id: 'criteres', label: 'Mes critères' },
   { id: 'trajets', label: 'Points d’ancrage' },
   { id: 'notifications', label: 'Notifications' },
+  { id: 'partages', label: 'Mes partages' },
   { id: 'compte', label: 'Compte & sécurité' }
 ]
+
+const { partages, refresh: refreshPartages, revoquer: revoquerPartageApi } = usePartages()
+useAsyncData('partages-profil', () => refreshPartages(), { server: false })
+
+function formatDateCourte(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+async function copierLienPartage(token: string) {
+  await navigator.clipboard.writeText(`${window.location.origin}/partage/${token}`)
+  annoncerToast('Lien copié.')
+}
+
+async function revoquerPartage(id: string) {
+  try {
+    await revoquerPartageApi(id)
+    annoncerToast('Partage révoqué.')
+  } catch {
+    annoncerToast('Impossible de révoquer. Réessaie.', 'erreur')
+  }
+}
 
 const fullName = ref('')
 watchEffect(() => {
@@ -559,6 +581,64 @@ v-for="axe in [
               </div>
             </div>
             <ReglagePush class="mt-6" />
+          </section>
+
+          <section
+            id="partages"
+            class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
+          >
+            <div class="flex items-start gap-4">
+              <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-teal text-[#0a4a42]">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <path d="m8.6 10.5 6.8-3.9M8.6 13.5l6.8 3.9" />
+                </svg>
+              </span>
+              <div class="min-w-0">
+                <h2 class="text-lg font-medium tracking-tight text-ink-deep">Mes partages</h2>
+                <p class="mt-1 text-sm text-slate">
+                  Liens de lecture seule créés depuis une sélection sur ton dashboard.
+                </p>
+              </div>
+            </div>
+
+            <p v-if="!partages.length" class="mt-6 text-sm text-stone">
+              Aucun partage actif. Sélectionne des biens sur ton dashboard puis clique « Partager ».
+            </p>
+
+            <ul v-else class="mt-6 space-y-3">
+              <li
+                v-for="p in partages"
+                :key="p.id"
+                class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3"
+              >
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium text-ink">
+                    {{ p.titre || 'Sans titre' }}
+                  </p>
+                  <p class="mt-0.5 text-xs text-stone">
+                    {{ p.nb_biens }} bien{{ p.nb_biens > 1 ? 's' : '' }} · créé le
+                    {{ formatDateCourte(p.cree_le) }}
+                  </p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                  <button
+                    class="rounded-full border border-hairline bg-white px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface"
+                    @click="copierLienPartage(p.token)"
+                  >
+                    Copier le lien
+                  </button>
+                  <button
+                    class="rounded-full px-3 py-1.5 text-xs font-medium text-[#600000] transition hover:bg-coral/20"
+                    @click="revoquerPartage(p.id)"
+                  >
+                    Révoquer
+                  </button>
+                </div>
+              </li>
+            </ul>
           </section>
 
           <div id="compte" class="grid scroll-mt-6 gap-6 lg:grid-cols-2">

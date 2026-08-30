@@ -10,8 +10,15 @@ vi.mock('../server/utils/scrape/liste', () => ({
 vi.mock('../server/utils/email', () => ({ envoyerVeilleEmail: vi.fn() }))
 vi.mock('../server/utils/push', () => ({ envoyerPush: vi.fn(), pushDisponible: () => false }))
 
-const { correspond, estConnu, aVerifier, prochaineVerif, champsVeille, verifierRecherche } =
-  await import('../server/utils/veille')
+const {
+  correspond,
+  estConnu,
+  aVerifier,
+  prochaineVerif,
+  champsVeille,
+  verifierRecherche,
+  purgerResultatsTraites
+} = await import('../server/utils/veille')
 
 function recherche(over: Partial<Recherche> = {}): Recherche {
   return {
@@ -272,5 +279,31 @@ describe('verifierRecherche', () => {
 
     const resume = await verifierRecherche(clientFactice() as any, recherche(), [], t0)
     expect(resume.erreur).toBe('Anti-bot')
+  })
+})
+
+describe('purgerResultatsTraites', () => {
+  function clientPurge(reponse: { data: any; error: any }) {
+    return {
+      from: () => ({
+        delete: () => ({
+          in: () => ({
+            lt: () => ({
+              select: () => Promise.resolve(reponse)
+            })
+          })
+        })
+      })
+    }
+  }
+
+  it('retourne le nombre de résultats supprimés', async () => {
+    const client = clientPurge({ data: [{ id: 'a' }, { id: 'b' }], error: null })
+    expect(await purgerResultatsTraites(client as any)).toBe(2)
+  })
+
+  it('retourne 0 en cas d’erreur', async () => {
+    const client = clientPurge({ data: null, error: { message: 'boom' } })
+    expect(await purgerResultatsTraites(client as any)).toBe(0)
   })
 })

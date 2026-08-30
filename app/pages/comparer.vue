@@ -9,6 +9,30 @@ const { pending } = useAsyncData('biens-comparer', () => refresh(), { server: fa
 const { selection, retirer, vider } = useComparateur()
 const { preferences } = usePreferences()
 
+const { creer: creerPartage } = usePartages()
+const partageOuvert = ref(false)
+const partageEnCours = ref(false)
+const partageErreur = ref('')
+const partageLien = ref<string | null>(null)
+
+async function creerLienPartage(titre: string) {
+  partageEnCours.value = true
+  partageErreur.value = ''
+  try {
+    const partage = await creerPartage(selection.value, titre || undefined)
+    partageLien.value = `${window.location.origin}/partage/${partage.token}`
+  } catch {
+    partageErreur.value = 'Impossible de créer le lien. Réessaie.'
+  } finally {
+    partageEnCours.value = false
+  }
+}
+
+function fermerPartage() {
+  partageOuvert.value = false
+  partageLien.value = null
+}
+
 const choisis = computed(() =>
   selection.value
     .map((id) => biens.value.find((b) => b.id === id))
@@ -92,6 +116,13 @@ const sourceLabels: Record<string, string> = {
             </NuxtLink>
             <button
               v-if="choisis.length"
+              class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
+              @click="partageOuvert = true"
+            >
+              Partager
+            </button>
+            <button
+              v-if="choisis.length"
               class="action rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white"
               @click="vider"
             >
@@ -100,6 +131,16 @@ const sourceLabels: Record<string, string> = {
           </div>
         </div>
       </section>
+
+      <ModalPartage
+        :ouvert="partageOuvert"
+        :nb-biens="choisis.length"
+        :en-cours="partageEnCours"
+        :erreur="partageErreur"
+        :lien="partageLien"
+        @creer="creerLienPartage"
+        @fermer="fermerPartage"
+      />
 
       <div v-if="pending" class="mt-6 h-96 animate-pulse rounded-feature border border-hairline-soft bg-white" />
 

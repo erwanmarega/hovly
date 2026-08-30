@@ -16,11 +16,20 @@ export function useAlertes() {
     await $fetch('/api/alertes', { method: 'PATCH' })
   }
 
+  async function marquerLue(id: string) {
+    const alerte = alertes.value.find((a) => a.id === id)
+    if (!alerte || alerte.vue) return
+    alerte.vue = true
+    await $fetch(`/api/alertes/${id}`, { method: 'PATCH' }).catch(() => {
+      alerte.vue = false
+    })
+  }
+
   async function verifierMaintenant(): Promise<CheckResume> {
     const resume = await $fetch<CheckResume>('/api/check', { method: 'POST' })
     await refresh()
     return resume
   }
 
-  return { alertes, nonVues, refresh, marquerLues, verifierMaintenant }
+  return { alertes, nonVues, refresh, marquerLues, marquerLue, verifierMaintenant }
 }

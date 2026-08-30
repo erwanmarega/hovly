@@ -87,11 +87,20 @@ async function basculerPause(id: string, active: boolean) {
   await modifier(id, { active }).catch(() => annoncer('Modification impossible.', true))
 }
 
-async function supprimerVeille(id: string) {
-  const r = recherches.value.find((x) => x.id === id)
-  if (!confirm(`Supprimer la veille « ${r?.label ?? ''} » et ses résultats en attente ?`)) return
+const rechercheASupprimer = ref<Recherche | null>(null)
+const suppressionEnCours = ref(false)
 
-  await supprimer(id).catch(() => annoncer('Suppression impossible.', true))
+function demanderSuppression(id: string) {
+  rechercheASupprimer.value = recherches.value.find((x) => x.id === id) ?? null
+}
+
+async function confirmerSuppression() {
+  const r = rechercheASupprimer.value
+  if (!r) return
+  suppressionEnCours.value = true
+  await supprimer(r.id).catch(() => annoncer('Suppression impossible.', true))
+  suppressionEnCours.value = false
+  rechercheASupprimer.value = null
 }
 
 async function garderResultat(rechercheId: string, resultatId: string) {
@@ -212,7 +221,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
           @basculer="basculer"
           @scanner="lancerScan"
           @pause="basculerPause"
-          @supprimer="supprimerVeille"
+          @supprimer="demanderSuppression"
         >
           <div v-if="!resultats[r.id]" class="h-16 animate-pulse rounded-xl bg-white" />
 
@@ -232,6 +241,14 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
           </div>
         </CarteVeille>
       </div>
+
+      <ModalSuppressionVeille
+        :ouvert="rechercheASupprimer !== null"
+        :recherche="rechercheASupprimer"
+        :en-cours="suppressionEnCours"
+        @annuler="rechercheASupprimer = null"
+        @confirmer="confirmerSuppression"
+      />
     </main>
   </div>
 </template>

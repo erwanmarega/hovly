@@ -148,6 +148,41 @@ export interface MarcheQuartier {
   maj: string // statistiques calculées le
 }
 
+export interface Partage {
+  id: string
+  user_id: string
+  token: string
+  titre: string | null
+  cree_le: string
+  expire_le: string | null
+  nb_biens: number
+}
+
+/** Champs d'un bien exposés sur la page de partage publique — jamais `Bien` en entier. */
+export type BienPartage = Pick<
+  Bien,
+  | 'id'
+  | 'titre'
+  | 'prix'
+  | 'surface'
+  | 'nb_pieces'
+  | 'etage'
+  | 'dpe'
+  | 'ville'
+  | 'code_postal'
+  | 'lat'
+  | 'lon'
+  | 'geo_precision'
+  | 'photos'
+  | 'transaction'
+>
+
+export interface PartagePublic {
+  titre: string | null
+  cree_le: string
+  biens: BienPartage[]
+}
+
 export type TypeAlerte = 'baisse_prix' | 'annonce_supprimee'
 
 export interface Alerte {

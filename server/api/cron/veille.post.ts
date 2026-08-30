@@ -1,6 +1,6 @@
 import type { Bien, Recherche } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
-import { aVerifier, notifierVeille, verifierRecherche } from '../../utils/veille'
+import { aVerifier, notifierVeille, purgerResultatsTraites, verifierRecherche } from '../../utils/veille'
 
 /** Plafond par exécution : un cron ne doit pas partir en scan de plusieurs heures. */
 const MAX_RECHERCHES_PAR_RUN = 25
@@ -80,12 +80,15 @@ export default defineEventHandler(async (event) => {
     echecs += envois.echecs
   }
 
+  const purges = await purgerResultatsTraites(service)
+
   return {
     ok: true,
     actives: recherches?.length ?? 0,
     scannees: dues.length,
     nouvelles,
     erreurs,
-    notifications: { envoyes, echecs }
+    notifications: { envoyes, echecs },
+    purges
   }
 })
