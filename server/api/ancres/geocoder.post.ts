@@ -1,5 +1,8 @@
+import { assertTailleCorps } from '../../utils/validation'
+
 export default defineEventHandler(async (event) => {
   await requireUser(event)
+  assertTailleCorps(event)
   const { adresse } = await readBody<{ adresse?: string }>(event)
 
   if (!adresse?.trim()) {

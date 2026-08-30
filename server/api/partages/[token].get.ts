@@ -9,14 +9,14 @@ export default defineEventHandler(async (event): Promise<PartagePublic> => {
   const token = getRouterParam(event, 'token')
   const client = serviceDb(event)
 
-  const { data: partage, error: errPartage } = await client
+  const { data: partage, error: lookupError } = await client
     .from('partages')
     .select('id, titre, cree_le, expire_le')
     .eq('token', token)
     .maybeSingle()
 
-  if (errPartage) {
-    console.error('[partages] lecture du token échouée', errPartage.message)
+  if (lookupError) {
+    console.error('[partages] lecture du token échouée', lookupError.message)
   }
 
   // Un token expiré renvoie la même erreur qu'un token inexistant : ne pas
@@ -25,13 +25,13 @@ export default defineEventHandler(async (event): Promise<PartagePublic> => {
     throw createError({ statusCode: 404, statusMessage: 'Lien introuvable' })
   }
 
-  const { data: liens, error: errLiens } = await client
+  const { data: liens, error: linksError } = await client
     .from('partage_biens')
     .select(`biens (${SELECT_PUBLIC_BIEN})`)
     .eq('partage_id', partage.id)
 
-  if (errLiens) {
-    console.error('[partages] lecture des biens échouée', errLiens.message)
+  if (linksError) {
+    console.error('[partages] lecture des biens échouée', linksError.message)
   }
 
   const biens = ((liens ?? []) as unknown as { biens: BienPartage | null }[])

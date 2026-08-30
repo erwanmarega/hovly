@@ -1,5 +1,5 @@
 import type { Bien, SiteSource } from '~/types'
-import { getBrowser, pickUserAgent, randomDelay } from './browser'
+import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
 import {
   extraire,
   extraireLeboncoin,
@@ -114,6 +114,7 @@ async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<Scr
     viewport: { width: 1280, height: 800 },
     extraHTTPHeaders: { 'Accept-Language': 'fr-FR,fr;q=0.9' }
   })
+  await guardContextAgainstSsrf(context)
   const page = await context.newPage()
 
   try {

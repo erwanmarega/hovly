@@ -136,6 +136,32 @@ export async function assertHostnamePublique(hostname: string): Promise<void> {
   }
 }
 
+/** Durée de mise en cache d'une décision d'hôte public/privé (ms). */
+const HOSTNAME_CACHE_MS = 5 * 60_000
+const hostnamePublicCache = new Map<string, { isPublic: boolean; expiresAt: number }>()
+
+/**
+ * Variante non-throwing d'`assertHostnamePublique`, mise en cache par hôte.
+ * Utilisée pour valider *chaque* requête réseau d'une page scrapée (nav,
+ * redirections, sous-ressources) sans relancer une résolution DNS à chaque
+ * appel — une page charge souvent des dizaines d'images sur les mêmes 1-3 CDN.
+ */
+export async function isHostnamePublic(hostname: string): Promise<boolean> {
+  const key = hostname.toLowerCase()
+  const cached = hostnamePublicCache.get(key)
+  if (cached && cached.expiresAt > Date.now()) return cached.isPublic
+
+  let isPublic: boolean
+  try {
+    await assertHostnamePublique(hostname)
+    isPublic = true
+  } catch {
+    isPublic = false
+  }
+  hostnamePublicCache.set(key, { isPublic, expiresAt: Date.now() + HOSTNAME_CACHE_MS })
+  return isPublic
+}
+
 /**
  * Nettoie une chaîne de texte libre pour stockage en base.
  */

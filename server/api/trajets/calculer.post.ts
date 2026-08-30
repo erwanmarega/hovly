@@ -1,6 +1,8 @@
 import type { Ancre, Bien, ModeTrajet, Trajet } from '~/types'
 import { dureesVersAncre, paquets, routageDisponible } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
+import { assertTailleCorps } from '../../utils/validation'
+import { MAX_ANCRES } from '~/composables/usePreferences'
 
 const MODES: ModeTrajet[] = ['voiture', 'velo', 'marche', 'transport']
 
@@ -21,9 +23,19 @@ const memePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   assertRateLimitForUser(event, user.id, QUOTAS.trajets, QUOTAS.trajetsHeure)
+  assertTailleCorps(event)
 
   const body = await readBody<{ ancres?: unknown }>(event)
   const ancres = ancresValides(body?.ancres)
+
+  if (ancres.length > MAX_ANCRES) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'Trop de points d’ancrage',
+      message: `Maximum ${MAX_ANCRES} points d'ancrage par calcul.`
+    })
+  }
+
   const client = await db(event)
 
   const { data: biensBruts, error: erreurBiens } = await client

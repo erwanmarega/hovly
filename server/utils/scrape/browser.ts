@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
-import type { Browser } from 'playwright'
+import type { Browser, BrowserContext } from 'playwright'
+import { isHostnamePublic } from '../validation'
 
 const require = createRequire(import.meta.url)
 
@@ -39,4 +40,29 @@ export function pickUserAgent(seed: number): string {
 export function randomDelay(min = 400, max = 1200): Promise<void> {
   const ms = min + Math.floor(Math.random() * (max - min))
   return new Promise((r) => setTimeout(r, ms))
+}
+
+/**
+ * Bloque toute requête réseau du contexte (navigation, redirections,
+ * sous-ressources) vers un hôte privé/interne. `assertHostnamePublique` seule
+ * ne protège que l'URL de départ : une redirection HTTP pendant `page.goto()`
+ * n'est jamais revalidée sans ce filtre au niveau réseau.
+ */
+export async function guardContextAgainstSsrf(context: BrowserContext): Promise<void> {
+  await context.route('**/*', async (route) => {
+    let hostname: string
+    try {
+      hostname = new URL(route.request().url()).hostname
+    } catch {
+      await route.abort('blockedbyclient')
+      return
+    }
+
+    const isPublic = await isHostnamePublic(hostname)
+    if (!isPublic) {
+      await route.abort('blockedbyclient')
+      return
+    }
+    await route.continue()
+  })
 }

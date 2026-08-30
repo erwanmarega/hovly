@@ -3,7 +3,7 @@ import { aplatirJsonLd, decimal, entier, imgValide, type LienCarte, type PageDat
 import { detecterSource } from './source'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
-import { getBrowser, pickUserAgent, randomDelay } from './browser'
+import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
 import { assertHostnamePublique } from '../validation'
 
 export interface AnnonceListe {
@@ -330,6 +330,7 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
     viewport: { width: 1280, height: 1600 },
     extraHTTPHeaders: { 'Accept-Language': 'fr-FR,fr;q=0.9' }
   })
+  await guardContextAgainstSsrf(context)
   const page = await context.newPage()
 
   try {

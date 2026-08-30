@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { detecterSource } from '../server/utils/scrape/source'
-import { assertHostnamePublique } from '../server/utils/validation'
+import { assertHostnamePublique, isHostnamePublic } from '../server/utils/validation'
 
 vi.mock('node:dns/promises', () => ({
   lookup: vi.fn()
@@ -53,5 +53,39 @@ describe('assertHostnamePublique', () => {
     const { lookup } = await import('node:dns/promises')
     vi.mocked(lookup).mockResolvedValue([{ address: '203.0.113.10', family: 4 }] as never)
     await expect(assertHostnamePublique('www.bienici.com')).resolves.toBeUndefined()
+  })
+})
+
+describe('isHostnamePublic', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renvoie false pour un hôte privé, sans lever', async () => {
+    const { lookup } = await import('node:dns/promises')
+    vi.mocked(lookup).mockResolvedValue([{ address: '169.254.169.254', family: 4 }] as never)
+    await expect(isHostnamePublic('cache-privee-1.exemple')).resolves.toBe(false)
+  })
+
+  it('renvoie true pour un hôte public', async () => {
+    const { lookup } = await import('node:dns/promises')
+    vi.mocked(lookup).mockResolvedValue([{ address: '203.0.113.20', family: 4 }] as never)
+    await expect(isHostnamePublic('cache-publique-1.exemple')).resolves.toBe(true)
+  })
+
+  it('met en cache le résultat : une seule résolution DNS pour deux appels', async () => {
+    const { lookup } = await import('node:dns/promises')
+    vi.mocked(lookup).mockResolvedValue([{ address: '203.0.113.21', family: 4 }] as never)
+
+    await isHostnamePublic('cache-publique-2.exemple')
+    await isHostnamePublic('cache-publique-2.exemple')
+
+    expect(lookup).toHaveBeenCalledTimes(1)
+  })
+
+  it('renvoie false si la résolution DNS échoue', async () => {
+    const { lookup } = await import('node:dns/promises')
+    vi.mocked(lookup).mockRejectedValue(new Error('ENOTFOUND'))
+    await expect(isHostnamePublic('cache-echec.exemple')).resolves.toBe(false)
   })
 })
