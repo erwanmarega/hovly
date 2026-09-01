@@ -1,4 +1,10 @@
 <script setup lang="ts">
+const user = useSupabaseUser();
+
+watchEffect(() => {
+  if (user.value) navigateTo("/dashboard");
+});
+
 useHead({
   title: "Hovly — Tous tes biens immobiliers en un seul endroit",
   meta: [

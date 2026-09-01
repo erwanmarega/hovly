@@ -23,10 +23,9 @@ async function confirmerSuppression() {
   await supprimer(b.id);
   suppressionEnCours.value = false;
   bienASupprimer.value = null;
-  // useBiens.supprimer restaure la liste en cas d'échec : si le bien est
-  // encore là, la suppression a échoué.
+
   if (biens.value.some((x) => x.id === b.id)) {
-    annoncerToast('Suppression impossible. Réessaie.', 'erreur');
+    annoncerToast("Suppression impossible. Réessaie.", "erreur");
   } else {
     annoncerToast(`« ${b.titre} » supprimé.`);
   }
@@ -67,16 +66,19 @@ const trajetSec = (b: Bien) =>
   trajetDe(b.id)?.duree_s ?? Number.POSITIVE_INFINITY;
 
 const contexteScore = computed(() => representants(biens.value));
-const scoreDe = (b: Bien) => scoreBien(b, contexteScore.value, preferences.value);
+const scoreDe = (b: Bien) =>
+  scoreBien(b, contexteScore.value, preferences.value);
 
-const groupesDoublons = computed(() => grouperDoublons(biens.value.filter((b) => b.actif)));
+const groupesDoublons = computed(() =>
+  grouperDoublons(biens.value.filter((b) => b.actif))
+);
 
 const {
   selection: selectionComparaison,
   nombre: nbCompares,
   complet: selectionComplete,
   comparable,
-  vider: viderComparaison
+  vider: viderComparaison,
 } = useComparateur();
 
 const { creer: creerPartage } = usePartages();
@@ -89,7 +91,10 @@ async function creerLienPartage(titre: string) {
   partageEnCours.value = true;
   partageErreur.value = "";
   try {
-    const partage = await creerPartage(selectionComparaison.value, titre || undefined);
+    const partage = await creerPartage(
+      selectionComparaison.value,
+      titre || undefined
+    );
     partageLien.value = `${window.location.origin}/partage/${partage.token}`;
   } catch {
     partageErreur.value = "Impossible de créer le lien. Réessaie.";
@@ -269,29 +274,15 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             >
               Tableau de bord
             </p>
-            <h1 class="mt-1.5 text-3xl font-light tracking-tight text-ink md:text-4xl">
+            <h1
+              class="mt-1.5 text-3xl font-light tracking-tight text-ink md:text-4xl"
+            >
               Mes biens
             </h1>
             <p class="mt-1 text-ink/60">
               Compare, suis les prix, prends ta décision.
             </p>
           </div>
-
-          <NuxtLink
-            to="/ajouter"
-            class="ajouter ml-auto flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white"
-          >
-            <svg
-              class="size-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Ajouter un bien
-          </NuxtLink>
         </div>
 
         <dl class="relative mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -310,7 +301,10 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             <dt
               class="text-[11px] font-semibold uppercase tracking-wider text-stone"
             >
-              Fourchette <span class="font-normal normal-case">({{ stats.fourchetteLabel }})</span>
+              Fourchette
+              <span class="font-normal normal-case"
+                >({{ stats.fourchetteLabel }})</span
+              >
             </dt>
             <dd
               v-if="stats.prixMax"
@@ -371,14 +365,17 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
         v-if="groupesDoublons.length"
         class="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-deep/30 bg-brand-light px-4 py-3"
       >
-        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm">⧉</span>
+        <span
+          class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm"
+          >⧉</span
+        >
         <p class="text-sm text-ink">
           <span class="font-semibold">
             {{ groupesDoublons.length }}
-            bien{{ groupesDoublons.length > 1 ? 's' : '' }} en double
+            bien{{ groupesDoublons.length > 1 ? "s" : "" }} en double
           </span>
-          — la même annonce publiée sur plusieurs sites. Elles ne comptent qu’une fois dans le
-          calcul du prix médian.
+          — la même annonce publiée sur plusieurs sites. Elles ne comptent
+          qu’une fois dans le calcul du prix médian.
         </p>
       </div>
 
@@ -392,7 +389,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
               type="search"
               placeholder="Rechercher un bien, une ville…"
               class="h-10 w-full rounded-full border border-hairline bg-surface-soft pl-10 pr-9 text-sm outline-none transition focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20"
-            >
+            />
             <svg
               class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-stone"
               viewBox="0 0 24 24"
@@ -442,7 +439,9 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
         <div
           class="flex flex-wrap items-center gap-3 border-t border-hairline-soft px-3 py-2.5"
         >
-          <div class="filtres -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
+          <div
+            class="filtres -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5"
+          >
             <button
               class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
               :class="
@@ -634,8 +633,12 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
           class="barre-cmp fixed inset-x-0 z-30 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-center gap-3 rounded-full border border-hairline bg-white/95 px-4 py-2.5 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-3"
         >
           <span class="text-sm font-medium">
-            {{ nbCompares }} bien{{ nbCompares > 1 ? 's' : '' }} sélectionné{{ nbCompares > 1 ? 's' : '' }}
-            <span v-if="selectionComplete" class="text-stone">(max atteint)</span>
+            {{ nbCompares }} bien{{ nbCompares > 1 ? "s" : "" }} sélectionné{{
+              nbCompares > 1 ? "s" : ""
+            }}
+            <span v-if="selectionComplete" class="text-stone"
+              >(max atteint)</span
+            >
           </span>
           <button
             class="text-sm font-medium text-steel transition hover:text-ink"
@@ -652,7 +655,11 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
           <NuxtLink
             :to="comparable ? '/comparer' : ''"
             class="rounded-full px-4 py-2 text-sm font-medium transition"
-            :class="comparable ? 'bg-ink text-white hover:bg-black' : 'pointer-events-none bg-surface text-stone'"
+            :class="
+              comparable
+                ? 'bg-ink text-white hover:bg-black'
+                : 'pointer-events-none bg-surface text-stone'
+            "
           >
             Comparer
           </NuxtLink>
@@ -731,8 +738,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
 }
 
 .ajouter {
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.3s ease;
 }
 .ajouter:hover {
@@ -781,9 +787,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
 
 .barre-cmp-enter-active,
 .barre-cmp-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 .barre-cmp-enter-from,
 .barre-cmp-leave-to {

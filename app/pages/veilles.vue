@@ -125,7 +125,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
   <div class="min-h-screen bg-surface text-ink antialiased">
     <TheNavbar width="max-w-7xl" />
 
-    <main class="mx-auto max-w-5xl px-6 py-8">
+    <main class="mx-auto max-w-7xl px-6 py-8">
       <FilAriane
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Veilles' }]"

@@ -1,112 +1,117 @@
 <script setup lang="ts">
-import type { Alerte } from '~/types'
+import type { Alerte } from "~/types";
 
-useHead({ title: 'Alertes — Hovly' })
+useHead({ title: "Alertes — Hovly" });
 
-const { alertes, nonVues, refresh, marquerLues, verifierMaintenant } = useAlertes()
+const { alertes, nonVues, refresh, marquerLues, verifierMaintenant } =
+  useAlertes();
 
-const { pending } = useAsyncData('alertes', () => refresh(), { server: false })
+const { pending } = useAsyncData("alertes", () => refresh(), { server: false });
 
 const FILTRES = [
-  { value: 'toutes', label: 'Toutes' },
-  { value: 'non_lues', label: 'Non lues' },
-  { value: 'baisse_prix', label: 'Baisses' },
-  { value: 'annonce_supprimee', label: 'Disparues' }
-] as const
+  { value: "toutes", label: "Toutes" },
+  { value: "non_lues", label: "Non lues" },
+  { value: "baisse_prix", label: "Baisses" },
+  { value: "annonce_supprimee", label: "Disparues" },
+] as const;
 
-const filtre = ref<(typeof FILTRES)[number]['value']>('toutes')
+const filtre = ref<(typeof FILTRES)[number]["value"]>("toutes");
 
-const checking = ref(false)
-const checkMsg = ref('')
-const checkErr = ref(false)
+const checking = ref(false);
+const checkMsg = ref("");
+const checkErr = ref(false);
 
 const stats = computed(() => {
-  const baisses = alertes.value.filter((a) => a.type === 'baisse_prix')
-  const economie = baisses.reduce(
-    (s, a) => s + Math.max(0, (a.ancien_prix ?? 0) - (a.nouveau_prix ?? 0)),
-    0
-  )
+  const baisses = alertes.value.filter((a) => a.type === "baisse_prix");
   return {
     total: alertes.value.length,
     nonLues: nonVues.value,
     baisses: baisses.length,
-    supprimees: alertes.value.filter((a) => a.type === 'annonce_supprimee').length,
-    economie
-  }
-})
+    supprimees: alertes.value.filter((a) => a.type === "annonce_supprimee")
+      .length,
+  };
+});
 
 const compteurs = computed(() => ({
   toutes: alertes.value.length,
   non_lues: nonVues.value,
   baisse_prix: stats.value.baisses,
-  annonce_supprimee: stats.value.supprimees
-}))
+  annonce_supprimee: stats.value.supprimees,
+}));
 
 const filtrees = computed(() => {
-  if (filtre.value === 'toutes') return alertes.value
-  if (filtre.value === 'non_lues') return alertes.value.filter((a) => !a.vue)
-  return alertes.value.filter((a) => a.type === filtre.value)
-})
+  if (filtre.value === "toutes") return alertes.value;
+  if (filtre.value === "non_lues") return alertes.value.filter((a) => !a.vue);
+  return alertes.value.filter((a) => a.type === filtre.value);
+});
 
 function cleJour(iso: string) {
-  const d = new Date(iso)
-  const aujourdhui = new Date()
-  const hier = new Date(aujourdhui)
-  hier.setDate(hier.getDate() - 1)
-  const memeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+  const d = new Date(iso);
+  const aujourdhui = new Date();
+  const hier = new Date(aujourdhui);
+  hier.setDate(hier.getDate() - 1);
+  const memeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
-  if (memeJour(d, aujourdhui)) return "Aujourd'hui"
-  if (memeJour(d, hier)) return 'Hier'
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+  if (memeJour(d, aujourdhui)) return "Aujourd'hui";
+  if (memeJour(d, hier)) return "Hier";
+  return d.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 const groupes = computed(() => {
-  const map = new Map<string, Alerte[]>()
+  const map = new Map<string, Alerte[]>();
   for (const a of filtrees.value) {
-    const cle = cleJour(a.envoyee_le)
-    const liste = map.get(cle) ?? []
-    liste.push(a)
-    map.set(cle, liste)
+    const cle = cleJour(a.envoyee_le);
+    const liste = map.get(cle) ?? [];
+    liste.push(a);
+    map.set(cle, liste);
   }
-  return [...map.entries()]
-})
+  return [...map.entries()];
+});
 
 async function lancerVerif() {
-  checking.value = true
-  checkMsg.value = ''
-  checkErr.value = false
+  checking.value = true;
+  checkMsg.value = "";
+  checkErr.value = false;
   try {
-    const r = await verifierMaintenant()
+    const r = await verifierMaintenant();
     const base =
       r.alertes.length > 0
         ? `${r.baisses} baisse(s), ${r.supprimes} annonce(s) disparue(s) sur ${r.verifies} bien(s) vérifié(s).`
-        : `Aucun changement sur ${r.verifies} bien(s) vérifié(s).`
+        : `Aucun changement sur ${r.verifies} bien(s) vérifié(s).`;
     const mails = r.envois?.echecs
-      ? ` ${r.envois.echecs} email(s) non envoyé(s) : ${r.envois.raisons.join(', ')}.`
+      ? ` ${r.envois.echecs} email(s) non envoyé(s) : ${r.envois.raisons.join(
+          ", "
+        )}.`
       : r.envois?.envoyes
-        ? ` ${r.envois.envoyes} email(s) envoyé(s).`
-        : ''
-    checkMsg.value = base + mails
-    checkErr.value = !!r.envois?.echecs || r.erreurs > 0
+      ? ` ${r.envois.envoyes} email(s) envoyé(s).`
+      : "";
+    checkMsg.value = base + mails;
+    checkErr.value = !!r.envois?.echecs || r.erreurs > 0;
   } catch {
-    checkErr.value = true
-    checkMsg.value = 'Vérification impossible (clé service Supabase manquante ?).'
+    checkErr.value = true;
+    checkMsg.value =
+      "Vérification impossible (clé service Supabase manquante ?).";
   }
-  checking.value = false
+  checking.value = false;
 }
 
-const eur = (c: number | null) =>
-  c == null ? '—' : Math.round(c / 100).toLocaleString('fr-FR') + ' €'
 </script>
 
 <template>
   <div class="min-h-screen bg-surface text-ink antialiased">
     <TheNavbar width="max-w-7xl" />
 
-    <main class="mx-auto max-w-5xl px-6 py-8">
+    <main class="mx-auto max-w-7xl px-6 py-8">
       <FilAriane
         class="mb-5"
-        :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Alertes' }]"
+        :items="[
+          { label: 'Mes biens', to: '/dashboard' },
+          { label: 'Alertes' },
+        ]"
       />
 
       <section
@@ -120,10 +125,16 @@ const eur = (c: number | null) =>
 
         <div class="relative flex flex-wrap items-start justify-between gap-6">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50"
+            >
               Surveillance
             </p>
-            <h1 class="mt-2 text-4xl font-light tracking-tight text-ink md:text-5xl">Alertes</h1>
+            <h1
+              class="mt-2 text-4xl font-light tracking-tight text-ink md:text-5xl"
+            >
+              Alertes
+            </h1>
             <p class="mt-2 max-w-sm text-ink/60">
               Baisses de prix et annonces disparues, détectées automatiquement.
             </p>
@@ -157,32 +168,32 @@ const eur = (c: number | null) =>
                 <path d="M21 12a9 9 0 1 1-3-6.7" />
                 <path d="M21 3v6h-6" />
               </svg>
-              {{ checking ? 'Vérification…' : 'Vérifier maintenant' }}
+              {{ checking ? "Vérification…" : "Vérifier maintenant" }}
             </button>
           </div>
         </div>
 
         <dl
-          class="tuiles relative mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink/10 lg:grid-cols-4"
+          class="tuiles relative mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink/10"
         >
           <div class="tuile bg-white px-5 py-4" style="--i: 0">
-            <dt class="text-[11px] font-semibold uppercase tracking-wider text-stone">Alertes</dt>
-            <dd class="mt-1.5 text-3xl font-light tabular-nums">{{ stats.total }}</dd>
+            <dt
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
+            >
+              Alertes
+            </dt>
+            <dd class="mt-1.5 text-3xl font-light tabular-nums">
+              {{ stats.total }}
+            </dd>
           </div>
           <div class="tuile bg-white px-5 py-4" style="--i: 1">
-            <dt class="text-[11px] font-semibold uppercase tracking-wider text-stone">Non lues</dt>
-            <dd class="mt-1.5 text-3xl font-light tabular-nums">{{ stats.nonLues }}</dd>
-          </div>
-          <div class="tuile bg-white px-5 py-4" style="--i: 2">
-            <dt class="text-[11px] font-semibold uppercase tracking-wider text-stone">Baisses</dt>
-            <dd class="mt-1.5 text-3xl font-light tabular-nums">{{ stats.baisses }}</dd>
-          </div>
-          <div class="tuile bg-white px-5 py-4" style="--i: 3">
-            <dt class="text-[11px] font-semibold uppercase tracking-wider text-stone">
-              Cumul des baisses
+            <dt
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
+            >
+              Non lues
             </dt>
-            <dd class="mt-1.5 text-3xl font-light tabular-nums text-[#0a4a42]">
-              {{ stats.economie ? '−' + eur(stats.economie) : '—' }}
+            <dd class="mt-1.5 text-3xl font-light tabular-nums">
+              {{ stats.nonLues }}
             </dd>
           </div>
         </dl>
@@ -192,7 +203,11 @@ const eur = (c: number | null) =>
         <p
           v-if="checkMsg"
           class="mt-5 rounded-2xl border px-4 py-3 text-sm"
-          :class="checkErr ? 'border-coral bg-coral/20 text-[#600000]' : 'border-hairline-soft bg-white text-slate'"
+          :class="
+            checkErr
+              ? 'border-coral bg-coral/20 text-[#600000]'
+              : 'border-hairline-soft bg-white text-slate'
+          "
         >
           {{ checkMsg }}
         </p>
@@ -207,14 +222,19 @@ const eur = (c: number | null) =>
           v-for="f in FILTRES"
           :key="f.value"
           class="filtre flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition"
-          :class="filtre === f.value ? 'bg-ink text-white' : 'border border-hairline bg-white text-steel hover:bg-surface'"
+          :class="
+            filtre === f.value
+              ? 'bg-ink text-white'
+              : 'border border-hairline bg-white text-steel hover:bg-surface'
+          "
           @click="filtre = f.value"
         >
           {{ f.label }}
           <span
             class="rounded-full px-1.5 text-[11px] tabular-nums"
             :class="filtre === f.value ? 'bg-white/20' : 'bg-surface'"
-          >{{ compteurs[f.value] }}</span>
+            >{{ compteurs[f.value] }}</span
+          >
         </button>
       </div>
 
@@ -224,9 +244,18 @@ const eur = (c: number | null) =>
           :key="n"
           class="flex items-center gap-4 rounded-2xl border border-hairline-soft bg-white p-4"
         >
-          <span class="squelette size-12 shrink-0 rounded-xl" :style="{ animationDelay: `${n * 0.1}s` }" />
-          <span class="squelette h-3 w-40 rounded-full" :style="{ animationDelay: `${n * 0.1}s` }" />
-          <span class="squelette ml-auto h-3 w-24 rounded-full" :style="{ animationDelay: `${n * 0.1}s` }" />
+          <span
+            class="squelette size-12 shrink-0 rounded-xl"
+            :style="{ animationDelay: `${n * 0.1}s` }"
+          />
+          <span
+            class="squelette h-3 w-40 rounded-full"
+            :style="{ animationDelay: `${n * 0.1}s` }"
+          />
+          <span
+            class="squelette ml-auto h-3 w-24 rounded-full"
+            :style="{ animationDelay: `${n * 0.1}s` }"
+          />
         </div>
       </div>
 
@@ -234,7 +263,9 @@ const eur = (c: number | null) =>
         v-else-if="!alertes.length"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
-        <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-teal text-[#0a4a42]">
+        <div
+          class="mx-auto grid size-14 place-items-center rounded-2xl bg-teal text-[#0a4a42]"
+        >
           <svg
             class="size-6"
             viewBox="0 0 24 24"
@@ -248,9 +279,12 @@ const eur = (c: number | null) =>
             <path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </svg>
         </div>
-        <p class="mt-4 text-lg font-medium text-ink-deep">Aucune alerte pour l’instant</p>
+        <p class="mt-4 text-lg font-medium text-ink-deep">
+          Aucune alerte pour l’instant
+        </p>
         <p class="mx-auto mt-1 max-w-xs text-sm text-slate">
-          Hovly surveille tes biens chaque jour. Tu peux aussi lancer une vérification manuelle.
+          Hovly surveille tes biens chaque jour. Tu peux aussi lancer une
+          vérification manuelle.
         </p>
       </div>
 
@@ -259,7 +293,10 @@ const eur = (c: number | null) =>
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-16 text-center"
       >
         <p class="text-slate">Aucune alerte dans ce filtre.</p>
-        <button class="mt-3 text-sm font-medium text-blue hover:underline" @click="filtre = 'toutes'">
+        <button
+          class="mt-3 text-sm font-medium text-blue hover:underline"
+          @click="filtre = 'toutes'"
+        >
           Voir toutes les alertes
         </button>
       </div>
@@ -267,13 +304,22 @@ const eur = (c: number | null) =>
       <div v-else class="mt-5 space-y-7">
         <section v-for="[jour, liste] in groupes" :key="jour">
           <div class="mb-2.5 flex items-center gap-3">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-stone">{{ jour }}</h2>
+            <h2
+              class="text-xs font-semibold uppercase tracking-wider text-stone"
+            >
+              {{ jour }}
+            </h2>
             <span class="h-px flex-1 bg-hairline-soft" />
             <span class="text-xs text-stone">{{ liste.length }}</span>
           </div>
 
           <ul class="space-y-2.5">
-            <li v-for="(a, i) in liste" :key="a.id" class="alerte" :style="{ '--i': i }">
+            <li
+              v-for="(a, i) in liste"
+              :key="a.id"
+              class="alerte"
+              :style="{ '--i': i }"
+            >
               <LigneAlerte :alerte="a" />
             </li>
           </ul>
@@ -313,7 +359,11 @@ const eur = (c: number | null) =>
 }
 
 .quadrillage {
-  background-image: linear-gradient(to right, rgb(5 0 56 / 8%) 1px, transparent 1px),
+  background-image: linear-gradient(
+      to right,
+      rgb(5 0 56 / 8%) 1px,
+      transparent 1px
+    ),
     linear-gradient(to bottom, rgb(5 0 56 / 8%) 1px, transparent 1px);
   background-size: 46px 46px;
   mask-image: radial-gradient(circle at 20% 0%, black, transparent 80%);
@@ -330,8 +380,7 @@ const eur = (c: number | null) =>
 }
 
 .action {
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.35s ease;
 }
 .action:not(:disabled):hover {
@@ -368,9 +417,7 @@ const eur = (c: number | null) =>
 
 .msg-enter-active,
 .msg-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .msg-enter-from,
 .msg-leave-to {
