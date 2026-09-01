@@ -260,6 +260,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
         class="bandeau relative isolate overflow-hidden rounded-feature bg-brand px-7 py-8 md:px-10 md:py-10"
       >
         <span class="quadrillage pointer-events-none absolute inset-0" />
+        <LogoWatermark />
 
         <div class="relative flex flex-wrap items-center gap-5">
           <div class="min-w-0">

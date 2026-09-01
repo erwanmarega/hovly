@@ -116,6 +116,7 @@ const eur = (c: number | null) =>
           class="halo pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-white/50 blur-3xl"
         />
         <span class="quadrillage pointer-events-none absolute inset-0" />
+        <LogoWatermark />
 
         <div class="relative flex flex-wrap items-start justify-between gap-6">
           <div>

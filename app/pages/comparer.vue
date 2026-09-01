@@ -94,6 +94,7 @@ const sourceLabels: Record<string, string> = {
         class="bandeau relative isolate overflow-hidden rounded-feature bg-brand px-7 py-8 md:px-10 md:py-10"
       >
         <span class="quadrillage pointer-events-none absolute inset-0" />
+        <LogoWatermark />
 
         <div class="relative flex flex-wrap items-start justify-between gap-6">
           <div>
