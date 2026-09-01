@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BienPartage } from "~/types";
 
-const props = defineProps<{ bien: BienPartage }>();
+const props = defineProps<{ bien: BienPartage; token: string }>();
 
 const eur = (n: number) => n.toLocaleString("fr-FR");
 const estAchatPartage = computed(() => props.bien.transaction === "achat");
@@ -9,22 +9,26 @@ const estAchatPartage = computed(() => props.bien.transaction === "achat");
 
 <template>
   <article class="overflow-hidden rounded-2xl border border-hairline bg-white">
-    <img
-      v-if="bien.photos?.[0]"
-      :src="bien.photos[0]"
-      :alt="bien.titre ?? ''"
-      class="h-40 w-full object-cover"
-      loading="lazy"
-    />
-    <div v-else class="grid h-40 w-full place-items-center bg-surface text-stone">
-      <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M3 10.5 12 3l9 7.5" />
-        <path d="M5 9.6V20h14V9.6" />
-      </svg>
-    </div>
+    <NuxtLink :to="`/partage/${token}/bien/${bien.id}`">
+      <img
+        v-if="bien.photos?.[0]"
+        :src="bien.photos[0]"
+        :alt="bien.titre ?? ''"
+        class="h-40 w-full object-cover"
+        loading="lazy"
+      />
+      <div v-else class="grid h-40 w-full place-items-center bg-surface text-stone">
+        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.6V20h14V9.6" />
+        </svg>
+      </div>
+    </NuxtLink>
 
     <div class="p-4">
-      <p class="truncate font-medium text-ink">{{ bien.titre || "Sans titre" }}</p>
+      <NuxtLink :to="`/partage/${token}/bien/${bien.id}`" class="block truncate font-medium text-ink hover:underline">
+        {{ bien.titre || "Sans titre" }}
+      </NuxtLink>
       <p class="mt-0.5 truncate text-xs text-stone">
         {{ [bien.ville, bien.code_postal].filter(Boolean).join(" ") || "Ville inconnue" }}
       </p>
@@ -61,6 +65,13 @@ const estAchatPartage = computed(() => props.bien.transaction === "achat");
         </span>
         <BadgeDPE :dpe="bien.dpe" />
       </div>
+
+      <NuxtLink
+        :to="`/partage/${token}/bien/${bien.id}`"
+        class="mt-3 inline-block text-xs font-medium text-blue hover:underline"
+      >
+        Détails
+      </NuxtLink>
     </div>
   </article>
 </template>

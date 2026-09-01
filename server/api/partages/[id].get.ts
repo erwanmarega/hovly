@@ -6,7 +6,11 @@ import { partageExpire, SELECT_PUBLIC_BIEN } from '../../utils/partages'
 // visiteur sans compte.
 
 export default defineEventHandler(async (event): Promise<PartagePublic> => {
-  const token = getRouterParam(event, 'token')
+  // Le fichier utilise le param `id` (et non `token`) car Nitro fusionne les
+  // routes d'un même segment de chemin : `[id].delete.ts` dans ce même dossier
+  // impose le nom de param `id` pour tout `/api/partages/:param`, quelle que
+  // soit la méthode HTTP du fichier qui le dessert.
+  const token = getRouterParam(event, 'id')
   const client = serviceDb(event)
 
   const { data: partage, error: lookupError } = await client
