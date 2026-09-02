@@ -29,7 +29,8 @@ export const MOTIF_FICHE: Record<SiteSource, RegExp> = {
   pap: /\/annonces\/[^/?#]*-r\d{6,}/i,
   'logic-immo': /\/(?:detail-[a-z]+|annonces?)\/[^?#]*\d{6,}/i,
   bienici: /\/annonce\/(?:location|vente|colocation)\//i,
-  century21: /\/trouver_logement\/detail\/\d{4,}/i
+  century21: /\/trouver_logement\/detail\/\d{4,}/i,
+  orpi: /\/annonce-(?:vente|location)-.+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i
 }
 
 const SITES_PROTEGES: SiteSource[] = ['leboncoin']

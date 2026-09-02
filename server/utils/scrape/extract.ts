@@ -19,6 +19,7 @@ export interface PageData {
   h1: string
   bodyText: string
   nextData?: string
+  estateData?: string
   liens?: LienCarte[]
 }
 
@@ -285,6 +286,36 @@ export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
     code_postal: ad.location?.zipcode ?? null,
     adresse: ad.location?.city_label ?? null,
     description: ad.body ? String(ad.body).slice(0, 5000) : null
+  }
+  return out
+}
+
+export function extraireOrpi(estateData: string | undefined): Partial<Bien> {
+  if (!estateData) return {}
+  let e: any
+  try {
+    e = JSON.parse(estateData)
+  } catch {
+    return {}
+  }
+  if (!e) return {}
+
+  const dpeIdx = typeof e.consumptionIndex === 'number' ? e.consumptionIndex : null
+  const dpe = dpeIdx != null && dpeIdx >= 1 && dpeIdx <= 7 ? (DPE_VALIDES[dpeIdx - 1] as DPE) : null
+
+  const ville = e.city?.name || e.locationDescription || null
+  const chargesEuros = typeof e.chargeReserve === 'number' ? e.chargeReserve : null
+
+  const out: Partial<Bien> = {
+    prix: typeof e.price === 'number' ? Math.round(e.price * 100) : undefined,
+    charges: chargesEuros != null ? Math.round(chargesEuros * 100) : null,
+    surface: typeof e.surface === 'number' ? Math.round(e.surface) : undefined,
+    nb_pieces: typeof e.nbRooms === 'number' ? e.nbRooms : null,
+    etage: typeof e.storyLocation === 'number' ? e.storyLocation : null,
+    dpe,
+    ville,
+    code_postal: e.zipCode || null,
+    photos: Array.isArray(e.images) ? e.images.slice(0, 20) : undefined
   }
   return out
 }

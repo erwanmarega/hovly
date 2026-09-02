@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import type { SiteSource } from '~/types'
 
-const SOURCES: SiteSource[] = ['seloger', 'leboncoin', 'pap', 'logic-immo', 'bienici', 'century21']
+const SOURCES: SiteSource[] = [
+  'seloger',
+  'leboncoin',
+  'pap',
+  'logic-immo',
+  'bienici',
+  'century21',
+  'orpi'
+]
 
 const EXEMPLES = [
   'pap.fr/annonces/appartement-marseille-8e…',
   'seloger.com/annonces/locations/appartement…',
   'leboncoin.fr/ad/locations/…',
-  'bienici.com/annonce/location/lyon-6e…'
+  'bienici.com/annonce/location/lyon-6e…',
+  'orpi.com/annonce-location-appartement-lyon…'
 ]
 
 const LABELS: Record<string, string> = {
@@ -16,7 +25,8 @@ const LABELS: Record<string, string> = {
   pap: 'PAP',
   'logic-immo': 'Logic-Immo',
   bienici: 'Bien’ici',
-  century21: 'Century 21'
+  century21: 'Century 21',
+  orpi: 'Orpi'
 }
 
 const url = ref('')

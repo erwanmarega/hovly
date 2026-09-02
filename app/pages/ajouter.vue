@@ -15,7 +15,8 @@ const SOURCES: SiteSource[] = [
   'pap',
   'logic-immo',
   'bienici',
-  'century21'
+  'century21',
+  'orpi'
 ]
 const LABELS: Record<SiteSource, string> = {
   seloger: 'SeLoger',
@@ -23,7 +24,8 @@ const LABELS: Record<SiteSource, string> = {
   pap: 'PAP',
   'logic-immo': 'Logic-Immo',
   bienici: 'Bien’ici',
-  century21: 'Century 21'
+  century21: 'Century 21',
+  orpi: 'Orpi'
 }
 const dpeOptions: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 

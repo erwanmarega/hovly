@@ -87,10 +87,11 @@ describe('detecterSource (client)', () => {
     expect(detecterSource('https://www.pap.fr/annonce/3')).toBe('pap')
     expect(detecterSource('https://www.logic-immo.com/detail/4')).toBe('logic-immo')
     expect(detecterSource('https://www.bienici.com/annonce/5')).toBe('bienici')
+    expect(detecterSource('https://www.orpi.com/annonce-vente-appartement-6/')).toBe('orpi')
   })
 
   it('retourne null pour une source non supportée', () => {
-    expect(detecterSource('https://www.orpi.com/x')).toBeNull()
+    expect(detecterSource('https://www.example.com/x')).toBeNull()
   })
 
   it('retourne null pour une URL invalide', () => {

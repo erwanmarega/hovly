@@ -58,6 +58,7 @@ export type SiteSource =
   | 'logic-immo'
   | 'bienici'
   | 'century21'
+  | 'orpi'
 
 export type AvisVisite = 'bon' | 'moyen' | 'mauvais'
 

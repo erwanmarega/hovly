@@ -10,7 +10,8 @@ const MOTIFS_ACHAT = [
   /\/annonce\/vente\//i, // bienici
   /\/annonces\/achat\//i, // seloger
   /detail-vente/i, // logic-immo
-  /\/acheter\//i // century21
+  /\/acheter\//i, // century21
+  /\/annonce-vente-/i // orpi
 ]
 
 const MOTIFS_LOCATION = [
@@ -18,7 +19,8 @@ const MOTIFS_LOCATION = [
   /\/annonce\/(?:location|colocation)\//i, // bienici
   /\/annonces\/location\//i, // seloger
   /detail-location/i, // logic-immo
-  /\/louer\//i // century21
+  /\/louer\//i, // century21
+  /\/annonce-location-/i // orpi
 ]
 
 export function detecterTransaction(url: string, prixCentimes: number | null): Transaction {

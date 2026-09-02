@@ -16,7 +16,8 @@ const LABELS: Record<SiteSource, string> = {
   pap: 'PAP',
   'logic-immo': 'Logic-Immo',
   bienici: 'Bien’ici',
-  century21: 'Century 21'
+  century21: 'Century 21',
+  orpi: 'Orpi'
 }
 </script>
 

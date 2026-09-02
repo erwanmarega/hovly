@@ -6,7 +6,8 @@ const DOMAINES: Record<string, SiteSource> = {
   'pap.fr': 'pap',
   'logic-immo.com': 'logic-immo',
   'bienici.com': 'bienici',
-  'century21.fr': 'century21'
+  'century21.fr': 'century21',
+  'orpi.com': 'orpi'
 }
 
 export function detecterSource(url: string): SiteSource | null {

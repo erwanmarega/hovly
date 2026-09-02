@@ -166,6 +166,7 @@ export function htmlToPageData(html: string, motifFiche: RegExp | null = null): 
     h1: document.querySelector('h1')?.textContent?.trim() || '',
     bodyText: (document.body?.textContent || '').replace(/\s+/g, ' ').slice(0, 20000),
     nextData: document.querySelector('#__NEXT_DATA__')?.textContent || '',
+    estateData: document.querySelector('[data-estate]')?.getAttribute('data-estate') || '',
     liens
   }
 }

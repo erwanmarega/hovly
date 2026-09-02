@@ -8,6 +8,7 @@ describe('detecterSource', () => {
     expect(detecterSource('https://www.pap.fr/annonces/colocation-r401')).toBe('pap')
     expect(detecterSource('https://www.logic-immo.com/detail/789')).toBe('logic-immo')
     expect(detecterSource('https://www.bienici.com/annonce/abc')).toBe('bienici')
+    expect(detecterSource('https://www.orpi.com/annonce-vente-appartement-x/')).toBe('orpi')
   })
 
   it('ignore le préfixe www', () => {
@@ -15,7 +16,7 @@ describe('detecterSource', () => {
   })
 
   it('retourne null pour source non supportée', () => {
-    expect(detecterSource('https://www.orpi.com/x')).toBeNull()
+    expect(detecterSource('https://www.example.com/x')).toBeNull()
   })
 
   it('retourne null pour URL invalide', () => {

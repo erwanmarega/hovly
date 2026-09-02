@@ -102,5 +102,6 @@ export function detecterSource(url: string): SiteSource | null {
   if (host.includes('logic-immo')) return 'logic-immo'
   if (host.includes('bienici')) return 'bienici'
   if (host.includes('century21')) return 'century21'
+  if (host.includes('orpi.com')) return 'orpi'
   return null
 }

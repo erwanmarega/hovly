@@ -4,6 +4,7 @@ import {
   extraire,
   extraireLeboncoin,
   extraireCentury21,
+  extraireOrpi,
   estPageRecherche,
   type PageData
 } from './extract'
@@ -74,7 +75,9 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
       ? extraireLeboncoin(raw.nextData)
       : source === 'century21'
         ? extraireCentury21(raw)
-        : null
+        : source === 'orpi'
+          ? extraireOrpi(raw.estateData)
+          : null
 
   if (specifique) {
     for (const [k, v] of Object.entries(specifique)) {
@@ -197,7 +200,8 @@ async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<Scr
         scriptImages,
         jsonLd,
         h1: document.querySelector('h1')?.textContent?.trim() || '',
-        bodyText: (document.body?.innerText || '').slice(0, 20000)
+        bodyText: (document.body?.innerText || '').slice(0, 20000),
+        estateData: document.querySelector('[data-estate]')?.getAttribute('data-estate') || ''
       }
     })
 

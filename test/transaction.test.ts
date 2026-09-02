@@ -14,7 +14,9 @@ describe('detecterTransaction — motifs d’URL', () => {
     ['https://www.logic-immo.com/detail-vente-123.htm', 'achat'],
     ['https://www.logic-immo.com/detail-location-123.htm', 'location'],
     ['https://www.century21.fr/acheter/appartement/123', 'achat'],
-    ['https://www.century21.fr/louer/appartement/123', 'location']
+    ['https://www.century21.fr/louer/appartement/123', 'location'],
+    ['https://www.orpi.com/annonce-vente-appartement-t2-lyon-69001-abc/', 'achat'],
+    ['https://www.orpi.com/annonce-location-appartement-t2-lyon-69001-abc/', 'location']
   ] as const)('%s → %s', (url, attendu) => {
     expect(detecterTransaction(url, null)).toBe(attendu)
   })
