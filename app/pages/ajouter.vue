@@ -278,7 +278,6 @@ async function enregistrer() {
   }
 }
 
-const eur = (n: number) => n.toLocaleString('fr-FR')
 
 const inputCls =
   'h-11 w-full rounded-xl border border-hairline-strong bg-white px-4 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20'
@@ -654,7 +653,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     <div
                       class="grid h-11 place-items-center rounded-xl bg-surface text-sm font-semibold text-slate"
                     >
-                      {{ eur(prixM2) }} €
+                      {{ formaterNombre(prixM2) }} €
                     </div>
                   </div>
                 </div>
@@ -772,7 +771,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                   </p>
 
                   <p class="mt-4 text-3xl font-light tracking-tight">
-                    {{ eur(draft.prix) }} €<span v-if="draft.transaction !== 'achat'" class="text-base text-stone">/mois</span>
+                    {{ formaterNombre(draft.prix) }} €<span v-if="draft.transaction !== 'achat'" class="text-base text-stone">/mois</span>
                   </p>
 
                   <div class="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -786,7 +785,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     </div>
                     <div class="rounded-xl bg-surface py-2.5">
                       <p class="text-xs text-stone">€/m²</p>
-                      <p class="mt-0.5 font-semibold">{{ eur(prixM2) }}</p>
+                      <p class="mt-0.5 font-semibold">{{ formaterNombre(prixM2) }}</p>
                     </div>
                   </div>
 

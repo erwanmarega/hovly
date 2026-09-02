@@ -1,13 +1,11 @@
 import type { Bien } from '~/types'
 import type { AlerteCreee } from '~/types/check'
+import { formaterPrix } from './prix'
 
 export interface ResultatEnvoi {
   envoye: boolean
   raison?: string
 }
-
-const eur = (centimes: number | null) =>
-  centimes == null ? '' : Math.round(centimes / 100).toLocaleString('fr-FR') + ' €'
 
 export async function envoyerAlerteEmail(
   to: string,
@@ -26,8 +24,8 @@ export async function envoyerAlerteEmail(
   if (alerte.type === 'baisse_prix') {
     subject = `Baisse de prix — ${alerte.titre}`
     html = `<p>Bonne nouvelle ! Le prix de <strong>${alerte.titre}</strong> a baissé.</p>
-      <p>Ancien prix : <s>${eur(alerte.ancien_prix)}</s><br/>
-      Nouveau prix : <strong>${eur(alerte.nouveau_prix)}</strong></p>`
+      <p>Ancien prix : <s>${formaterPrix(alerte.ancien_prix)}</s><br/>
+      Nouveau prix : <strong>${formaterPrix(alerte.nouveau_prix)}</strong></p>`
   } else {
     subject = `Annonce supprimée — ${alerte.titre}`
     html = `<p>L'annonce <strong>${alerte.titre}</strong> n'est plus disponible (bien probablement loué ou vendu).</p>
@@ -98,7 +96,7 @@ export async function envoyerVeilleEmail(
   const items = lignes
     .map((l) => {
       const details = [
-        eur(l.prix),
+        formaterPrix(l.prix),
         l.surface ? `${l.surface} m²` : '',
         l.nb_pieces ? `${l.nb_pieces} pièces` : ''
       ]

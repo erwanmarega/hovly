@@ -11,8 +11,7 @@ const PAD_Y = 16
 const W = 600
 const H = 200
 
-const euros = (centimes: number) => Math.round(centimes / 100)
-const fmt = (centimes: number) => euros(centimes).toLocaleString('fr-FR')
+const fmt = (centimes: number) => formaterNombre(Math.round(centimes / 100))
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' })
 

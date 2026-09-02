@@ -6,7 +6,7 @@ const props = defineProps<{ bien: Bien }>()
 const { calculer } = useCoutReel()
 
 const cout = computed(() => calculer(props.bien))
-const eur = (centimes: number) => Math.round(centimes / 100).toLocaleString('fr-FR')
+const eur = (centimes: number) => formaterNombre(Math.round(centimes / 100))
 
 const detailsOuverts = ref(false)
 

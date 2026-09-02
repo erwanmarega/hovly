@@ -40,6 +40,20 @@ centrales de Vue.js et la règle par défaut de ce projet.
 - Avant d'écrire du markup dans une page, vérifier si un composant existe déjà
   (`app/components/`) ou mérite d'être créé.
 
+### Pas de doublon (règle stricte)
+
+**On ne crée pas une nouvelle fonction / composant / composable s'il en existe
+déjà un qui couvre le besoin.** Avant d'écrire quoi que ce soit de nouveau,
+chercher l'existant (`app/components/`, `app/composables/`, `server/utils/`) et
+le réutiliser ou l'étendre plutôt que de le redupliquer.
+
+- Un besoin proche mais pas identique → étendre l'existant (prop optionnelle,
+  paramètre) plutôt que copier-coller et adapter.
+- Si l'existant ne convient vraiment pas, l'expliquer avant de créer du neuf.
+- Vaut aussi pour les petites fonctions utilitaires (formatage, calculs) : pas
+  de `const eur = (n) => ...` local si un helper partagé fait déjà le travail
+  (ex. `formaterPrix`/`formaterNombre` dans `app/utils/prix.ts`).
+
 ### Composants partagés actuels
 
 - `TheNavbar` — navbar unique, s'adapte à l'état auth (déconnecté / connecté).

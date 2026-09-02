@@ -17,8 +17,6 @@ const emit = defineEmits<{
   supprimer: [id: string];
   statut: [id: string, statut: Statut];
 }>();
-
-const eur = (n: number) => n.toLocaleString("fr-FR");
 </script>
 
 <template>
@@ -63,7 +61,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
             >
           </p>
           <p class="mt-1 text-base font-semibold tabular-nums">
-            {{ eur(prixMensuel) }} €<span
+            {{ formaterNombre(prixMensuel) }} €<span
               v-if="!estAchat(bien)"
               class="text-xs font-normal text-stone"
               >/mois</span
@@ -75,23 +73,15 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
       </NuxtLink>
 
       <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
-        <span
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
+        <StatsBien
+          :surface="bien.surface"
+          :nb-pieces="bien.nb_pieces"
+          pieces-label="p"
+          :prix-m2="prixM2"
+          :dpe="bien.dpe"
         >
-          {{ bien.surface }} m²
-        </span>
-        <span
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ bien.nb_pieces }} p
-        </span>
-        <span
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ eur(prixM2) }} €/m²
-        </span>
-        <BadgeDPE :dpe="bien.dpe" />
-        <BadgeVisite :visite-le="bien.visite_le" compact />
+          <BadgeVisite :visite-le="bien.visite_le" compact />
+        </StatsBien>
       </div>
 
       <div class="mt-2.5 flex items-center gap-2">

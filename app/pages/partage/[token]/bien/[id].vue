@@ -21,8 +21,7 @@ const bien = computed(
   () => partage.value?.biens.find((b) => b.id === id) ?? null
 );
 
-const eur = (n: number) => n.toLocaleString("fr-FR");
-const estAchat = computed(() => bien.value?.transaction === "achat");
+const achat = computed(() => bien.value != null && estAchat(bien.value));
 
 useHead({
   title: () =>
@@ -103,8 +102,8 @@ useHead({
         <div class="mt-6 rounded-2xl border border-hairline bg-white p-5">
           <p class="text-2xl font-semibold tabular-nums">
             <template v-if="bien.prix != null">
-              {{ eur(Math.round(bien.prix / 100)) }} €<span
-                v-if="!estAchat"
+              {{ formaterNombre(Math.round(bien.prix / 100)) }} €<span
+                v-if="!achat"
                 class="text-sm font-normal text-stone"
                 >/mois</span
               >
@@ -115,25 +114,14 @@ useHead({
           </p>
 
           <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-            <span
-              v-if="bien.surface"
-              class="rounded-full bg-surface px-3 py-1 font-medium tabular-nums text-steel"
-            >
-              {{ bien.surface }} m²
-            </span>
-            <span
-              v-if="bien.nb_pieces"
-              class="rounded-full bg-surface px-3 py-1 font-medium tabular-nums text-steel"
-            >
-              {{ bien.nb_pieces }} pièce{{ bien.nb_pieces > 1 ? "s" : "" }}
-            </span>
-            <span
-              v-if="bien.etage != null"
-              class="rounded-full bg-surface px-3 py-1 font-medium tabular-nums text-steel"
-            >
-              Étage {{ bien.etage }}
-            </span>
-            <BadgeDPE :dpe="bien.dpe" />
+            <StatsBien
+              taille="md"
+              :surface="bien.surface"
+              :nb-pieces="bien.nb_pieces"
+              :pieces-label="bien.nb_pieces && bien.nb_pieces > 1 ? 'pièces' : 'pièce'"
+              :etage="bien.etage"
+              :dpe="bien.dpe"
+            />
           </div>
         </div>
       </template>

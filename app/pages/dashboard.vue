@@ -253,7 +253,6 @@ function toggleTri(clef: typeof triClef.value) {
   }
 }
 
-const eur = (n: number) => n.toLocaleString("fr-FR");
 </script>
 
 <template>
@@ -310,7 +309,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
               v-if="stats.prixMax"
               class="mt-1.5 text-2xl font-light tabular-nums"
             >
-              {{ eur(stats.prixMin) }} – {{ eur(stats.prixMax) }}
+              {{ formaterNombre(stats.prixMin) }} – {{ formaterNombre(stats.prixMax) }}
               <span class="text-base text-stone">€</span>
             </dd>
             <dd v-else class="mt-1.5 text-3xl font-light text-stone">—</dd>
@@ -666,9 +665,12 @@ const eur = (n: number) => n.toLocaleString("fr-FR");
         </div>
       </Transition>
 
-      <ModalSuppressionBien
+      <ModalConfirmationSuppression
         :ouvert="bienASupprimer !== null"
-        :bien="bienASupprimer"
+        titre="Supprimer ce bien ?"
+        :nom="bienASupprimer?.titre"
+        :sous-ligne="bienASupprimer?.ville"
+        message="Le bien et son historique seront définitivement supprimés."
         :en-cours="suppressionEnCours"
         @annuler="bienASupprimer = null"
         @confirmer="confirmerSuppression"

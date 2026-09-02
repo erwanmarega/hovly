@@ -3,8 +3,7 @@ import type { BienPartage } from "~/types";
 
 const props = defineProps<{ bien: BienPartage; token: string }>();
 
-const eur = (n: number) => n.toLocaleString("fr-FR");
-const estAchatPartage = computed(() => props.bien.transaction === "achat");
+const estAchatPartage = computed(() => estAchat(props.bien));
 </script>
 
 <template>
@@ -35,7 +34,7 @@ const estAchatPartage = computed(() => props.bien.transaction === "achat");
 
       <p class="mt-2 text-lg font-semibold tabular-nums">
         <template v-if="bien.prix != null">
-          {{ eur(Math.round(bien.prix / 100)) }} €<span
+          {{ formaterNombre(Math.round(bien.prix / 100)) }} €<span
             v-if="!estAchatPartage"
             class="text-xs font-normal text-stone"
             >/mois</span
@@ -45,25 +44,13 @@ const estAchatPartage = computed(() => props.bien.transaction === "achat");
       </p>
 
       <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
-        <span
-          v-if="bien.surface"
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ bien.surface }} m²
-        </span>
-        <span
-          v-if="bien.nb_pieces"
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ bien.nb_pieces }} p
-        </span>
-        <span
-          v-if="bien.etage != null"
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          Étage {{ bien.etage }}
-        </span>
-        <BadgeDPE :dpe="bien.dpe" />
+        <StatsBien
+          :surface="bien.surface"
+          :nb-pieces="bien.nb_pieces"
+          pieces-label="p"
+          :etage="bien.etage"
+          :dpe="bien.dpe"
+        />
       </div>
 
       <NuxtLink

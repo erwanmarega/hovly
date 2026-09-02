@@ -3,6 +3,7 @@ import type { Score } from '~/composables/useScore'
 import type { OptionsCout } from '~/composables/useCoutReel'
 import { coutReel } from '~/composables/useCoutReel'
 import { estAchat } from '~/composables/useBiens'
+import { prixAuM2 } from '~/composables/useMarche'
 import { cleTrajet, formatDuree } from '~/composables/useTrajets'
 
 export const MAX_COMPARAISON = 4
@@ -71,7 +72,7 @@ export function comparer(
   })
   const coutsReels = couts.map((c) => Math.round(c.total / 100) || null)
   const surfaces = biens.map((b) => b.surface || null)
-  const auM2 = biens.map((b) => (b.surface && b.prix ? Math.round(b.prix / 100 / b.surface) : null))
+  const auM2 = biens.map((b) => prixAuM2(b))
   const pieces = biens.map((b) => b.nb_pieces || null)
   const etages = biens.map((b) => b.etage)
   const dpes = biens.map((b) => (b.dpe ? DPE_ORDRE.indexOf(b.dpe) : null))
@@ -125,7 +126,7 @@ export function comparer(
 export function comparerPublic(biens: BienPartage[]): LigneComparaison[] {
   const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
   const surfaces = biens.map((b) => b.surface || null)
-  const auM2 = biens.map((b) => (b.surface && b.prix ? Math.round(b.prix / 100 / b.surface) : null))
+  const auM2 = biens.map((b) => prixAuM2(b))
   const pieces = biens.map((b) => b.nb_pieces || null)
   const etages = biens.map((b) => b.etage)
   const dpes = biens.map((b) => (b.dpe ? DPE_ORDRE.indexOf(b.dpe) : null))

@@ -12,7 +12,6 @@ const H = 120
 const HAUT = 20
 const BAS = 96
 
-const fmt = (n: number) => n.toLocaleString('fr-FR')
 const fmtMois = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
 
@@ -62,7 +61,7 @@ const barreDuBien = computed(() => {
     </div>
 
     <div class="mt-2 flex items-baseline gap-2">
-      <span class="text-2xl font-bold tracking-tight">{{ fmt(marche.mediane) }} €/m²</span>
+      <span class="text-2xl font-bold tracking-tight">{{ formaterNombre(marche.mediane) }} €/m²</span>
       <span class="text-xs text-stone">médiane des ventes DVF</span>
     </div>
 
@@ -105,11 +104,11 @@ const barreDuBien = computed(() => {
     </svg>
 
     <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-stone">
-      <span class="whitespace-nowrap">{{ fmt(marche.min) }} €/m²</span>
+      <span class="whitespace-nowrap">{{ formaterNombre(marche.min) }} €/m²</span>
       <span v-if="prixM2" class="whitespace-nowrap font-medium text-slate">
-        ▲ ce bien · {{ fmt(prixM2) }} €/m²
+        ▲ ce bien · {{ formaterNombre(prixM2) }} €/m²
       </span>
-      <span class="whitespace-nowrap">{{ fmt(marche.max) }} €/m²</span>
+      <span class="whitespace-nowrap">{{ formaterNombre(marche.max) }} €/m²</span>
     </div>
 
     <p class="mt-3 border-t border-hairline-soft pt-3 text-xs text-stone">

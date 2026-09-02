@@ -10,8 +10,6 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{ supprimer: [id: string] }>()
-
-const eur = (n: number) => n.toLocaleString('fr-FR')
 </script>
 
 <template>
@@ -47,21 +45,13 @@ const eur = (n: number) => n.toLocaleString('fr-FR')
       </p>
 
       <p class="mt-3 text-2xl font-light tracking-tight">
-        {{ eur(prixMensuel) }} €<span v-if="!estAchat(bien)" class="text-sm text-stone">/mois</span>
+        {{ formaterNombre(prixMensuel) }} €<span v-if="!estAchat(bien)" class="text-sm text-stone">/mois</span>
       </p>
 
       <div class="mt-4 flex flex-wrap items-center gap-1.5 text-xs">
-        <span class="rounded-full bg-surface px-2.5 py-1 font-medium text-steel">
-          {{ bien.surface }} m²
-        </span>
-        <span class="rounded-full bg-surface px-2.5 py-1 font-medium text-steel">
-          {{ bien.nb_pieces }} pièces
-        </span>
-        <span class="rounded-full bg-surface px-2.5 py-1 font-medium text-steel">
-          {{ eur(prixM2) }} €/m²
-        </span>
-        <BadgeDPE :dpe="bien.dpe" />
-        <BadgeVisite :visite-le="bien.visite_le" compact />
+        <StatsBien :surface="bien.surface" :nb-pieces="bien.nb_pieces" :prix-m2="prixM2" :dpe="bien.dpe">
+          <BadgeVisite :visite-le="bien.visite_le" compact />
+        </StatsBien>
       </div>
 
       <div class="mt-auto flex items-center gap-1 pt-4">

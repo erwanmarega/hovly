@@ -71,12 +71,7 @@ const prixMensuel = computed(() =>
 const charges = computed(() =>
   bien.value?.charges ? Math.round(bien.value.charges / 100) : 0
 );
-const prixM2 = computed(() =>
-  bien.value?.surface
-    ? Math.round(bien.value.prix / 100 / bien.value.surface)
-    : 0
-);
-const eur = (n: number) => n.toLocaleString("fr-FR");
+const prixM2 = computed(() => (bien.value ? (prixAuM2(bien.value) ?? 0) : 0));
 
 const dateAjout = computed(() =>
   bien.value
@@ -467,7 +462,7 @@ async function confirmerSuppression() {
           <div class="flex min-w-0 flex-col gap-4 sm:gap-6 lg:col-span-2">
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <p class="text-3xl font-bold tracking-tight">
-                {{ eur(prixMensuel) }} €<span
+                {{ formaterNombre(prixMensuel) }} €<span
                   v-if="bien.transaction !== 'achat'"
                   class="text-base font-medium text-stone"
                 >
@@ -477,15 +472,15 @@ async function confirmerSuppression() {
               <div class="mt-4 space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span class="text-steel">Prix au m²</span>
-                  <span class="font-semibold">{{ eur(prixM2) }} €</span>
+                  <span class="font-semibold">{{ formaterNombre(prixM2) }} €</span>
                 </div>
                 <div v-if="marche" class="flex justify-between">
                   <span class="text-steel">Marché (DVF)</span>
-                  <span class="font-semibold">{{ eur(marche.mediane) }} €/m²</span>
+                  <span class="font-semibold">{{ formaterNombre(marche.mediane) }} €/m²</span>
                 </div>
                 <div v-if="charges" class="flex justify-between">
                   <span class="text-steel">Charges</span>
-                  <span class="font-semibold">{{ eur(charges) }} €</span>
+                  <span class="font-semibold">{{ formaterNombre(charges) }} €</span>
                 </div>
               </div>
             </div>
@@ -523,7 +518,7 @@ async function confirmerSuppression() {
                       <span class="block truncate text-xs text-stone">{{ d.titre }}</span>
                     </span>
                     <span class="shrink-0 text-sm font-semibold tabular-nums">
-                      {{ eur(Math.round(d.prix / 100)) }} €
+                      {{ formaterNombre(Math.round(d.prix / 100)) }} €
                       <span
                         v-if="d.prix < bien.prix"
                         class="ml-1 rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold text-[#0a4a42]"
@@ -606,9 +601,12 @@ async function confirmerSuppression() {
         </Transition>
       </template>
 
-      <ModalSuppressionBien
+      <ModalConfirmationSuppression
         :ouvert="confirmationSuppression"
-        :bien="bien ?? null"
+        titre="Supprimer ce bien ?"
+        :nom="bien?.titre"
+        :sous-ligne="bien?.ville"
+        message="Le bien et son historique seront définitivement supprimés."
         :en-cours="deleting"
         @annuler="confirmationSuppression = false"
         @confirmer="confirmerSuppression"

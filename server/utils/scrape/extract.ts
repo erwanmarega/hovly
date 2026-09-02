@@ -239,6 +239,24 @@ export function collecterPhotos(data: PageData, node: any): string[] {
   return out.slice(0, 20)
 }
 
+/** Prix en centimes depuis un objet `ad` leboncoin (fiche ou carte de liste). */
+export function prixLeboncoinCentimes(ad: any): number | null {
+  const prixEuros = Array.isArray(ad?.price) ? ad.price[0] : null
+  return typeof ad?.price_cents === 'number'
+    ? ad.price_cents
+    : prixEuros != null
+      ? Math.round(prixEuros * 100)
+      : null
+}
+
+/** Surface/nb de pièces depuis les `attributes` (`key`→`value`) d'une annonce leboncoin. */
+export function surfaceLeboncoin(attrs: Record<string, string>): number | null {
+  return attrs.square ? Math.round(parseFloat(attrs.square)) : null
+}
+export function piecesLeboncoin(attrs: Record<string, string>): number | null {
+  return attrs.rooms ? parseInt(attrs.rooms, 10) : null
+}
+
 export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
   if (!nextData) return {}
   let ad: any
@@ -258,16 +276,9 @@ export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
     }
   }
 
-  const prixEuros = Array.isArray(ad.price) ? ad.price[0] : null
-  const prix =
-    typeof ad.price_cents === 'number'
-      ? ad.price_cents
-      : prixEuros != null
-        ? Math.round(prixEuros * 100)
-        : null
-
-  const surface = val.square ? Math.round(parseFloat(val.square)) : null
-  const nb_pieces = val.rooms ? parseInt(val.rooms, 10) : null
+  const prix = prixLeboncoinCentimes(ad)
+  const surface = surfaceLeboncoin(val)
+  const nb_pieces = piecesLeboncoin(val)
   const etage = val.floor_number != null ? parseInt(val.floor_number, 10) : null
   const charges = val.monthly_charges ? Math.round(parseFloat(val.monthly_charges) * 100) : null
 

@@ -14,18 +14,15 @@ const emit = defineEmits<{
   supprimer: [id: string]
 }>()
 
-const eur = (c: number | null) =>
-  c == null ? '' : Math.round(c / 100).toLocaleString('fr-FR') + ' €'
-
 const criteres = computed(() => {
   const r = props.recherche
   return [
     r.prix_min && r.prix_max
-      ? `${eur(r.prix_min)}–${eur(r.prix_max)}`
+      ? `${formaterPrix(r.prix_min)}–${formaterPrix(r.prix_max)}`
       : r.prix_max
-        ? `≤ ${eur(r.prix_max)}`
+        ? `≤ ${formaterPrix(r.prix_max)}`
         : r.prix_min
-          ? `≥ ${eur(r.prix_min)}`
+          ? `≥ ${formaterPrix(r.prix_min)}`
           : '',
     r.surface_min ? `≥ ${r.surface_min} m²` : '',
     r.pieces_min ? `≥ ${r.pieces_min} p` : ''

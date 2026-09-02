@@ -1,5 +1,6 @@
 import webpush from 'web-push'
 import type { AlerteCreee, ResumeEnvois } from '~/types/check'
+import { formaterPrix } from './prix'
 
 export interface AbonnementPush {
   id: string
@@ -14,9 +15,6 @@ export interface PayloadPush {
   url: string
   tag?: string
 }
-
-const eur = (centimes: number | null) =>
-  centimes == null ? '' : Math.round(centimes / 100).toLocaleString('fr-FR') + ' €'
 
 let configure = false
 
@@ -35,8 +33,8 @@ export function pushDisponible(): boolean {
 
 export function payloadAlerte(alerte: AlerteCreee): PayloadPush {
   if (alerte.type === 'baisse_prix') {
-    const ancien = eur(alerte.ancien_prix)
-    const nouveau = eur(alerte.nouveau_prix)
+    const ancien = formaterPrix(alerte.ancien_prix)
+    const nouveau = formaterPrix(alerte.nouveau_prix)
     return {
       titre: `Baisse de prix — ${alerte.titre}`,
       corps: ancien && nouveau ? `${ancien} → ${nouveau}` : 'Le prix a baissé.',

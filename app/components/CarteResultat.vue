@@ -13,13 +13,10 @@ const emit = defineEmits<{
 
 const source = computed(() => detecterSource(props.resultat.url))
 
-const eur = (c: number | null) =>
-  c == null ? null : Math.round(c / 100).toLocaleString('fr-FR') + ' €'
-
 const prixM2 = computed(() => {
   const { prix, surface } = props.resultat
   if (!prix || !surface) return null
-  return Math.round(prix / 100 / surface).toLocaleString('fr-FR') + ' €/m²'
+  return Math.round(prix / 100 / surface)
 })
 
 const titre = computed(() => props.resultat.titre?.trim() || 'Annonce sans titre')
@@ -68,30 +65,21 @@ const quand = computed(() =>
       </p>
 
       <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-        <span
-          v-if="eur(resultat.prix)"
-          class="rounded-full bg-ink px-2 py-0.5 font-semibold tabular-nums text-white"
+        <StatsBien
+          :surface="resultat.surface"
+          :nb-pieces="resultat.nb_pieces"
+          pieces-label="p"
+          :prix-m2="prixM2"
         >
-          {{ eur(resultat.prix) }}
-        </span>
-        <span
-          v-if="resultat.surface"
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ resultat.surface }} m²
-        </span>
-        <span
-          v-if="resultat.nb_pieces"
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ resultat.nb_pieces }} p
-        </span>
-        <span
-          v-if="prixM2"
-          class="rounded-full bg-surface px-2 py-0.5 font-medium tabular-nums text-steel"
-        >
-          {{ prixM2 }}
-        </span>
+          <template #avant>
+            <span
+              v-if="formaterPrix(resultat.prix)"
+              class="rounded-full bg-ink px-2 py-0.5 font-semibold tabular-nums text-white"
+            >
+              {{ formaterPrix(resultat.prix) }}
+            </span>
+          </template>
+        </StatsBien>
       </div>
     </div>
 

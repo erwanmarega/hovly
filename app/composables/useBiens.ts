@@ -1,4 +1,5 @@
 import type { Bien, Statut, SiteSource } from '~/types'
+import { prixAuM2 } from './useMarche'
 
 export const STATUTS: { value: Statut; label: string }[] = [
   { value: 'a_visiter', label: 'À visiter' },
@@ -20,8 +21,7 @@ export function useBiens() {
   }
 
   function prixM2(b: Bien): number {
-    if (!b.surface) return 0
-    return Math.round(b.prix / 100 / b.surface)
+    return prixAuM2(b) ?? 0
   }
 
   async function refresh() {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Bien } from '~/types'
-
 const props = defineProps<{
   ouvert: boolean
-  bien: Pick<Bien, 'titre' | 'ville'> | null
+  titre: string
+  nom: string | null | undefined
+  sousLigne?: string | null
+  message: string
   enCours?: boolean
 }>()
 
@@ -31,7 +32,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', surTouche))
         class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="titre-suppression-bien"
+        aria-labelledby="titre-suppression"
         @click.self="!enCours && emit('annuler')"
       >
         <div
@@ -57,20 +58,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', surTouche))
           </div>
 
           <h2
-            id="titre-suppression-bien"
+            id="titre-suppression"
             class="mt-4 text-[22px] font-medium leading-snug tracking-tight text-ink-deep"
           >
-            Supprimer ce bien ?
+            {{ titre }}
           </h2>
 
           <div class="mt-4 rounded-2xl bg-surface px-4 py-3">
-            <p class="break-words text-sm font-medium text-ink">{{ bien?.titre }}</p>
-            <p v-if="bien?.ville" class="mt-0.5 text-xs text-stone">{{ bien.ville }}</p>
+            <p class="break-words text-sm font-medium text-ink">{{ nom }}</p>
+            <p v-if="sousLigne" class="mt-0.5 text-xs text-stone">{{ sousLigne }}</p>
           </div>
 
-          <p class="mt-4 text-sm text-slate">
-            Le bien et son historique seront définitivement supprimés.
-          </p>
+          <p class="mt-4 text-sm text-slate">{{ message }}</p>
 
           <div class="mt-6 flex items-center justify-end gap-3">
             <button

@@ -3,6 +3,7 @@ import type { ResumeEnvois } from '~/types/check'
 import { similarite, SEUIL_DOUBLON } from '~/composables/useDoublons'
 import { scrapeListe, type AnnonceListe } from './scrape/liste'
 import { detecterSource } from './scrape/source'
+import { formaterPrix } from './prix'
 import { envoyerVeilleEmail } from './email'
 import { envoyerPush, pushDisponible } from './push'
 
@@ -225,12 +226,9 @@ export async function purgerResultatsTraites(client: any): Promise<number> {
   return data?.length ?? 0
 }
 
-const eur = (centimes: number | null) =>
-  centimes == null ? '' : Math.round(centimes / 100).toLocaleString('fr-FR') + ' €'
-
 export function resumeCourt(r: ResultatVeille): string {
   return (
-    [eur(r.prix), r.surface ? `${r.surface} m²` : '', r.nb_pieces ? `T${r.nb_pieces}` : '']
+    [formaterPrix(r.prix), r.surface ? `${r.surface} m²` : '', r.nb_pieces ? `T${r.nb_pieces}` : '']
       .filter(Boolean)
       .join(' · ') ||
     r.titre ||

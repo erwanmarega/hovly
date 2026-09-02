@@ -9,8 +9,7 @@ const props = withDefaults(
   { compact: false }
 );
 
-const eur = (c: number | null) =>
-  c == null ? "—" : Math.round(c / 100).toLocaleString("fr-FR") + " €";
+const eur = (c: number | null) => (c == null ? "—" : formaterPrix(c));
 
 const heure = (iso: string) =>
   new Date(iso).toLocaleTimeString("fr-FR", {

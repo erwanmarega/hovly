@@ -59,8 +59,6 @@ const TRIS = computed<{ value: Clef, label: string }[]>(() => {
   return tris
 })
 
-const eur = (n: number) => n.toLocaleString('fr-FR')
-
 const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.length - 2
 </script>
 
@@ -185,16 +183,16 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="hidden w-28 shrink-0 text-right tabular-nums lg:block">
             <p class="font-semibold">
-              {{ eur(prixMensuel(b)) }} €<span v-if="!estAchat(b)" class="text-xs font-normal text-stone">/mois</span>
+              {{ formaterNombre(prixMensuel(b)) }} €<span v-if="!estAchat(b)" class="text-xs font-normal text-stone">/mois</span>
             </p>
             <p class="text-xs text-stone">
-              réel {{ eur(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
+              réel {{ formaterNombre(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
             </p>
           </div>
 
           <div class="hidden w-24 shrink-0 text-right tabular-nums xl:block">
             <p class="text-sm text-slate">{{ b.surface }} m²</p>
-            <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ eur(prixM2(b)) }} €/m²</p>
+            <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ formaterNombre(prixM2(b)) }} €/m²</p>
           </div>
 
           <div class="hidden w-10 shrink-0 xl:block"><BadgeDPE :dpe="b.dpe" /></div>

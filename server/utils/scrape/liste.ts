@@ -1,5 +1,15 @@
 import type { SiteSource } from '~/types'
-import { aplatirJsonLd, decimal, entier, imgValide, type LienCarte, type PageData } from './extract'
+import {
+  aplatirJsonLd,
+  decimal,
+  entier,
+  imgValide,
+  piecesLeboncoin,
+  prixLeboncoinCentimes,
+  surfaceLeboncoin,
+  type LienCarte,
+  type PageData
+} from './extract'
 import { detecterSource } from './source'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
@@ -265,20 +275,14 @@ export function annoncesLeboncoin(nextData: string | undefined): AnnonceListe[] 
     const attrs: Record<string, string> = {}
     for (const a of ad.attributes ?? []) if (a?.key) attrs[a.key] = a.value
 
-    const prixEuros = Array.isArray(ad.price) ? ad.price[0] : null
     const photo = ad.images?.urls?.[0] ?? ad.images?.thumb_url ?? null
 
     out.push(
       fusionner(vide(url), {
         titre: ad.subject ? String(ad.subject).slice(0, 200) : null,
-        prix:
-          typeof ad.price_cents === 'number'
-            ? ad.price_cents
-            : prixEuros != null
-              ? Math.round(prixEuros * 100)
-              : null,
-        surface: attrs.square ? Math.round(parseFloat(attrs.square)) : null,
-        nb_pieces: attrs.rooms ? parseInt(attrs.rooms, 10) : null,
+        prix: prixLeboncoinCentimes(ad),
+        surface: surfaceLeboncoin(attrs),
+        nb_pieces: piecesLeboncoin(attrs),
         photo: typeof photo === 'string' && imgValide(photo) ? photo : null,
         ville: ad.location?.city ?? null,
         code_postal: ad.location?.zipcode ?? null

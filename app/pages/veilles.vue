@@ -243,9 +243,11 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
         </CarteVeille>
       </div>
 
-      <ModalSuppressionVeille
+      <ModalConfirmationSuppression
         :ouvert="rechercheASupprimer !== null"
-        :recherche="rechercheASupprimer"
+        titre="Supprimer cette veille ?"
+        :nom="rechercheASupprimer?.label"
+        message="La veille et ses résultats en attente seront définitivement supprimés."
         :en-cours="suppressionEnCours"
         @annuler="rechercheASupprimer = null"
         @confirmer="confirmerSuppression"

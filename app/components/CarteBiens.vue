@@ -69,8 +69,6 @@ function zoomerAuPincement(e: WheelEvent) {
   );
 }
 
-const eur = (n: number) => n.toLocaleString("fr-FR");
-
 function echapper(s: string): string {
   return s.replace(
     /[&<>"']/g,
@@ -83,11 +81,9 @@ function echapper(s: string): string {
 
 function popup(b: Bien): string {
   const prix = b.prix
-    ? `${eur(Math.round(b.prix / 100))} €${estAchat(b) ? "" : "/mois"}`
+    ? `${formaterNombre(Math.round(b.prix / 100))} €${estAchat(b) ? "" : "/mois"}`
     : "Prix inconnu";
-  const m2 = b.surface
-    ? ` · ${eur(Math.round(b.prix / 100 / b.surface))} €/m²`
-    : "";
+  const m2 = prixAuM2(b) ? ` · ${formaterNombre(prixAuM2(b)!)} €/m²` : "";
   const approx =
     b.geo_precision === "ville"
       ? '<div class="mt-1 text-stone">Position approximative</div>'

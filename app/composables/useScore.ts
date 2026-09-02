@@ -1,5 +1,6 @@
 import type { Bien, DPE, Preferences } from '~/types'
 import { estAchat } from './useBiens'
+import { prixAuM2 } from './useMarche'
 
 export interface ScorePart {
   label: string
@@ -67,7 +68,7 @@ function clamp01(x: number): number {
 }
 
 function pm2(b: Bien): number {
-  return b.surface ? b.prix / b.surface : 0
+  return prixAuM2(b) ?? 0
 }
 
 export function estPersonnalise(p: Preferences): boolean {
