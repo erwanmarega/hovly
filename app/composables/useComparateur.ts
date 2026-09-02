@@ -1,4 +1,4 @@
-import type { Ancre, Bien, DPE, Trajet } from '~/types'
+import type { Ancre, Bien, BienPartage, DPE, Trajet } from '~/types'
 import type { Score } from '~/composables/useScore'
 import type { OptionsCout } from '~/composables/useCoutReel'
 import { coutReel } from '~/composables/useCoutReel'
@@ -114,6 +114,31 @@ export function comparer(
     ligne('criteres', 'Critères non respectés', 'min', horsCriteres, (v) =>
       v == null ? '—' : v === 0 ? 'Aucun' : String(v)
     )
+  ]
+}
+
+/**
+ * Comparaison pour la page de partage publique : seuls les champs de
+ * `BienPartage` sont dispo (pas de charges, préférences, trajets ni score,
+ * tous privés — voir `CHAMPS_PUBLICS_BIEN` côté serveur).
+ */
+export function comparerPublic(biens: BienPartage[]): LigneComparaison[] {
+  const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
+  const surfaces = biens.map((b) => b.surface || null)
+  const auM2 = biens.map((b) => (b.surface && b.prix ? Math.round(b.prix / 100 / b.surface) : null))
+  const pieces = biens.map((b) => b.nb_pieces || null)
+  const etages = biens.map((b) => b.etage)
+  const dpes = biens.map((b) => (b.dpe ? DPE_ORDRE.indexOf(b.dpe) : null))
+
+  const vide = (v: number | null) => (v == null ? '—' : String(v))
+
+  return [
+    ligne('prix', 'Prix', 'min', loyers, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('surface', 'Surface', 'max', surfaces, (v) => (v == null ? '—' : `${v} m²`)),
+    ligne('m2', 'Prix au m²', 'min', auM2, (v) => (v == null ? '—' : `${eur(v)} €`)),
+    ligne('pieces', 'Pièces', 'max', pieces, vide),
+    ligne('etage', 'Étage', null, etages, vide),
+    ligne('dpe', 'DPE', 'min', dpes, (v) => (v == null ? '—' : DPE_ORDRE[v]!))
   ]
 }
 
