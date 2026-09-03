@@ -11,22 +11,22 @@ watchEffect(() => {
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
-const envoiLien = ref(false)
+const sendingLink = ref(false)
 const error = ref('')
 const info = ref('')
 
 const route = useRoute()
-const inactivite = computed(() => route.query.raison === 'inactivite')
+const fromInactivity = computed(() => route.query.raison === 'inactivite')
 
-const occupe = computed(() => loading.value || envoiLien.value)
+const busy = computed(() => loading.value || sendingLink.value)
 
-function reinitialiserMessages() {
+function resetMessages() {
   error.value = ''
   info.value = ''
 }
 
 async function handleLogin() {
-  reinitialiserMessages()
+  resetMessages()
   if (!email.value || !password.value) {
     error.value = 'Renseigne ton email et ton mot de passe.'
     return
@@ -46,18 +46,18 @@ async function handleLogin() {
   await navigateTo('/dashboard')
 }
 
-async function motDePasseOublie() {
-  reinitialiserMessages()
+async function forgotPassword() {
+  resetMessages()
   if (!email.value) {
     error.value = 'Renseigne ton email, on t’envoie un lien de réinitialisation.'
     return
   }
 
-  envoiLien.value = true
+  sendingLink.value = true
   const { error: err } = await supabase.auth.resetPasswordForEmail(email.value, {
     redirectTo: `${window.location.origin}/confirm`
   })
-  envoiLien.value = false
+  sendingLink.value = false
 
   if (err) {
     error.value = 'Envoi impossible pour le moment. Réessaie dans un instant.'
@@ -80,7 +80,7 @@ async function motDePasseOublie() {
           <p class="mt-2 text-slate">Connecte-toi pour retrouver tes biens.</p>
 
           <p
-            v-if="inactivite"
+            v-if="fromInactivity"
             class="mt-6 flex items-start gap-2.5 rounded-xl bg-surface-yellow px-4 py-3 text-sm text-ink-deep/70"
           >
             <svg
@@ -100,7 +100,7 @@ async function motDePasseOublie() {
 
           <GoogleButton
             class="mt-8"
-            :disabled="occupe"
+            :disabled="busy"
             @error="error = $event"
           />
 
@@ -135,10 +135,10 @@ async function motDePasseOublie() {
                 <button
                   type="button"
                   class="text-xs font-medium text-blue transition hover:underline disabled:opacity-60"
-                  :disabled="occupe"
-                  @click="motDePasseOublie"
+                  :disabled="busy"
+                  @click="forgotPassword"
                 >
-                  {{ envoiLien ? 'Envoi…' : 'Oublié ?' }}
+                  {{ sendingLink ? 'Envoi…' : 'Oublié ?' }}
                 </button>
               </template>
             </TextField>
@@ -173,7 +173,7 @@ async function motDePasseOublie() {
 
             <button
               type="submit"
-              :disabled="occupe"
+              :disabled="busy"
               class="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink text-sm font-medium text-white transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-ink-deep/20 disabled:opacity-60"
             >
               <span
