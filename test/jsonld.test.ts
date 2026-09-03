@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extraire, estPageRecherche, aplatirJsonLd, type PageData } from '../server/utils/scrape/extract'
+import { extract, isSearchPage, flattenJsonLd, type PageData } from '../server/utils/scrape/extract'
 
 const page = (over: Partial<PageData> = {}): PageData => ({
   title: '',
@@ -46,9 +46,9 @@ const BIENICI_RECHERCHE = [
   }
 ]
 
-describe('aplatirJsonLd', () => {
+describe('flattenJsonLd', () => {
   it('déplie les tableaux et les @graph', () => {
-    const flat = aplatirJsonLd([
+    const flat = flattenJsonLd([
       [{ '@type': 'A' }, { '@type': 'B' }],
       { '@type': 'C', '@graph': [{ '@type': 'D' }] }
     ])
@@ -56,13 +56,13 @@ describe('aplatirJsonLd', () => {
   })
 
   it('ignore les valeurs non exploitables', () => {
-    expect(aplatirJsonLd([null, undefined, 'texte', 42])).toEqual([])
+    expect(flattenJsonLd([null, undefined, 'texte', 42])).toEqual([])
   })
 })
 
-describe('extraire — agrégation multi-nœuds (cas Bien’ici)', () => {
+describe('extract — agrégation multi-nœuds (cas Bien’ici)', () => {
   it('combine l’adresse du nœud Accommodation et le prix du nœud Product', () => {
-    const d = extraire(page({ jsonLd: BIENICI_ANNONCE }))
+    const d = extract(page({ jsonLd: BIENICI_ANNONCE }))
 
     expect(d.prix).toBe(141000)
     expect(d.surface).toBe(77)
@@ -72,7 +72,7 @@ describe('extraire — agrégation multi-nœuds (cas Bien’ici)', () => {
   })
 
   it('ne se laisse plus piéger par le corps de page quand le JSON-LD suffit', () => {
-    const d = extraire(
+    const d = extract(
       page({
         jsonLd: BIENICI_ANNONCE,
         bodyText: 'Autres annonces : 550 € 48 m² 2 pièces — 700 € 60 m² 2 pièces'
@@ -84,14 +84,14 @@ describe('extraire — agrégation multi-nœuds (cas Bien’ici)', () => {
   })
 
   it('garde le repli texte quand le JSON-LD est vide', () => {
-    const d = extraire(page({ bodyText: 'Loyer 1 410 € — 77 m² — 3 pièces' }))
+    const d = extract(page({ bodyText: 'Loyer 1 410 € — 77 m² — 3 pièces' }))
     expect(d.prix).toBe(141000)
     expect(d.surface).toBe(77)
     expect(d.nb_pieces).toBe(3)
   })
 
   it('ignore un prix agrégé au profit du prix réel', () => {
-    const d = extraire(
+    const d = extract(
       page({
         jsonLd: [
           { '@type': 'Product', offers: { '@type': 'AggregateOffer', offerCount: 107, lowPrice: 550 } },
@@ -103,22 +103,22 @@ describe('extraire — agrégation multi-nœuds (cas Bien’ici)', () => {
   })
 })
 
-describe('estPageRecherche', () => {
+describe('isSearchPage', () => {
   it('reconnaît une page de résultats Bien’ici', () => {
-    expect(estPageRecherche(page({ jsonLd: BIENICI_RECHERCHE }))).toBe(true)
+    expect(isSearchPage(page({ jsonLd: BIENICI_RECHERCHE }))).toBe(true)
   })
 
   it('laisse passer une vraie annonce', () => {
-    expect(estPageRecherche(page({ jsonLd: BIENICI_ANNONCE }))).toBe(false)
+    expect(isSearchPage(page({ jsonLd: BIENICI_ANNONCE }))).toBe(false)
   })
 
   it('laisse passer une page sans JSON-LD', () => {
-    expect(estPageRecherche(page({ bodyText: 'Appartement 3 pièces' }))).toBe(false)
+    expect(isSearchPage(page({ bodyText: 'Appartement 3 pièces' }))).toBe(false)
   })
 
   it('laisse passer un agrégat accompagné de vraies caractéristiques', () => {
     expect(
-      estPageRecherche(
+      isSearchPage(
         page({
           jsonLd: [
             ...BIENICI_RECHERCHE,
@@ -131,7 +131,7 @@ describe('estPageRecherche', () => {
 
   it('laisse passer un agrégat d’une seule offre', () => {
     expect(
-      estPageRecherche(
+      isSearchPage(
         page({
           jsonLd: [
             { '@type': 'Product', offers: { '@type': 'AggregateOffer', offerCount: 1, lowPrice: 900 } }

@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import {
-  annoncesDepuisJsonLd,
-  annoncesDepuisLiens,
-  annoncesLeboncoin,
-  extraireAnnonces,
-  normaliserUrlAnnonce,
-  parseCarte,
-  titreDepuisCarte,
-  meilleureLecture,
-  MOTIF_FICHE
-} from '../server/utils/scrape/liste'
-import type { LienCarte, PageData } from '../server/utils/scrape/extract'
+  adsFromJsonLd,
+  adsFromLinks,
+  leboncoinAds,
+  extractAds,
+  normalizeAdUrl,
+  parseCard,
+  titleFromCard,
+  bestReading,
+  LISTING_PATTERN
+} from '../server/utils/scrape/listing'
+import type { CardLink, PageData } from '../server/utils/scrape/extract'
 
 const page = (over: Partial<PageData> = {}): PageData => ({
   title: '',
@@ -22,34 +22,34 @@ const page = (over: Partial<PageData> = {}): PageData => ({
   ...over
 })
 
-describe('normaliserUrlAnnonce', () => {
+describe('normalizeAdUrl', () => {
   it('résout une URL relative contre la page de résultats', () => {
-    expect(normaliserUrlAnnonce('/ad/locations/123456', 'https://www.leboncoin.fr/recherche')).toBe(
+    expect(normalizeAdUrl('/ad/locations/123456', 'https://www.leboncoin.fr/recherche')).toBe(
       'https://www.leboncoin.fr/ad/locations/123456'
     )
   })
 
   it('supprime query et hash quand l’id vit dans le chemin', () => {
     expect(
-      normaliserUrlAnnonce('https://www.pap.fr/annonces/t2-paris-r123456789?position=3#photos')
+      normalizeAdUrl('https://www.pap.fr/annonces/t2-paris-r123456789?position=3#photos')
     ).toBe('https://www.pap.fr/annonces/t2-paris-r123456789')
   })
 
   it('garde la query quand le chemin ne porte aucun id', () => {
-    expect(normaliserUrlAnnonce('https://exemple.fr/annonce?id=42')).toBe(
+    expect(normalizeAdUrl('https://exemple.fr/annonce?id=42')).toBe(
       'https://exemple.fr/annonce?id=42'
     )
   })
 
   it('rejette une URL non http', () => {
-    expect(normaliserUrlAnnonce('javascript:alert(1)')).toBeNull()
-    expect(normaliserUrlAnnonce('pas une url')).toBeNull()
+    expect(normalizeAdUrl('javascript:alert(1)')).toBeNull()
+    expect(normalizeAdUrl('pas une url')).toBeNull()
   })
 })
 
-describe('parseCarte', () => {
+describe('parseCard', () => {
   it('lit loyer, surface et pièces dans le texte d’une carte', () => {
-    const c = parseCarte('Appartement 3 pièces 62,5 m² Paris 75011 — 1 250 € CC')
+    const c = parseCard('Appartement 3 pièces 62,5 m² Paris 75011 — 1 250 € CC')
     expect(c.prix).toBe(125000)
     expect(c.surface).toBe(63)
     expect(c.nb_pieces).toBe(3)
@@ -57,24 +57,24 @@ describe('parseCarte', () => {
   })
 
   it('comprend la notation T2', () => {
-    expect(parseCarte('Studio T2 - 890 €').nb_pieces).toBe(2)
+    expect(parseCard('Studio T2 - 890 €').nb_pieces).toBe(2)
   })
 
   it('rend null sur une carte illisible plutôt que d’inventer', () => {
-    const c = parseCarte('Voir toutes les annonces')
+    const c = parseCard('Voir toutes les annonces')
     expect(c.prix).toBeNull()
     expect(c.surface).toBeNull()
     expect(c.nb_pieces).toBeNull()
   })
 
   it('ne prend pas un code postal pour un prix', () => {
-    expect(parseCarte('Lyon 69006').prix).toBeNull()
+    expect(parseCard('Lyon 69006').prix).toBeNull()
   })
 
   // Textes relevés sur une vraie page de résultats SeLoger : l'ancre est vide et
   // le texte remonté est la carte entière, compteur de carrousel compris.
   it('ignore le compteur de carrousel qui précède le prix', () => {
-    const c = parseCarte(
+    const c = parseCard(
       '1 / 24 2 268 € /mois charges comprises Comparez les déménageurs ' +
         'Appartement à louer 1 pièce · 42 m² · dès le 15/09/2026 ' +
         'Aligre-Gare de Lyon, Paris 12ème arrondissement (75012)'
@@ -85,7 +85,7 @@ describe('parseCarte', () => {
   })
 
   it('lit une carte avec badge DPE et surface décimale', () => {
-    const c = parseCarte(
+    const c = parseCard(
       '1 / 5 Nouveau B 3 426 € /mois charges comprises Appartement à louer ' +
         '2 pièces · 1 chambre · 53,8 m² · 8ème étage Nation-Picpus, Paris 12ème (75012)'
     )
@@ -97,7 +97,7 @@ describe('parseCarte', () => {
   // Relevé sur une page Century 21 : abréviation « pcs », surface en « m2 »,
   // décimale à la virgule, prix avant les caractéristiques.
   it('lit l’abréviation « pcs » de Century 21', () => {
-    const c = parseCarte(
+    const c = parseCard(
       'Exclusivité CHESSY 77 2 780 € par mois charges comprises 95,3 m2 , Appartement , 4 pcs'
     )
     expect(c.prix).toBe(278000)
@@ -106,24 +106,24 @@ describe('parseCarte', () => {
   })
 
   it('lit le singulier « pc »', () => {
-    expect(parseCarte('LAGNY 77 695 € par mois 21 m2 , Appartement , 1 pc').nb_pieces).toBe(1)
+    expect(parseCard('LAGNY 77 695 € par mois 21 m2 , Appartement , 1 pc').nb_pieces).toBe(1)
   })
 
   it('lit un loyer à décimale', () => {
-    expect(parseCarte('Appartement F4 à louer 1 583,80 € par mois').prix).toBe(158380)
+    expect(parseCard('Appartement F4 à louer 1 583,80 € par mois').prix).toBe(158380)
   })
 
   it('accepte les deux écritures du millier et la décimale', () => {
-    expect(parseCarte('Loyer 150000 €').prix).toBe(15000000)
-    expect(parseCarte('Loyer 2.422 €').prix).toBe(242200)
-    expect(parseCarte('Loyer 1 250,50 €').prix).toBe(125050)
+    expect(parseCard('Loyer 150000 €').prix).toBe(15000000)
+    expect(parseCard('Loyer 2.422 €').prix).toBe(242200)
+    expect(parseCard('Loyer 1 250,50 €').prix).toBe(125050)
   })
 })
 
-describe('titreDepuisCarte', () => {
+describe('titleFromCard', () => {
   it('repart du type de bien pour couper le bruit de la carte', () => {
     expect(
-      titreDepuisCarte(
+      titleFromCard(
         '1 / 8 E 1 517 € /mois charges comprises Investissez dans l’immobilier ' +
           'Appartement à louer 2 pièces · 41 m² · 1er étage Nation-Picpus'
       )
@@ -131,22 +131,22 @@ describe('titreDepuisCarte', () => {
   })
 
   it('laisse intact un titre déjà propre', () => {
-    expect(titreDepuisCarte('Appartement 3 pièces 62 m² proche métro')).toBe(
+    expect(titleFromCard('Appartement 3 pièces 62 m² proche métro')).toBe(
       'Appartement 3 pièces 62 m² proche métro'
     )
   })
 
   it('garde le texte tel quel faute de type de bien reconnu', () => {
-    expect(titreDepuisCarte('T3 lumineux plein sud')).toBe('T3 lumineux plein sud')
+    expect(titleFromCard('T3 lumineux plein sud')).toBe('T3 lumineux plein sud')
   })
 
   it('rend null sur un texte trop court', () => {
-    expect(titreDepuisCarte('Voir')).toBeNull()
+    expect(titleFromCard('Voir')).toBeNull()
   })
 })
 
-describe('MOTIF_FICHE', () => {
-  const fiches: [keyof typeof MOTIF_FICHE, string][] = [
+describe('LISTING_PATTERN', () => {
+  const fiches: [keyof typeof LISTING_PATTERN, string][] = [
     ['seloger', '/annonces/locations/appartement/paris-11eme-75/roquette/123456789.htm'],
     ['leboncoin', '/ad/locations/2891234567'],
     ['pap', '/annonces/appartement-paris-11e-r123456789'],
@@ -156,67 +156,67 @@ describe('MOTIF_FICHE', () => {
   ]
 
   it.each(fiches)('reconnaît une fiche %s', (source, chemin) => {
-    expect(MOTIF_FICHE[source].test(chemin)).toBe(true)
+    expect(LISTING_PATTERN[source].test(chemin)).toBe(true)
   })
 
   it('ne prend pas une page de résultats pour une fiche', () => {
-    expect(MOTIF_FICHE.seloger.test('/list.htm')).toBe(false)
-    expect(MOTIF_FICHE.leboncoin.test('/recherche')).toBe(false)
-    expect(MOTIF_FICHE.bienici.test('/recherche/location/paris-11e')).toBe(false)
+    expect(LISTING_PATTERN.seloger.test('/list.htm')).toBe(false)
+    expect(LISTING_PATTERN.leboncoin.test('/recherche')).toBe(false)
+    expect(LISTING_PATTERN.bienici.test('/recherche/location/paris-11e')).toBe(false)
   })
 })
 
-describe('annoncesDepuisLiens', () => {
-  const lien = (href: string, texte = '', image = ''): LienCarte => ({ href, texte, image })
+describe('adsFromLinks', () => {
+  const link = (href: string, text = '', image = ''): CardLink => ({ href, text, image })
 
   it('ne retient que les liens vers des fiches du même site', () => {
-    const annonces = annoncesDepuisLiens(
+    const ads = adsFromLinks(
       [
-        lien('/annonces/locations/appartement/paris-11eme-75/roquette/123456789.htm', 'T2 1 100 €'),
-        lien('/list.htm?ci=750111', 'Page 2'),
-        lien('https://www.facebook.com/annonces/locations/x/999999.htm', 'Partager'),
-        lien('/aide/contact', 'Contact')
+        link('/annonces/locations/appartement/paris-11eme-75/roquette/123456789.htm', 'T2 1 100 €'),
+        link('/list.htm?ci=750111', 'Page 2'),
+        link('https://www.facebook.com/annonces/locations/x/999999.htm', 'Partager'),
+        link('/aide/contact', 'Contact')
       ],
       'seloger',
       'https://www.seloger.com/list.htm?ci=750111'
     )
 
-    expect(annonces).toHaveLength(1)
-    expect(annonces[0]!.url).toBe(
+    expect(ads).toHaveLength(1)
+    expect(ads[0]!.url).toBe(
       'https://www.seloger.com/annonces/locations/appartement/paris-11eme-75/roquette/123456789.htm'
     )
-    expect(annonces[0]!.prix).toBe(110000)
+    expect(ads[0]!.prix).toBe(110000)
   })
 
   it('fusionne le lien photo et le lien titre de la même annonce', () => {
-    const annonces = annoncesDepuisLiens(
+    const ads = adsFromLinks(
       [
-        lien('/ad/locations/2891234567', '', 'https://img.leboncoin.fr/api/v1/photo.jpg'),
-        lien('/ad/locations/2891234567', 'Appartement 2 pièces 40 m² 980 €')
+        link('/ad/locations/2891234567', '', 'https://img.leboncoin.fr/api/v1/photo.jpg'),
+        link('/ad/locations/2891234567', 'Appartement 2 pièces 40 m² 980 €')
       ],
       'leboncoin',
       'https://www.leboncoin.fr/recherche?category=10'
     )
 
-    expect(annonces).toHaveLength(1)
-    expect(annonces[0]!.photo).toBe('https://img.leboncoin.fr/api/v1/photo.jpg')
-    expect(annonces[0]!.prix).toBe(98000)
-    expect(annonces[0]!.surface).toBe(40)
+    expect(ads).toHaveLength(1)
+    expect(ads[0]!.photo).toBe('https://img.leboncoin.fr/api/v1/photo.jpg')
+    expect(ads[0]!.prix).toBe(98000)
+    expect(ads[0]!.surface).toBe(40)
   })
 
   it('écarte les images de décor', () => {
-    const annonces = annoncesDepuisLiens(
-      [lien('/ad/locations/2891234567', 'T1 700 €', 'https://cdn.site.fr/static/logo.svg')],
+    const ads = adsFromLinks(
+      [link('/ad/locations/2891234567', 'T1 700 €', 'https://cdn.site.fr/static/logo.svg')],
       'leboncoin',
       'https://www.leboncoin.fr/recherche'
     )
-    expect(annonces[0]!.photo).toBeNull()
+    expect(ads[0]!.photo).toBeNull()
   })
 })
 
-describe('annoncesDepuisJsonLd', () => {
+describe('adsFromJsonLd', () => {
   it('lit un ItemList', () => {
-    const annonces = annoncesDepuisJsonLd(
+    const ads = adsFromJsonLd(
       [
         {
           '@type': 'ItemList',
@@ -238,8 +238,8 @@ describe('annoncesDepuisJsonLd', () => {
       'https://www.pap.fr/annonce/locations'
     )
 
-    expect(annonces).toHaveLength(1)
-    expect(annonces[0]).toMatchObject({
+    expect(ads).toHaveLength(1)
+    expect(ads[0]).toMatchObject({
       url: 'https://www.pap.fr/annonces/appartement-lyon-r123456789',
       titre: 'T3 Lyon 6e',
       prix: 110000,
@@ -251,13 +251,13 @@ describe('annoncesDepuisJsonLd', () => {
   })
 
   it('ignore un JSON-LD sans liste', () => {
-    expect(annoncesDepuisJsonLd([{ '@type': 'Organization', name: 'PAP' }], 'https://pap.fr')).toEqual(
+    expect(adsFromJsonLd([{ '@type': 'Organization', name: 'PAP' }], 'https://pap.fr')).toEqual(
       []
     )
   })
 })
 
-describe('annoncesLeboncoin', () => {
+describe('leboncoinAds', () => {
   const nextData = JSON.stringify({
     props: {
       pageProps: {
@@ -282,9 +282,9 @@ describe('annoncesLeboncoin', () => {
   })
 
   it('lit les cartes du __NEXT_DATA__', () => {
-    const annonces = annoncesLeboncoin(nextData)
-    expect(annonces).toHaveLength(1)
-    expect(annonces[0]).toMatchObject({
+    const ads = leboncoinAds(nextData)
+    expect(ads).toHaveLength(1)
+    expect(ads[0]).toMatchObject({
       url: 'https://www.leboncoin.fr/ad/locations/2891234567',
       titre: 'Appartement T2 refait à neuf',
       prix: 98000,
@@ -296,14 +296,14 @@ describe('annoncesLeboncoin', () => {
   })
 
   it('ne casse pas sur un JSON absent ou invalide', () => {
-    expect(annoncesLeboncoin(undefined)).toEqual([])
-    expect(annoncesLeboncoin('{oups')).toEqual([])
+    expect(leboncoinAds(undefined)).toEqual([])
+    expect(leboncoinAds('{oups')).toEqual([])
   })
 })
 
-describe('extraireAnnonces', () => {
+describe('extractAds', () => {
   it('complète les données du DOM avec celles du JSON-LD', () => {
-    const annonces = extraireAnnonces(
+    const ads = extractAds(
       page({
         jsonLd: [
           {
@@ -319,10 +319,10 @@ describe('extraireAnnonces', () => {
             ]
           }
         ],
-        liens: [
+        links: [
           {
             href: '/annonces/t2-paris-r123456789?position=1',
-            texte: '2 pièces 40 m² 980 €',
+            text: '2 pièces 40 m² 980 €',
             image: 'https://cdn.pap.fr/photos/1.jpg'
           }
         ]
@@ -331,8 +331,8 @@ describe('extraireAnnonces', () => {
       'https://www.pap.fr/annonce/locations'
     )
 
-    expect(annonces).toHaveLength(1)
-    expect(annonces[0]).toMatchObject({
+    expect(ads).toHaveLength(1)
+    expect(ads[0]).toMatchObject({
       titre: 'T2 Paris 11e',
       ville: 'Paris',
       prix: 98000,
@@ -343,49 +343,49 @@ describe('extraireAnnonces', () => {
 
   it('rend une liste vide quand la page ne contient aucune fiche', () => {
     expect(
-      extraireAnnonces(page({ liens: [{ href: '/aide', texte: 'Aide' }] }), 'pap', 'https://www.pap.fr/x')
+      extractAds(page({ links: [{ href: '/aide', text: 'Aide' }] }), 'pap', 'https://www.pap.fr/x')
     ).toEqual([])
   })
 })
 
-describe('meilleureLecture', () => {
+describe('bestReading', () => {
   it('préfère la carte quand l’ancre n’est qu’un badge', () => {
-    const l = meilleureLecture({
+    const l = bestReading({
       href: '/trouver_logement/detail/176/',
-      texte: 'Exclusivité',
-      texteCarte: 'SERRIS 77 62,93 m2, 3 pièces Ref : 176 Appartement F3 à louer 1 620 € par mois'
+      text: 'Exclusivité',
+      cardText: 'SERRIS 77 62,93 m2, 3 pièces Ref : 176 Appartement F3 à louer 1 620 € par mois'
     })
 
-    expect(l.champs.prix).toBe(162000)
-    expect(l.champs.surface).toBe(63)
-    expect(l.champs.nb_pieces).toBe(3)
-    expect(l.titre).toContain('Appartement F3 à louer')
+    expect(l.fields.prix).toBe(162000)
+    expect(l.fields.surface).toBe(63)
+    expect(l.fields.nb_pieces).toBe(3)
+    expect(l.title).toContain('Appartement F3 à louer')
   })
 
   it('ignore un libellé de bouton au profit de la carte', () => {
-    const l = meilleureLecture({
+    const l = bestReading({
       href: '/trouver_logement/detail/176/',
-      texte: 'Voir le détail du bien',
-      texteCarte: 'CHESSY 45 m2, 2 pièces Appartement F2 à louer 980 € par mois'
+      text: 'Voir le détail du bien',
+      cardText: 'CHESSY 45 m2, 2 pièces Appartement F2 à louer 980 € par mois'
     })
 
-    expect(l.champs.prix).toBe(98000)
-    expect(l.titre).not.toContain('Voir le détail')
+    expect(l.fields.prix).toBe(98000)
+    expect(l.title).not.toContain('Voir le détail')
   })
 
   it('garde l’ancre à égalité de signal — elle est plus étroite', () => {
-    const l = meilleureLecture({
+    const l = bestReading({
       href: '/annonces/x-r123456789',
-      texte: 'Appartement 3 pièces 62 m²',
-      texteCarte: 'Trier par prix Appartement 3 pièces 62 m²'
+      text: 'Appartement 3 pièces 62 m²',
+      cardText: 'Trier par prix Appartement 3 pièces 62 m²'
     })
 
-    expect(l.titre).toBe('Appartement 3 pièces 62 m²')
+    expect(l.title).toBe('Appartement 3 pièces 62 m²')
   })
 
   it('fonctionne sans carte (ancre porteuse, aucun motif)', () => {
-    const l = meilleureLecture({ href: '/x', texte: 'Studio 20 m² 700 €' })
-    expect(l.champs.prix).toBe(70000)
+    const l = bestReading({ href: '/x', text: 'Studio 20 m² 700 €' })
+    expect(l.fields.prix).toBe(70000)
     expect(l.signal).toBe(2)
   })
 })

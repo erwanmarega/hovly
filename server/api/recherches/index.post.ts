@@ -1,4 +1,4 @@
-import { MOTIF_FICHE } from '../../utils/scrape/liste'
+import { LISTING_PATTERN } from '../../utils/scrape/listing'
 import { detecterSource } from '../../utils/scrape/source'
 import { assertBodySize, validateSourceUrl } from '../../utils/validation'
 
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const chemin = new URL(url).pathname
 
-  if (MOTIF_FICHE[source].test(chemin)) {
+  if (LISTING_PATTERN[source].test(chemin)) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Annonce, pas une liste',

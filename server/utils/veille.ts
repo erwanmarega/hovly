@@ -1,7 +1,7 @@
 import type { Property, SavedSearch, WatchResult } from '~/types'
 import type { SendSummary } from '~/types/check'
 import { similarity, DUPLICATE_THRESHOLD } from '~/composables/useDuplicates'
-import { scrapeListe, type AnnonceListe } from './scrape/liste'
+import { scrapeListing, type ListingAd } from './scrape/listing'
 import { detecterSource } from './scrape/source'
 import { formatPrice } from './price'
 import { sendWatchEmail } from './email'
@@ -51,7 +51,7 @@ export function watchFields(body: Record<string, any>): Record<string, unknown> 
 }
 
 /** Assez de signal pour comparer sérieusement une annonce à un bien déjà suivi. */
-function hasEnoughSignal(a: AnnonceListe): boolean {
+function hasEnoughSignal(a: ListingAd): boolean {
   return a.surface != null && a.prix != null && (a.ville != null || a.code_postal != null)
 }
 
@@ -59,7 +59,7 @@ function hasEnoughSignal(a: AnnonceListe): boolean {
  * Un filtre ne s'applique qu'aux annonces dont on a extrait la valeur : une carte
  * illisible passe et sera filtrée à la main plutôt que perdue silencieusement.
  */
-export function matches(a: AnnonceListe, r: SavedSearch): boolean {
+export function matches(a: ListingAd, r: SavedSearch): boolean {
   if (r.prix_max != null && a.prix != null && a.prix > r.prix_max) return false
   if (r.prix_min != null && a.prix != null && a.prix < r.prix_min) return false
   if (r.surface_min != null && a.surface != null && a.surface < r.surface_min) return false
@@ -67,7 +67,7 @@ export function matches(a: AnnonceListe, r: SavedSearch): boolean {
   return true
 }
 
-function asProperty(a: AnnonceListe): Property {
+function asProperty(a: ListingAd): Property {
   return {
     id: `annonce:${a.url}`,
     url_source: a.url,
@@ -84,7 +84,7 @@ function asProperty(a: AnnonceListe): Property {
  * Écarte ce que l'utilisateur suit déjà : même URL, ou même logement reposté
  * ailleurs (multi-diffusion agence), détecté par `similarity`.
  */
-export function isKnown(a: AnnonceListe, biens: Property[], urlsVues: Set<string>): boolean {
+export function isKnown(a: ListingAd, biens: Property[], urlsVues: Set<string>): boolean {
   if (urlsVues.has(a.url)) return true
   if (biens.some((b) => b.url_source === a.url)) return true
   if (!hasEnoughSignal(a)) return false
@@ -110,7 +110,7 @@ export function needsCheck(r: SavedSearch, maintenant = new Date()): boolean {
   return maintenant.getTime() - derniere >= nextCheck(r) * 60 * 1000
 }
 
-function row(a: AnnonceListe, rechercheId: string) {
+function row(a: ListingAd, rechercheId: string) {
   return {
     recherche_id: rechercheId,
     url: a.url,
@@ -146,9 +146,9 @@ export async function checkSearch(
     erreur: null
   }
 
-  let annonces: AnnonceListe[]
+  let annonces: ListingAd[]
   try {
-    annonces = (await scrapeListe(recherche.url)).annonces
+    annonces = (await scrapeListing(recherche.url)).ads
   } catch (e: any) {
     summary.erreur = e?.message || e?.statusMessage || 'erreur inconnue'
     const echecs = recherche.echecs_consecutifs + 1

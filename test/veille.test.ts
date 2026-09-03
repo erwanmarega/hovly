@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { Property, SavedSearch } from '../app/types'
-import type { AnnonceListe } from '../server/utils/scrape/liste'
+import type { ListingAd } from '../server/utils/scrape/listing'
 
-const scrapeListe = vi.fn()
+const scrapeListing = vi.fn()
 
-vi.mock('../server/utils/scrape/liste', () => ({
-  scrapeListe: (...a: any[]) => scrapeListe(...a)
+vi.mock('../server/utils/scrape/listing', () => ({
+  scrapeListing: (...a: any[]) => scrapeListing(...a)
 }))
 vi.mock('../server/utils/email', () => ({ sendWatchEmail: vi.fn() }))
 vi.mock('../server/utils/push', () => ({ sendPush: vi.fn(), pushAvailable: () => false }))
@@ -41,7 +41,7 @@ function recherche(over: Partial<SavedSearch> = {}): SavedSearch {
   }
 }
 
-function annonce(over: Partial<AnnonceListe> = {}): AnnonceListe {
+function annonce(over: Partial<ListingAd> = {}): ListingAd {
   return {
     url: 'https://www.seloger.com/annonces/locations/appartement/paris/x/123456789.htm',
     titre: 'T2 refait à neuf',
@@ -209,7 +209,7 @@ describe('checkSearch', () => {
     const chere = annonce({ url: 'https://www.seloger.com/annonces/x/y/222222222.htm', prix: 300000 })
     const connue = annonce({ url: 'https://www.seloger.com/annonces/x/y/333333333.htm' })
 
-    scrapeListe.mockResolvedValue({ source: 'seloger', annonces: [neuve, chere, connue] })
+    scrapeListing.mockResolvedValue({ source: 'seloger', ads: [neuve, chere, connue] })
     const client = clientFactice({ dejaVues: [connue.url] })
 
     const resume = await checkSearch(
@@ -228,7 +228,7 @@ describe('checkSearch', () => {
   })
 
   it('remet le compteur d’échecs à zéro après un scan réussi', async () => {
-    scrapeListe.mockResolvedValue({ source: 'seloger', annonces: [annonce()] })
+    scrapeListing.mockResolvedValue({ source: 'seloger', ads: [annonce()] })
     const client = clientFactice()
 
     await checkSearch(client as any, recherche({ echecs_consecutifs: 3 }), [], t0)
@@ -243,7 +243,7 @@ describe('checkSearch', () => {
   // `createError` met le texte lisible dans `message` ; `statusMessage` n'est
   // plus qu'un code court, et h3 le sanitisera à terme.
   it('compte l’échec et laisse la veille active tant que le plafond n’est pas atteint', async () => {
-    scrapeListe.mockImplementation(() => {
+    scrapeListing.mockImplementation(() => {
       throw Object.assign(new Error('Page de résultats bloquée par un anti-bot.'), {
         statusMessage: 'Anti-bot'
       })
@@ -263,7 +263,7 @@ describe('checkSearch', () => {
   })
 
   it('met la veille en pause après trop d’échecs d’affilée', async () => {
-    scrapeListe.mockImplementation(() => {
+    scrapeListing.mockImplementation(() => {
       throw new Error('URL morte')
     })
     const client = clientFactice()
@@ -273,7 +273,7 @@ describe('checkSearch', () => {
     expect(client.majRecherches[0]).toMatchObject({ echecs_consecutifs: 8, active: false })
   })
   it('retombe sur statusMessage quand l’erreur n’a pas de message', async () => {
-    scrapeListe.mockImplementation(() => {
+    scrapeListing.mockImplementation(() => {
       throw { statusMessage: 'Anti-bot' }
     })
 

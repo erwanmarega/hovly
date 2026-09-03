@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { htmlToPageData, vignetteTropPetite } from '../server/utils/scrape/html'
+import { htmlToPageData, thumbnailTooSmall } from '../server/utils/scrape/html'
 
 const page = (body: string, head = '') =>
   htmlToPageData(`<html><head>${head}</head><body>${body}</body></html>`)
@@ -126,10 +126,10 @@ describe('htmlToPageData — liens de cartes', () => {
       MOTIF
     )
 
-    const lien = d.liens!.find((l) => l.href.includes('274651193'))!
-    expect(lien.texte).toBe('')
-    expect(lien.texteCarte).toContain('1 517 €')
-    expect(lien.texteCarte).toContain('41 m²')
+    const lien = d.links!.find((l) => l.href.includes('274651193'))!
+    expect(lien.text).toBe('')
+    expect(lien.cardText).toContain('1 517 €')
+    expect(lien.cardText).toContain('41 m²')
     expect(lien.image).toBe('https://mms.seloger.com/a.jpg')
   })
 
@@ -142,9 +142,9 @@ describe('htmlToPageData — liens de cartes', () => {
       MOTIF
     )
 
-    const premier = d.liens!.find((l) => l.href.includes('111111111'))!
-    expect(premier.texteCarte).toContain('1 000 €')
-    expect(premier.texteCarte).not.toContain('2 000 €')
+    const premier = d.links!.find((l) => l.href.includes('111111111'))!
+    expect(premier.cardText).toContain('1 000 €')
+    expect(premier.cardText).not.toContain('2 000 €')
     expect(premier.image).toBe('https://mms.seloger.com/a.jpg')
   })
 
@@ -156,9 +156,9 @@ describe('htmlToPageData — liens de cartes', () => {
       MOTIF
     )
 
-    const lien = d.liens!.find((l) => l.href.includes('333333333'))!
-    expect(lien.texte).toBe('Appartement 3 pièces 62 m²')
-    expect(lien.texte).not.toContain('Trier')
+    const lien = d.links!.find((l) => l.href.includes('333333333'))!
+    expect(lien.text).toBe('Appartement 3 pièces 62 m²')
+    expect(lien.text).not.toContain('Trier')
   })
 
   it('sans motif fourni, ne remonte jamais (chemin fiche inchangé)', () => {
@@ -166,26 +166,26 @@ describe('htmlToPageData — liens de cartes', () => {
       `<html><body>${carte('444444444', '900 € · 20 m²', 'https://x.fr/a.jpg')}</body></html>`
     )
 
-    expect(d.liens!.find((l) => l.href.includes('444444444'))!.texte).toBe('')
+    expect(d.links!.find((l) => l.href.includes('444444444'))!.text).toBe('')
   })
 })
 
-describe('vignetteTropPetite', () => {
+describe('thumbnailTooSmall', () => {
   it('écarte un logo d’agence servi par le CDN des photos', () => {
-    expect(vignetteTropPetite('https://mms.seloger.com/abc.jpg?c=1&h=50')).toBe(true)
+    expect(thumbnailTooSmall('https://mms.seloger.com/abc.jpg?c=1&h=50')).toBe(true)
   })
 
   it('garde une vraie photo d’annonce', () => {
-    expect(vignetteTropPetite('https://mms.seloger.com/abc.jpg?w=525&h=394')).toBe(false)
+    expect(thumbnailTooSmall('https://mms.seloger.com/abc.jpg?w=525&h=394')).toBe(false)
   })
 
   it('retombe sur les attributs quand l’URL ne dit rien', () => {
-    expect(vignetteTropPetite('https://x.fr/a.jpg', '80', '60')).toBe(true)
-    expect(vignetteTropPetite('https://x.fr/a.jpg', '600', '400')).toBe(false)
+    expect(thumbnailTooSmall('https://x.fr/a.jpg', '80', '60')).toBe(true)
+    expect(thumbnailTooSmall('https://x.fr/a.jpg', '600', '400')).toBe(false)
   })
 
   it('garde une image de taille inconnue plutôt que de la perdre', () => {
-    expect(vignetteTropPetite('https://x.fr/a.jpg')).toBe(false)
+    expect(thumbnailTooSmall('https://x.fr/a.jpg')).toBe(false)
   })
 })
 
@@ -203,7 +203,7 @@ describe('htmlToPageData — logo d’agence en tête de carte', () => {
       MOTIF
     )
 
-    const lien = d.liens!.find((l) => l.href.includes('555555555'))!
+    const lien = d.links!.find((l) => l.href.includes('555555555'))!
     expect(lien.image).toBe('https://mms.seloger.com/photo.jpg?w=525&h=394')
   })
 })
@@ -231,9 +231,9 @@ describe('htmlToPageData — deux liens vers la même fiche', () => {
       MOTIF
     )
 
-    const badge = d.liens!.find((l) => l.texte === '' && l.href.includes('14920340077'))!
-    expect(badge.texteCarte).toContain('1 620 €')
-    expect(badge.texteCarte).toContain('62,93 m2')
-    expect(badge.texteCarte).not.toContain('980 €')
+    const badge = d.links!.find((l) => l.text === '' && l.href.includes('14920340077'))!
+    expect(badge.cardText).toContain('1 620 €')
+    expect(badge.cardText).toContain('62,93 m2')
+    expect(badge.cardText).not.toContain('980 €')
   })
 })

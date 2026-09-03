@@ -1,13 +1,13 @@
 import type { SiteSource } from '~/types'
 import {
-  aplatirJsonLd,
+  flattenJsonLd,
   decimal,
-  entier,
-  imgValide,
-  piecesLeboncoin,
-  prixLeboncoinCentimes,
-  surfaceLeboncoin,
-  type LienCarte,
+  toInteger,
+  isValidImage,
+  leboncoinRooms,
+  leboncoinPriceCents,
+  leboncoinSurface,
+  type CardLink,
   type PageData
 } from './extract'
 import { detecterSource } from './source'
@@ -16,7 +16,7 @@ import { scrapeViaApi, apiKey } from './fetch-api'
 import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
 import { assertPublicHostname } from '../validation'
 
-export interface AnnonceListe {
+export interface ListingAd {
   url: string
   titre: string | null
   prix: number | null
@@ -27,13 +27,13 @@ export interface AnnonceListe {
   code_postal: string | null
 }
 
-export interface ListeResult {
+export interface ListResult {
   source: SiteSource
-  annonces: AnnonceListe[]
+  ads: ListingAd[]
 }
 
 /** Chemin d'une fiche annonce, par site. Une page de résultats pointe vers ces URLs. */
-export const MOTIF_FICHE: Record<SiteSource, RegExp> = {
+export const LISTING_PATTERN: Record<SiteSource, RegExp> = {
   seloger: /\/annonces\/[^?#]+\/\d{6,}\.htm/i,
   leboncoin: /\/ad\/[a-z_]+\/\d{6,}/i,
   pap: /\/annonces\/[^/?#]*-r\d{6,}/i,
@@ -43,81 +43,81 @@ export const MOTIF_FICHE: Record<SiteSource, RegExp> = {
   orpi: /\/annonce-(?:vente|location)-.+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i
 }
 
-const SITES_PROTEGES: SiteSource[] = ['leboncoin']
+const PROTECTED_SITES: SiteSource[] = ['leboncoin']
 
-const MAX_ANNONCES = 60
+const MAX_ADS = 60
 
 // Deux formes seulement : groupée à la française (« 2 268 », « 1.250,50 ») ou
 // chiffres collés (« 150000 »). Accepter n'importe quelle suite chiffres-espaces
 // ferait avaler ce qui précède : sur une carte SeLoger « 1 / 24 2 268 € », le
 // compteur de carrousel donnerait 242 268 €. Le lookbehind évite en plus de
 // démarrer au milieu d'un mot (« T2 1 100 € »). `\s` couvre les espaces insécables.
-const RE_PRIX = /(?<!\w)(\d{1,3}(?:[\s.]\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)\s*€/
+const RE_PRICE = /(?<!\w)(\d{1,3}(?:[\s.]\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)\s*€/
 const RE_SURFACE = /(\d+(?:[.,]\d+)?)\s*m(?:²|2(?!\d)|\^2)/i
 // « 3 pièces », mais aussi l'abréviation « 3 pcs » / « 1 pc » de Century 21.
-const RE_PIECES = /(\d+)\s*(?:pi[eè]ces?|pcs?)\b/i
-const RE_PIECES_COURT = /\b[TF](\d)\b/
-const RE_CP = /\b(\d{5})\b(?!\s*(?:€|EUR|euros?))/i
+const RE_ROOMS = /(\d+)\s*(?:pi[eè]ces?|pcs?)\b/i
+const RE_ROOMS_SHORT = /\b[TF](\d)\b/
+const RE_ZIP = /\b(\d{5})\b(?!\s*(?:€|EUR|euros?))/i
 
 /**
  * Retire query et hash — l'id d'annonce vit dans le chemin sur tous les sites
  * supportés, et les params (tracking, position dans la liste) varient d'un scan
  * à l'autre, ce qui casserait la détection de nouveauté.
  */
-export function normaliserUrlAnnonce(brut: string, base?: string): string | null {
+export function normalizeAdUrl(raw: string, base?: string): string | null {
   let u: URL
   try {
-    u = new URL(brut, base)
+    u = new URL(raw, base)
   } catch {
     return null
   }
   if (!/^https?:$/.test(u.protocol)) return null
 
-  const idDansChemin = /\d{4,}/.test(u.pathname)
-  const query = idDansChemin ? '' : u.search
+  const idInPath = /\d{4,}/.test(u.pathname)
+  const query = idInPath ? '' : u.search
   return `${u.origin}${u.pathname.replace(/\/+$/, '')}${query}`
 }
 
-const memeHote = (a: string, b: string) =>
+const sameHost = (a: string, b: string) =>
   a.replace(/^www\./, '').toLowerCase() === b.replace(/^www\./, '').toLowerCase()
 
 /**
- * `entier()` supprime tous les non-chiffres : « 2 422,68 » y deviendrait
+ * `toInteger()` supprime tous les non-chiffres : « 2 422,68 » y deviendrait
  * 242 268. Ici le motif garantit que le point et l'espace ne sont que des
  * séparateurs de milliers, et la virgule la seule décimale.
  */
-export function prixEnCentimes(brut: string | undefined): number | null {
-  if (!brut) return null
+export function priceInCents(raw: string | undefined): number | null {
+  if (!raw) return null
 
-  const v = parseFloat(brut.replace(/[\s.]/g, '').replace(',', '.'))
+  const v = parseFloat(raw.replace(/[\s.]/g, '').replace(',', '.'))
   return Number.isFinite(v) && v > 0 ? Math.round(v * 100) : null
 }
 
-export function parseCarte(texte: string): Partial<AnnonceListe> {
-  const prix = prixEnCentimes(texte.match(RE_PRIX)?.[1])
-  const surface = decimal(texte.match(RE_SURFACE)?.[1])
+export function parseCard(text: string): Partial<ListingAd> {
+  const prix = priceInCents(text.match(RE_PRICE)?.[1])
+  const surface = decimal(text.match(RE_SURFACE)?.[1])
   const pieces =
-    entier(texte.match(RE_PIECES)?.[1]) ?? entier(texte.match(RE_PIECES_COURT)?.[1])
+    toInteger(text.match(RE_ROOMS)?.[1]) ?? toInteger(text.match(RE_ROOMS_SHORT)?.[1])
 
   return {
     prix,
     surface: surface ? Math.round(surface) : null,
     nb_pieces: pieces,
-    code_postal: texte.match(RE_CP)?.[1] ?? null
+    code_postal: text.match(RE_ZIP)?.[1] ?? null
   }
 }
 
 /** Fusionne deux extractions de la même annonce : la valeur définie gagne. */
-function fusionner(a: AnnonceListe, b: Partial<AnnonceListe>): AnnonceListe {
+function merge(a: ListingAd, b: Partial<ListingAd>): ListingAd {
   const out = { ...a }
   for (const [k, v] of Object.entries(b)) {
     if (v == null || v === '') continue
-    if (out[k as keyof AnnonceListe] == null) (out as any)[k] = v
+    if (out[k as keyof ListingAd] == null) (out as any)[k] = v
   }
   return out
 }
 
-function vide(url: string): AnnonceListe {
+function empty(url: string): ListingAd {
   return {
     url,
     titre: null,
@@ -130,34 +130,34 @@ function vide(url: string): AnnonceListe {
   }
 }
 
-const RE_TYPE_BIEN =
+const RE_PROPERTY_TYPE =
   /(appartement|maison|studio|colocation|duplex|loft|villa|immeuble|terrain|parking|local|bureau)\b/i
 
 /**
- * Sur un lien étiré, `texte` est la carte entière — compteur de carrousel,
+ * Sur un lien étiré, `text` est la carte entière — compteur de carrousel,
  * badges et boutons compris. On repart du type de bien, qui ouvre presque
  * toujours le libellé. Titre d'attente : « Garder » rescrape la vraie fiche.
  */
-export function titreDepuisCarte(texte: string): string | null {
-  const propre = texte.replace(/\s+/g, ' ').trim()
-  if (propre.length < 10) return null
+export function titleFromCard(text: string): string | null {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (clean.length < 10) return null
 
-  const i = propre.search(RE_TYPE_BIEN)
-  return (i > 0 ? propre.slice(i) : propre).slice(0, 200) || null
+  const i = clean.search(RE_PROPERTY_TYPE)
+  return (i > 0 ? clean.slice(i) : clean).slice(0, 200) || null
 }
 
-interface Lecture {
-  champs: Partial<AnnonceListe>
-  titre: string | null
+interface Reading {
+  fields: Partial<ListingAd>
+  title: string | null
   signal: number
 }
 
-const lire = (texte: string): Lecture => {
-  const champs = parseCarte(texte)
+const read = (text: string): Reading => {
+  const fields = parseCard(text)
   return {
-    champs,
-    titre: titreDepuisCarte(texte),
-    signal: [champs.prix, champs.surface, champs.nb_pieces].filter((v) => v != null).length
+    fields,
+    title: titleFromCard(text),
+    signal: [fields.prix, fields.surface, fields.nb_pieces].filter((v) => v != null).length
   }
 }
 
@@ -168,82 +168,82 @@ const lire = (texte: string): Lecture => {
  * l'ancre gagne : elle est plus étroite, donc moins susceptible d'avoir happé le
  * texte d'un voisin.
  */
-export function meilleureLecture(lien: LienCarte): Lecture {
-  return [lien.texte, lien.texteCarte]
+export function bestReading(link: CardLink): Reading {
+  return [link.text, link.cardText]
     .filter((t): t is string => !!t)
-    .map(lire)
-    .sort((a, b) => b.signal - a.signal)[0] ?? lire('')
+    .map(read)
+    .sort((a, b) => b.signal - a.signal)[0] ?? read('')
 }
 
-export function annoncesDepuisLiens(
-  liens: LienCarte[],
+export function adsFromLinks(
+  links: CardLink[],
   source: SiteSource,
   baseUrl: string
-): AnnonceListe[] {
-  const motif = MOTIF_FICHE[source]
-  let hote: string
+): ListingAd[] {
+  const pattern = LISTING_PATTERN[source]
+  let host: string
   try {
-    hote = new URL(baseUrl).hostname
+    host = new URL(baseUrl).hostname
   } catch {
     return []
   }
 
-  const parUrl = new Map<string, AnnonceListe>()
+  const byUrl = new Map<string, ListingAd>()
 
-  for (const lien of liens) {
+  for (const link of links) {
     let u: URL
     try {
-      u = new URL(lien.href, baseUrl)
+      u = new URL(link.href, baseUrl)
     } catch {
       continue
     }
-    if (!memeHote(u.hostname, hote)) continue
-    if (!motif.test(u.pathname)) continue
+    if (!sameHost(u.hostname, host)) continue
+    if (!pattern.test(u.pathname)) continue
 
-    const url = normaliserUrlAnnonce(u.href)
+    const url = normalizeAdUrl(u.href)
     if (!url) continue
 
     // Une même annonce a souvent deux liens : la photo (sans texte) et le titre.
-    const meilleur = meilleureLecture(lien)
-    const image = lien.image && imgValide(lien.image) ? lien.image : null
+    const best = bestReading(link)
+    const image = link.image && isValidImage(link.image) ? link.image : null
 
-    parUrl.set(
+    byUrl.set(
       url,
-      fusionner(parUrl.get(url) ?? vide(url), {
-        ...meilleur.champs,
-        titre: meilleur.titre,
+      merge(byUrl.get(url) ?? empty(url), {
+        ...best.fields,
+        titre: best.title,
         photo: image
       })
     )
   }
 
-  return [...parUrl.values()]
+  return [...byUrl.values()]
 }
 
-export function annoncesDepuisJsonLd(jsonLd: any[], baseUrl: string): AnnonceListe[] {
-  const out: AnnonceListe[] = []
+export function adsFromJsonLd(jsonLd: any[], baseUrl: string): ListingAd[] {
+  const out: ListingAd[] = []
 
-  for (const noeud of aplatirJsonLd(jsonLd ?? [])) {
-    const elements = noeud?.itemListElement
+  for (const node of flattenJsonLd(jsonLd ?? [])) {
+    const elements = node?.itemListElement
     if (!Array.isArray(elements)) continue
 
     for (const el of elements) {
       const item = el?.item ?? el
-      const url = normaliserUrlAnnonce(String(el?.url ?? item?.url ?? ''), baseUrl)
+      const url = normalizeAdUrl(String(el?.url ?? item?.url ?? ''), baseUrl)
       if (!url) continue
 
-      const offre = Array.isArray(item?.offers) ? item.offers[0] : item?.offers
-      const prixEuros = decimal(String(offre?.price ?? offre?.priceSpecification?.price ?? ''))
+      const offer = Array.isArray(item?.offers) ? item.offers[0] : item?.offers
+      const priceEuros = decimal(String(offer?.price ?? offer?.priceSpecification?.price ?? ''))
       const surface = decimal(String(item?.floorSize?.value ?? ''))
       const image = Array.isArray(item?.image) ? item.image[0] : item?.image
 
       out.push(
-        fusionner(vide(url), {
+        merge(empty(url), {
           titre: typeof item?.name === 'string' ? item.name.slice(0, 200) : null,
-          prix: prixEuros ? Math.round(prixEuros * 100) : null,
+          prix: priceEuros ? Math.round(priceEuros * 100) : null,
           surface: surface ? Math.round(surface) : null,
-          nb_pieces: entier(String(item?.numberOfRooms ?? '')),
-          photo: typeof image === 'string' && imgValide(image) ? image : null,
+          nb_pieces: toInteger(String(item?.numberOfRooms ?? '')),
+          photo: typeof image === 'string' && isValidImage(image) ? image : null,
           ville: item?.address?.addressLocality ?? null,
           code_postal: item?.address?.postalCode ?? null
         })
@@ -254,7 +254,7 @@ export function annoncesDepuisJsonLd(jsonLd: any[], baseUrl: string): AnnonceLis
   return out
 }
 
-export function annoncesLeboncoin(nextData: string | undefined): AnnonceListe[] {
+export function leboncoinAds(nextData: string | undefined): ListingAd[] {
   if (!nextData) return []
 
   let ads: any[]
@@ -266,10 +266,10 @@ export function annoncesLeboncoin(nextData: string | undefined): AnnonceListe[] 
   }
   if (!Array.isArray(ads)) return []
 
-  const out: AnnonceListe[] = []
+  const out: ListingAd[] = []
   for (const ad of ads) {
-    const brut = ad?.url || (ad?.list_id ? `https://www.leboncoin.fr/ad/locations/${ad.list_id}` : '')
-    const url = normaliserUrlAnnonce(String(brut), 'https://www.leboncoin.fr')
+    const raw = ad?.url || (ad?.list_id ? `https://www.leboncoin.fr/ad/locations/${ad.list_id}` : '')
+    const url = normalizeAdUrl(String(raw), 'https://www.leboncoin.fr')
     if (!url) continue
 
     const attrs: Record<string, string> = {}
@@ -278,12 +278,12 @@ export function annoncesLeboncoin(nextData: string | undefined): AnnonceListe[] 
     const photo = ad.images?.urls?.[0] ?? ad.images?.thumb_url ?? null
 
     out.push(
-      fusionner(vide(url), {
+      merge(empty(url), {
         titre: ad.subject ? String(ad.subject).slice(0, 200) : null,
-        prix: prixLeboncoinCentimes(ad),
-        surface: surfaceLeboncoin(attrs),
-        nb_pieces: piecesLeboncoin(attrs),
-        photo: typeof photo === 'string' && imgValide(photo) ? photo : null,
+        prix: leboncoinPriceCents(ad),
+        surface: leboncoinSurface(attrs),
+        nb_pieces: leboncoinRooms(attrs),
+        photo: typeof photo === 'string' && isValidImage(photo) ? photo : null,
         ville: ad.location?.city ?? null,
         code_postal: ad.location?.zipcode ?? null
       })
@@ -292,30 +292,30 @@ export function annoncesLeboncoin(nextData: string | undefined): AnnonceListe[] 
   return out
 }
 
-export function extraireAnnonces(
+export function extractAds(
   data: PageData,
   source: SiteSource,
   baseUrl: string
-): AnnonceListe[] {
-  const parUrl = new Map<string, AnnonceListe>()
+): ListingAd[] {
+  const byUrl = new Map<string, ListingAd>()
 
   // Du plus riche au plus pauvre : les données structurées priment sur le DOM.
-  const couches = [
-    source === 'leboncoin' ? annoncesLeboncoin(data.nextData) : [],
-    annoncesDepuisJsonLd(data.jsonLd, baseUrl),
-    annoncesDepuisLiens(data.liens ?? [], source, baseUrl)
+  const layers = [
+    source === 'leboncoin' ? leboncoinAds(data.nextData) : [],
+    adsFromJsonLd(data.jsonLd, baseUrl),
+    adsFromLinks(data.links ?? [], source, baseUrl)
   ]
 
-  for (const couche of couches) {
-    for (const a of couche) {
-      parUrl.set(a.url, parUrl.has(a.url) ? fusionner(parUrl.get(a.url)!, a) : a)
+  for (const layer of layers) {
+    for (const a of layer) {
+      byUrl.set(a.url, byUrl.has(a.url) ? merge(byUrl.get(a.url)!, a) : a)
     }
   }
 
-  return [...parUrl.values()].slice(0, MAX_ANNONCES)
+  return [...byUrl.values()].slice(0, MAX_ADS)
 }
 
-async function listeViaApi(url: string, source: SiteSource): Promise<PageData> {
+async function listingViaApi(url: string, source: SiteSource): Promise<PageData> {
   const { html, status } = await scrapeViaApi(url)
   if (status !== 200 || !html) {
     throw createError({
@@ -324,10 +324,10 @@ async function listeViaApi(url: string, source: SiteSource): Promise<PageData> {
       message: `Page de résultats ${source} bloquée par l'anti-bot.`
     })
   }
-  return htmlToPageData(html, MOTIF_FICHE[source])
+  return htmlToPageData(html, LISTING_PATTERN[source])
 }
 
-async function listeViaPlaywright(url: string, source: SiteSource): Promise<PageData> {
+async function listingViaPlaywright(url: string, source: SiteSource): Promise<PageData> {
   const browser = await getBrowser()
   const context = await browser.newContext({
     userAgent: pickUserAgent(url.length),
@@ -354,7 +354,7 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
     await page.waitForTimeout(1800)
 
-    return await page.evaluate((motifFiche: string) => {
+    return await page.evaluate((listingPattern: string) => {
       const jsonLd: any[] = []
       document.querySelectorAll('script[type="application/ld+json"]').forEach((s) => {
         try {
@@ -363,77 +363,77 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
         }
       })
 
-      // Voir carteDe() dans html.ts : même règle de remontée, transposée au DOM
+      // Voir cardFrom() dans html.ts : même règle de remontée, transposée au DOM
       // vivant. Le motif ne peut pas traverser page.evaluate, il arrive en texte.
-      const motif = new RegExp(motifFiche, 'i')
+      const pattern = new RegExp(listingPattern, 'i')
 
-      const carteDe = (ancre: Element): Element => {
-        // Voir carteDe() dans html.ts : on ne remonte que depuis une ancre de
+      const cardFrom = (anchor: Element): Element => {
+        // Voir cardFrom() dans html.ts : on ne remonte que depuis une ancre de
         // fiche, sinon chaque lien de navigation coûterait 5 balayages du DOM.
-        if (!motif.test(ancre.getAttribute('href') || '')) return ancre
+        if (!pattern.test(anchor.getAttribute('href') || '')) return anchor
 
-        let courant: Element = ancre
-        let carte: Element = ancre
+        let current: Element = anchor
+        let card: Element = anchor
 
-        for (let i = 0; i < 5 && courant.parentElement; i++) {
-          courant = courant.parentElement
+        for (let i = 0; i < 5 && current.parentElement; i++) {
+          current = current.parentElement
           // Clé = la portion d'URL identifiant l'annonce, pas le href brut :
           // deux liens vers la même fiche (ancre étirée + bouton) sont souvent
           // l'un relatif et l'autre absolu.
-          const annonces = new Set<string>()
-          courant.querySelectorAll('a[href]').forEach((x) => {
-            const cible = (x.getAttribute('href') || '').match(motif)
-            if (cible) annonces.add(cible[0])
+          const listings = new Set<string>()
+          current.querySelectorAll('a[href]').forEach((x) => {
+            const match = (x.getAttribute('href') || '').match(pattern)
+            if (match) listings.add(match[0])
           })
-          if (annonces.size > 1) break
-          carte = courant
+          if (listings.size > 1) break
+          card = current
         }
-        return carte
+        return card
       }
 
-      // Voir vignetteTropPetite() dans html.ts. Ici on dispose en plus de
+      // Voir thumbnailTooSmall() dans html.ts. Ici on dispose en plus de
       // naturalWidth : le logo d'agence est déjà chargé (86 px) là où les vraies
       // photos sont en lazy-load et valent encore 0.
-      const tropPetite = (url: string, img: HTMLImageElement) => {
-        const dansUrl = (cle: string) => {
-          const m = url.match(new RegExp(`[?&](?:${cle})=(\\d+)`, 'i'))
+      const tooSmall = (url: string, img: HTMLImageElement) => {
+        const inUrl = (key: string) => {
+          const m = url.match(new RegExp(`[?&](?:${key})=(\\d+)`, 'i'))
           return m ? parseInt(m[1]!, 10) : null
         }
-        const l = dansUrl('w|width') ?? (img.naturalWidth || null)
-        const h = dansUrl('h|height') ?? (img.naturalHeight || null)
+        const l = inUrl('w|width') ?? (img.naturalWidth || null)
+        const h = inUrl('h|height') ?? (img.naturalHeight || null)
         return (l !== null && l < 200) || (h !== null && h < 150)
       }
 
-      const premiereImage = (el: Element): string => {
+      const firstImage = (el: Element): string => {
         for (const img of Array.from(el.querySelectorAll('img')).slice(0, 8)) {
           const i = img as HTMLImageElement
           const cand = i.currentSrc || i.getAttribute('data-src') || i.src || ''
           if (!cand || !/^https?:\/\//i.test(cand)) continue
-          if (tropPetite(cand, i)) continue
+          if (tooSmall(cand, i)) continue
           return cand
         }
         return ''
       }
 
-      const liens: { href: string; texte: string; texteCarte?: string; image: string }[] = []
+      const links: { href: string; text: string; cardText?: string; image: string }[] = []
       document.querySelectorAll('a[href]').forEach((a) => {
-        if (liens.length >= 600) return
+        if (links.length >= 600) return
         const el = a as HTMLAnchorElement
 
-        const propre = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim()
-        const carte = carteDe(el)
-        const texteCarte =
-          carte === el
+        const clean = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim()
+        const card = cardFrom(el)
+        const cardText =
+          card === el
             ? ''
-            : ((carte as HTMLElement).innerText || carte.textContent || '')
+            : ((card as HTMLElement).innerText || card.textContent || '')
                 .replace(/\s+/g, ' ')
                 .trim()
 
-        liens.push({
+        links.push({
           href: el.getAttribute('href') || '',
-          texte: propre.slice(0, 300),
-          ...(texteCarte && texteCarte !== propre ? { texteCarte: texteCarte.slice(0, 400) } : {}),
-          image: premiereImage(carte)
+          text: clean.slice(0, 300),
+          ...(cardText && cardText !== clean ? { cardText: cardText.slice(0, 400) } : {}),
+          image: firstImage(card)
         })
       })
 
@@ -445,15 +445,15 @@ async function listeViaPlaywright(url: string, source: SiteSource): Promise<Page
         h1: document.querySelector('h1')?.textContent?.trim() || '',
         bodyText: (document.body?.innerText || '').slice(0, 20000),
         nextData: document.querySelector('#__NEXT_DATA__')?.textContent || '',
-        liens
+        links
       }
-    }, MOTIF_FICHE[source].source)
+    }, LISTING_PATTERN[source].source)
   } finally {
     await context.close()
   }
 }
 
-export async function scrapeListe(url: string): Promise<ListeResult> {
+export async function scrapeListing(url: string): Promise<ListResult> {
   const source = detecterSource(url)
   if (!source) {
     throw createError({ statusCode: 422, statusMessage: 'Source non supportée' })
@@ -461,19 +461,19 @@ export async function scrapeListe(url: string): Promise<ListeResult> {
   await assertPublicHostname(new URL(url).hostname)
 
   let data: PageData
-  if (SITES_PROTEGES.includes(source)) {
-    data = await listeViaApi(url, source)
+  if (PROTECTED_SITES.includes(source)) {
+    data = await listingViaApi(url, source)
   } else {
     try {
-      data = await listeViaPlaywright(url, source)
+      data = await listingViaPlaywright(url, source)
     } catch (e: any) {
       if (e?.statusCode !== 423 || !apiKey()) throw e
-      data = await listeViaApi(url, source)
+      data = await listingViaApi(url, source)
     }
   }
 
-  const annonces = extraireAnnonces(data, source, url)
-  if (!annonces.length) {
+  const ads = extractAds(data, source, url)
+  if (!ads.length) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Aucune annonce',
@@ -482,5 +482,5 @@ export async function scrapeListe(url: string): Promise<ListeResult> {
     })
   }
 
-  return { source, annonces }
+  return { source, ads }
 }
