@@ -14,11 +14,12 @@ const props = withDefaults(
   defineProps<{
     biens: Bien[];
     selection?: string | null;
+    survole?: string | null;
     hauteur?: string;
     zoomBien?: number;
     zone?: ZoneCarte | null;
   }>(),
-  { selection: null, hauteur: "32rem", zoomBien: 15, zone: null }
+  { selection: null, survole: null, hauteur: "32rem", zoomBien: 15, zone: null }
 );
 
 const emit = defineEmits<{
@@ -33,6 +34,9 @@ let carte: LeafletMap | null = null;
 let observateur: ResizeObserver | null = null;
 let couche: (CircleMarker | Circle)[] = [];
 const marqueurs = new Map<string, CircleMarker>();
+
+const RAYON_BASE = 9;
+const RAYON_SURVOLE = 14;
 
 const modeDessin = ref(false);
 let cercleZone: Circle | null = null;
@@ -129,7 +133,7 @@ async function dessiner() {
     }
 
     const m = L.circleMarker([b.lat!, b.lon!], {
-      radius: 9,
+      radius: RAYON_BASE,
       color: "#ffffff",
       weight: 2,
       fillColor: couleur,
@@ -142,6 +146,8 @@ async function dessiner() {
     marqueurs.set(b.id, m);
     couche.push(m);
   }
+
+  if (props.survole) marqueurs.get(props.survole)?.setRadius(RAYON_SURVOLE);
 
   if (localises.value.length === 1) {
     const seul = localises.value[0]!;
@@ -282,6 +288,14 @@ watch(
     if (!m) return;
     carte.panTo(m.getLatLng());
     m.openPopup();
+  }
+);
+
+watch(
+  () => props.survole,
+  (id, ancien) => {
+    if (ancien) marqueurs.get(ancien)?.setRadius(RAYON_BASE);
+    if (id) marqueurs.get(id)?.setRadius(RAYON_SURVOLE);
   }
 );
 </script>

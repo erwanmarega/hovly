@@ -64,6 +64,10 @@ le réutiliser ou l'étendre plutôt que de le redupliquer.
 - `ScoreBien` — badge score compact (prop `score: Score`). Colonne dashboard, entêtes.
 - `ScoreBreakdown` — carte détaillée du score avec barres par critère (prop `score: Score`).
 - `PrixHistorique` — graphe historique de prix (prop `points`).
+- `GrilleBiens` — grille de `CarteBien` + pagination. Prop `compact` (colonne
+  unique) pour la sidebar de la vue carte ; sans, colonnes standard de la vue
+  grille. Émet `survole` (id du bien survolé ou `null`), consommé par
+  `CarteBiens` pour agrandir le marqueur correspondant.
 - `CarteVeille` — une recherche sauvegardée : critères, dernier scan, actions. Slot = résultats.
 - `CarteResultat` — une annonce trouvée par une veille, avec Garder / Ignorer.
 - `FormulaireVeille` — création d'une veille depuis une URL de page de résultats.

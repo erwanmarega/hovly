@@ -41,6 +41,7 @@ const VUES = [
 
 const vue = ref<(typeof VUES)[number]["value"]>("liste");
 const selection = ref<string | null>(null);
+const bienSurvole = ref<string | null>(null);
 
 const filtreStatut = ref<Statut | "tous">("tous");
 const recherche = ref("");
@@ -570,44 +571,59 @@ function toggleTri(clef: typeof triClef.value) {
         </button>
       </div>
 
-      <ClientOnly v-else-if="vue === 'carte'">
-        <CarteBiens
-          class="mt-5"
-          :biens="biensAffiches"
-          :selection="selection"
-          :zone="zone"
-          @select="selection = $event"
-          @zone-changee="zone = $event"
-        />
-        <template #fallback>
-          <div
-            class="mt-5 h-[32rem] animate-pulse rounded-2xl border border-hairline bg-white"
-          />
-        </template>
-      </ClientOnly>
-
-      <div v-else-if="vue === 'grille'" class="mt-5">
-        <div class="grille grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          <CarteBien
-            v-for="(b, i) in biensPage"
-            :key="b.id"
-            :bien="b"
-            :score="scoreDe(b)"
-            :prix-mensuel="prixMensuel(b)"
-            :prix-m2="prixM2(b)"
-            :style="{ '--i': i }"
-            @supprimer="demanderSuppression"
-          />
+      <div
+        v-else-if="vue === 'carte'"
+        class="mt-5 flex flex-col gap-5 lg:flex-row lg:items-stretch"
+      >
+        <div class="min-w-0 lg:flex-1">
+          <ClientOnly>
+            <CarteBiens
+              class="h-[70vh]"
+              hauteur="100%"
+              :biens="biensAffiches"
+              :selection="selection"
+              :survole="bienSurvole"
+              :zone="zone"
+              @select="selection = $event"
+              @zone-changee="zone = $event"
+            />
+            <template #fallback>
+              <div
+                class="h-[70vh] animate-pulse rounded-2xl border border-hairline bg-white"
+              />
+            </template>
+          </ClientOnly>
         </div>
 
-        <PaginationListe
-          class="mt-5 rounded-2xl border border-hairline-soft bg-white"
+        <GrilleBiens
+          class="lg:h-[70vh] lg:w-[360px] lg:shrink-0 lg:overflow-y-auto"
+          compact
+          :biens="biensPage"
+          :score="scoreDe"
+          :prix-mensuel="prixMensuel"
+          :prix-m2="prixM2"
           :page="page"
           :total="biensAffiches.length"
           :par-page="PAR_PAGE"
           @update:page="page = $event"
+          @supprimer="demanderSuppression"
+          @survole="bienSurvole = $event"
         />
       </div>
+
+      <GrilleBiens
+        v-else-if="vue === 'grille'"
+        class="mt-5"
+        :biens="biensPage"
+        :score="scoreDe"
+        :prix-mensuel="prixMensuel"
+        :prix-m2="prixM2"
+        :page="page"
+        :total="biensAffiches.length"
+        :par-page="PAR_PAGE"
+        @update:page="page = $event"
+        @supprimer="demanderSuppression"
+      />
 
       <ListeBiens
         v-else
@@ -748,12 +764,6 @@ function toggleTri(clef: typeof triClef.value) {
   background: #000;
 }
 
-.grille > * {
-  opacity: 0;
-  animation: monter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: calc(var(--i) * 0.05s);
-}
-
 .filtres {
   scrollbar-width: none;
 }
@@ -799,8 +809,7 @@ function toggleTri(clef: typeof triClef.value) {
 
 @media (prefers-reduced-motion: reduce) {
   .bandeau,
-  .tuile,
-  .grille > * {
+  .tuile {
     opacity: 1;
     animation: none;
   }
