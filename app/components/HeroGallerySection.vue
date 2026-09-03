@@ -150,7 +150,7 @@ onBeforeUnmount(() => clearInterval(minuteur));
                 <span
                   class="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/90 py-1 pl-1.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-ink shadow-sm backdrop-blur"
                 >
-                  <LogoSource :source="vitrine.source" :taille="16" />
+                  <SourceLogo :source="vitrine.source" :taille="16" />
                   Importé de {{ vitrine.label }}
                 </span>
 
@@ -264,7 +264,7 @@ onBeforeUnmount(() => clearInterval(minuteur));
                 <span
                   class="absolute bottom-1 left-1 grid size-6 place-items-center rounded-sm bg-white/90 backdrop-blur"
                 >
-                  <LogoSource :source="v.source" :taille="14" />
+                  <SourceLogo :source="v.source" :taille="14" />
                 </span>
               </span>
             </button>

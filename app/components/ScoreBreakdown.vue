@@ -10,7 +10,7 @@ defineProps<{ score: Score }>()
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
         {{ score.customized ? 'Mon score' : 'Score Hovly' }}
       </h2>
-      <ScoreBien :score="score" />
+      <ScoreBadge :score="score" />
     </div>
     <div class="mt-3 flex items-baseline gap-1">
       <span class="text-4xl font-bold tracking-tight">{{ score.total }}</span>

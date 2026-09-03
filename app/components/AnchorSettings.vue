@@ -82,7 +82,7 @@ function changerMode(id: string, m: TravelMode) {
         :key="a.id"
         class="flex flex-wrap items-center gap-3 rounded-xl border border-hairline-soft bg-surface-soft px-3 py-2.5"
       >
-        <IconeMode :mode="a.mode" class="text-steel" />
+        <ModeIcon :mode="a.mode" class="text-steel" />
         <div class="min-w-[8rem] flex-1">
           <p class="truncate text-sm font-medium text-ink">{{ a.label }}</p>
           <p class="truncate text-xs text-stone">
@@ -132,7 +132,7 @@ function changerMode(id: string, m: TravelMode) {
           "
           @click="mode = m.value"
         >
-          <IconeMode :mode="m.value" class="size-3.5" />
+          <ModeIcon :mode="m.value" class="size-3.5" />
           {{ m.label }}
         </button>
       </div>

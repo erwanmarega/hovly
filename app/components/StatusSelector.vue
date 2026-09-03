@@ -69,7 +69,7 @@ onBeforeUnmount(() => ecouter(false));
       aria-label="Changer le statut"
       @click="basculer"
     >
-      <BadgeStatut :statut="statut" />
+      <StatusBadge :statut="statut" />
     </button>
 
     <Teleport to="body">

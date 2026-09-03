@@ -86,7 +86,7 @@ const sourceLabels: Record<string, string> = {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
-      <FilAriane
+      <Breadcrumbs
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Comparer' }]"
       />
@@ -134,7 +134,7 @@ const sourceLabels: Record<string, string> = {
         </div>
       </section>
 
-      <ModalPartage
+      <ShareModal
         :ouvert="partageOuvert"
         :nb-biens="choisis.length"
         :en-cours="partageEnCours"
@@ -237,11 +237,11 @@ const sourceLabels: Record<string, string> = {
                     </NuxtLink>
 
                     <p class="mt-1 flex items-center gap-1.5 text-xs font-normal text-stone">
-                      <LogoSource :source="b.site_source" :avec-nom="false" :taille="14" />
+                      <SourceLogo :source="b.site_source" :avec-nom="false" :taille="14" />
                       {{ sourceLabels[b.site_source] }} · {{ b.ville }}
                     </p>
                     <div class="mt-2">
-                      <BadgeStatut :statut="b.statut" />
+                      <StatusBadge :statut="b.statut" />
                     </div>
                   </div>
                 </th>

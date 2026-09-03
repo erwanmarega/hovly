@@ -90,7 +90,7 @@ const gages = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
       <div
         class="logos relative mt-8 flex flex-wrap items-center justify-center gap-5"
       >
-        <LogoSource
+        <SourceLogo
           v-for="s in SOURCES"
           :key="s"
           :source="s"

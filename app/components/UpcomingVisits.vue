@@ -44,7 +44,7 @@ const restantes = computed(
           class="flex max-w-full items-center gap-2 rounded-full border border-hairline px-3 py-1.5 text-xs transition hover:bg-surface"
         >
           <span class="truncate font-medium text-ink">{{ b.titre }}</span>
-          <BadgeVisite :visite-le="b.visite_le" compact />
+          <VisitBadge :visite-le="b.visite_le" compact />
         </NuxtLink>
       </li>
       <li v-if="restantes" class="text-xs text-stone">+{{ restantes }} autre{{ restantes > 1 ? 's' : '' }}</li>

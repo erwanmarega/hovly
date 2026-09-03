@@ -256,7 +256,7 @@ async function confirmerSuppression() {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-      <FilAriane class="mb-5" :items="filAriane" />
+      <Breadcrumbs class="mb-5" :items="filAriane" />
 
       <div v-if="pending" class="py-24 text-center">
         <div
@@ -278,7 +278,7 @@ async function confirmerSuppression() {
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <BadgeStatut :statut="bien.statut" />
+              <StatusBadge :statut="bien.statut" />
               <span class="text-xs font-medium text-stone">
                 {{ sourceLabels[bien.site_source] }} · ajouté le {{ dateAjout }}
               </span>
@@ -491,7 +491,7 @@ async function confirmerSuppression() {
               </div>
               <ClientOnly>
                 <div class="mt-3 min-h-64 flex-1">
-                  <CarteBiens class="h-full" :biens="[bien]" hauteur="100%" />
+                  <PropertyMap class="h-full" :biens="[bien]" hauteur="100%" />
                 </div>
                 <template #fallback>
                   <div
@@ -546,9 +546,9 @@ async function confirmerSuppression() {
               </div>
             </div>
 
-            <CoutReel :bien="bien" />
+            <ActualCost :bien="bien" />
 
-            <TrajetsBien :bien="bien" />
+            <PropertyCommutes :bien="bien" />
 
             <ScoreBreakdown v-if="score" :score="score" />
 
@@ -575,7 +575,7 @@ async function confirmerSuppression() {
                     :to="`/bien/${d.id}`"
                     class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white"
                   >
-                    <LogoSource
+                    <SourceLogo
                       :source="d.site_source"
                       :avec-nom="false"
                       :taille="20"
@@ -601,7 +601,7 @@ async function confirmerSuppression() {
               </ul>
             </div>
 
-            <PlanificateurVisite :bien="bien" @maj="appliquerVisite" />
+            <VisitScheduler :bien="bien" @maj="appliquerVisite" />
 
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <h2
@@ -614,7 +614,7 @@ async function confirmerSuppression() {
                   class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left transition hover:bg-surface"
                   @click="menuStatut = !menuStatut"
                 >
-                  <BadgeStatut :statut="bien.statut" />
+                  <StatusBadge :statut="bien.statut" />
                   <svg
                     class="size-4 text-stone"
                     viewBox="0 0 24 24"
@@ -670,7 +670,7 @@ async function confirmerSuppression() {
           </div>
         </div>
 
-        <PrixHistorique :points="historique" class="mt-4 sm:mt-6" />
+        <PriceHistory :points="historique" class="mt-4 sm:mt-6" />
 
         <Transition name="bloc">
           <div
@@ -678,7 +678,7 @@ async function confirmerSuppression() {
             ref="blocChecklist"
             class="scroll-mt-24"
           >
-            <ChecklistVisite
+            <VisitChecklist
               :bien="bien"
               class="mt-4 sm:mt-6"
               @maj="appliquerVisite"
@@ -687,7 +687,7 @@ async function confirmerSuppression() {
         </Transition>
       </template>
 
-      <ModalConfirmationSuppression
+      <DeleteConfirmationModal
         :ouvert="confirmationSuppression"
         titre="Supprimer ce bien ?"
         :nom="bien?.titre"

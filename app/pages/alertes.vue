@@ -105,7 +105,7 @@ async function lancerVerif() {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
-      <FilAriane
+      <Breadcrumbs
         class="mb-5"
         :items="[
           { label: 'Mes biens', to: '/dashboard' },
@@ -212,7 +212,7 @@ async function lancerVerif() {
         </p>
       </Transition>
 
-      <ReglagePush class="mt-6" />
+      <PushSettings class="mt-6" />
 
       <div
         class="mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-hairline-soft bg-white p-3"
@@ -319,7 +319,7 @@ async function lancerVerif() {
               class="alerte"
               :style="{ '--i': i }"
             >
-              <LigneAlerte :alerte="a" />
+              <AlertRow :alerte="a" />
             </li>
           </ul>
         </section>

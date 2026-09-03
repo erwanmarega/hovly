@@ -205,7 +205,7 @@ const inputCls =
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-6xl px-6 py-8">
-      <FilAriane
+      <Breadcrumbs
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Mon profil' }]"
       />
@@ -552,7 +552,7 @@ v-for="axe in [
               </div>
             </div>
 
-            <ReglageAncres
+            <AnchorSettings
               class="mt-6"
               :ancres="brouillon.ancres"
               @update:ancres="majAncres"
@@ -560,7 +560,7 @@ v-for="axe in [
 
             <p v-if="erreurTrajets" class="mt-3 text-xs text-[#600000]">{{ erreurTrajets }}</p>
 
-            <MentionTransitous class="mt-3" />
+            <TransitousNotice class="mt-3" />
           </section>
 
           <section
@@ -581,7 +581,7 @@ v-for="axe in [
                 </p>
               </div>
             </div>
-            <ReglagePush class="mt-6" />
+            <PushSettings class="mt-6" />
           </section>
 
           <section

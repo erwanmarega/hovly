@@ -126,7 +126,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
-      <FilAriane
+      <Breadcrumbs
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Veilles' }]"
       />
@@ -181,7 +181,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
         {{ message }}
       </p>
 
-      <FormulaireVeille
+      <WatchForm
         v-if="formulaireOuvert"
         class="mt-5"
         :url-initiale="urlInitiale"
@@ -213,7 +213,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
       </div>
 
       <div v-else class="mt-6 space-y-3">
-        <CarteVeille
+        <WatchCard
           v-for="r in recherches"
           :key="r.id"
           :recherche="r"
@@ -231,7 +231,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
           </p>
 
           <div v-else class="space-y-2.5">
-            <CarteResultat
+            <ResultCard
               v-for="res in resultats[r.id]"
               :key="res.id"
               :resultat="res"
@@ -240,10 +240,10 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
               @ignorer="ignorerResultat(r.id, $event)"
             />
           </div>
-        </CarteVeille>
+        </WatchCard>
       </div>
 
-      <ModalConfirmationSuppression
+      <DeleteConfirmationModal
         :ouvert="rechercheASupprimer !== null"
         titre="Supprimer cette veille ?"
         :nom="rechercheASupprimer?.label"

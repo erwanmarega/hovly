@@ -359,7 +359,7 @@ function toggleTri(clef: typeof triClef.value) {
         </dl>
       </section>
 
-      <ProchainesVisites :biens="biens" class="mt-6" />
+      <UpcomingVisits :biens="biens" class="mt-6" />
 
       <div
         v-if="groupesDoublons.length"
@@ -487,7 +487,7 @@ function toggleTri(clef: typeof triClef.value) {
             <span class="text-blue/70">✕</span>
           </button>
 
-          <SelecteurAncreTrajet class="ml-auto" />
+          <CommuteAnchorPicker class="ml-auto" />
         </div>
       </div>
 
@@ -577,7 +577,7 @@ function toggleTri(clef: typeof triClef.value) {
       >
         <div class="min-w-0 lg:flex-1">
           <ClientOnly>
-            <CarteBiens
+            <PropertyMap
               class="h-[70vh]"
               hauteur="100%"
               :biens="biensAffiches"
@@ -595,7 +595,7 @@ function toggleTri(clef: typeof triClef.value) {
           </ClientOnly>
         </div>
 
-        <GrilleBiens
+        <PropertyGrid
           class="lg:h-[70vh] lg:w-[360px] lg:shrink-0 lg:overflow-y-auto"
           compact
           :biens="biensPage"
@@ -611,7 +611,7 @@ function toggleTri(clef: typeof triClef.value) {
         />
       </div>
 
-      <GrilleBiens
+      <PropertyGrid
         v-else-if="vue === 'grille'"
         class="mt-5"
         :biens="biensPage"
@@ -625,7 +625,7 @@ function toggleTri(clef: typeof triClef.value) {
         @supprimer="demanderSuppression"
       />
 
-      <ListeBiens
+      <PropertyList
         v-else
         class="mt-5"
         :biens="biensPage"
@@ -681,7 +681,7 @@ function toggleTri(clef: typeof triClef.value) {
         </div>
       </Transition>
 
-      <ModalConfirmationSuppression
+      <DeleteConfirmationModal
         :ouvert="bienASupprimer !== null"
         titre="Supprimer ce bien ?"
         :nom="bienASupprimer?.titre"
@@ -692,7 +692,7 @@ function toggleTri(clef: typeof triClef.value) {
         @confirmer="confirmerSuppression"
       />
 
-      <ModalPartage
+      <ShareModal
         :ouvert="partageOuvert"
         :nb-biens="nbCompares"
         :en-cours="partageEnCours"

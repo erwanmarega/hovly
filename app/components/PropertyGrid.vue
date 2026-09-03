@@ -29,7 +29,7 @@ const emit = defineEmits<{
       class="grille grid gap-5"
       :class="compact ? 'grid-cols-1' : 'sm:grid-cols-2 xl:grid-cols-3'"
     >
-      <CarteBien
+      <PropertyCard
         v-for="(b, i) in biens"
         :key="b.id"
         :bien="b"
@@ -43,7 +43,7 @@ const emit = defineEmits<{
       />
     </div>
 
-    <PaginationListe
+    <ListPagination
       class="mt-5 rounded-2xl border border-hairline-soft bg-white"
       :page="page"
       :total="total"

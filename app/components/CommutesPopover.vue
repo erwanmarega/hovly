@@ -73,7 +73,7 @@ function afficherDansLaColonne(ancreId: string | null) {
         :class="affiche.depasse ? 'bg-coral text-[#600000]' : 'bg-teal text-[#0a4a42]'"
         :title="`${affiche.ancre.label} ${MODE_LABELS[affiche.ancre.mode]}`"
       >
-        <IconeMode :mode="affiche.ancre.mode" class="size-3" />
+        <ModeIcon :mode="affiche.ancre.mode" class="size-3" />
         {{ formatDuration(affiche.duree_s) }}
       </span>
       <span v-else class="text-stone">—</span>
@@ -103,7 +103,7 @@ function afficherDansLaColonne(ancreId: string | null) {
             :class="ancreChoisie?.id === t.ancre.id ? 'bg-surface-soft' : ''"
             @click="afficherDansLaColonne(t.ancre.id)"
           >
-            <IconeMode :mode="t.ancre.mode" class="size-3.5 shrink-0 text-stone" />
+            <ModeIcon :mode="t.ancre.mode" class="size-3.5 shrink-0 text-stone" />
             <span class="min-w-0 flex-1">
               <span
                 class="block truncate text-left"

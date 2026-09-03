@@ -54,7 +54,7 @@ const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport
         class="flex items-center justify-between gap-3 text-sm"
       >
         <span class="flex min-w-0 items-center gap-2">
-          <IconeMode :mode="t.ancre.mode" class="text-stone" />
+          <ModeIcon :mode="t.ancre.mode" class="text-stone" />
           <span class="min-w-0">
             <span class="block truncate font-medium text-ink">{{ t.ancre.label }}</span>
             <span class="block truncate text-xs text-stone">
@@ -93,6 +93,6 @@ const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport
       Itinéraires porte à porte, hors trafic.
     </p>
 
-    <MentionTransitous v-if="actif && localise && aTransport" class="mt-2" />
+    <TransitousNotice v-if="actif && localise && aTransport" class="mt-2" />
   </section>
 </template>

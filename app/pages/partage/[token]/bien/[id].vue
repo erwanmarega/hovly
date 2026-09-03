@@ -115,7 +115,7 @@ useHead({
           </p>
 
           <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-            <StatsBien
+            <PropertyStats
               taille="md"
               :surface="bien.surface"
               :nb-pieces="bien.nb_pieces"

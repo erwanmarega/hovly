@@ -141,7 +141,7 @@ async function logout() {
             <span class="text-base leading-none">+</span>
             <span class="hidden sm:inline">Ajouter un bien</span>
           </NuxtLink>
-          <CentreNotifications />
+          <NotificationCenter />
           <NuxtLink
             to="/profil"
             class="grid size-9 place-items-center rounded-full bg-brand text-sm font-bold text-ink hover:opacity-90 transition"

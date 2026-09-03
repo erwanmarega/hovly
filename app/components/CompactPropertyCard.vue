@@ -50,7 +50,7 @@ const emit = defineEmits<{
             class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-stone"
           >
             <span class="truncate">{{ bien.ville }}</span>
-            <LogoSource
+            <SourceLogo
               :source="bien.site_source"
               :avec-nom="false"
               :taille="14"
@@ -70,23 +70,23 @@ const emit = defineEmits<{
           </p>
         </div>
 
-        <ScoreBien :score="score" class="shrink-0 self-start" />
+        <ScoreBadge :score="score" class="shrink-0 self-start" />
       </NuxtLink>
 
       <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
-        <StatsBien
+        <PropertyStats
           :surface="bien.surface"
           :nb-pieces="bien.nb_pieces"
           pieces-label="p"
           :price-per-sqm="pricePerSqm"
           :dpe="bien.dpe"
         >
-          <BadgeVisite :visite-le="bien.visite_le" compact />
-        </StatsBien>
+          <VisitBadge :visite-le="bien.visite_le" compact />
+        </PropertyStats>
       </div>
 
       <div class="mt-2.5 flex items-center gap-2">
-        <SelecteurStatut
+        <StatusSelector
           :statut="bien.statut"
           @change="emit('statut', bien.id, $event)"
         />

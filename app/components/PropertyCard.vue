@@ -28,10 +28,10 @@ const emit = defineEmits<{ supprimer: [id: string] }>()
       <span v-else class="grid size-full place-items-center text-sm text-stone">Aucune photo</span>
 
       <span class="absolute left-3 top-3">
-        <BadgeStatut :statut="bien.statut" />
+        <StatusBadge :statut="bien.statut" />
       </span>
       <span class="absolute right-3 top-3">
-        <ScoreBien :score="score" />
+        <ScoreBadge :score="score" />
       </span>
     </NuxtLink>
 
@@ -50,9 +50,9 @@ const emit = defineEmits<{ supprimer: [id: string] }>()
       </p>
 
       <div class="mt-4 flex flex-wrap items-center gap-1.5 text-xs">
-        <StatsBien :surface="bien.surface" :nb-pieces="bien.nb_pieces" :price-per-sqm="pricePerSqm" :dpe="bien.dpe">
-          <BadgeVisite :visite-le="bien.visite_le" compact />
-        </StatsBien>
+        <PropertyStats :surface="bien.surface" :nb-pieces="bien.nb_pieces" :price-per-sqm="pricePerSqm" :dpe="bien.dpe">
+          <VisitBadge :visite-le="bien.visite_le" compact />
+        </PropertyStats>
       </div>
 
       <div class="mt-auto flex items-center gap-1 pt-4">

@@ -65,7 +65,7 @@ async function marquerVisite() {
   <section class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
     <div class="flex items-center justify-between gap-3">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Visite</h2>
-      <BadgeVisite :visite-le="bien.visite_le" />
+      <VisitBadge :visite-le="bien.visite_le" />
     </div>
 
     <template v-if="bien.visite_le && !edition">

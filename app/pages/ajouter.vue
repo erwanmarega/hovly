@@ -290,7 +290,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-6 py-10">
-      <FilAriane
+      <Breadcrumbs
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Ajouter un bien' }]"
       />
@@ -369,7 +369,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               class="w-full resize-y rounded-xl border border-hairline-strong bg-white px-4 py-3 font-mono text-xs outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:opacity-60"
             />
 
-            <MentionLeboncoin v-if="masseAvecLeboncoin" class="mt-4" />
+            <LeboncoinNotice v-if="masseAvecLeboncoin" class="mt-4" />
 
             <div v-if="entrees.length" class="mt-5">
               <div class="flex flex-wrap items-center justify-between gap-3">
@@ -433,7 +433,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     <template v-else>!</template>
                   </span>
 
-                  <LogoSource v-if="e.source" :source="e.source" :avec-nom="false" :taille="16" />
+                  <SourceLogo v-if="e.source" :source="e.source" :avec-nom="false" :taille="16" />
                   <span v-else class="size-4 shrink-0 rounded bg-surface" />
 
                   <span class="min-w-0 flex-1 truncate" :class="e.statut === 'echec' ? 'text-[#600000]' : 'text-slate'">
@@ -495,7 +495,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                   key="ok"
                   class="mt-3 inline-flex items-center gap-2 rounded-full bg-teal/40 px-3 py-1.5 text-xs font-semibold text-[#0a4a42]"
                 >
-                  <LogoSource :source="sourceDetectee" :avec-nom="false" :taille="16" />
+                  <SourceLogo :source="sourceDetectee" :avec-nom="false" :taille="16" />
                   {{ LABELS[sourceDetectee] }} reconnu
                 </p>
                 <p
@@ -508,7 +508,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                 <span v-else key="rien" />
               </Transition>
 
-              <MentionLeboncoin v-if="sourceDetectee === 'leboncoin'" class="mt-3" />
+              <LeboncoinNotice v-if="sourceDetectee === 'leboncoin'" class="mt-3" />
 
               <p v-if="error" class="mt-3 text-sm font-medium text-[#600000]">{{ error }}</p>
 
@@ -576,7 +576,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                 class="source-chip inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-3.5 py-2 text-sm font-medium text-steel transition"
                 :class="sourceDetectee === s && 'border-ink text-ink'"
               >
-                <LogoSource :source="s" :avec-nom="false" :taille="18" />
+                <SourceLogo :source="s" :avec-nom="false" :taille="18" />
                 {{ LABELS[s] }}
                 <span v-if="s === 'leboncoin'" class="text-xs font-normal text-stone">
                   · extraction limitée
@@ -761,7 +761,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     v-if="sourceDetectee"
                     class="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink backdrop-blur-sm"
                   >
-                    <LogoSource :source="sourceDetectee" :avec-nom="false" :taille="14" />
+                    <SourceLogo :source="sourceDetectee" :avec-nom="false" :taille="14" />
                     {{ LABELS[sourceDetectee] }}
                   </span>
                 </div>
@@ -796,7 +796,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                       <span class="text-xs font-semibold uppercase tracking-wide text-stone">
                         Score estimé
                       </span>
-                      <ScoreBien :score="scoreApercu" />
+                      <ScoreBadge :score="scoreApercu" />
                     </div>
                   </div>
                 </div>

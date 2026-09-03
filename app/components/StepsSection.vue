@@ -95,7 +95,7 @@ const lignes = [
                   class="jeton grid size-12 place-items-center rounded-2xl border border-hairline-soft bg-surface-soft"
                   :style="{ animationDelay: `${j * 0.25}s` }"
                 >
-                  <LogoSource :source="s" :avec-nom="false" :taille="24" />
+                  <SourceLogo :source="s" :avec-nom="false" :taille="24" />
                 </span>
               </div>
 

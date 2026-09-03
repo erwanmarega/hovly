@@ -88,7 +88,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       </div>
 
       <div class="divide-y divide-hairline-soft">
-        <CarteBienCompacte
+        <CompactPropertyCard
           v-for="b in biens"
           :key="b.id"
           :bien="b"
@@ -159,7 +159,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
               </p>
               <p class="mt-0.5 flex items-center gap-1.5 text-xs text-stone">
                 <span class="truncate">{{ b.ville }}</span>
-                <LogoSource :source="b.site_source" :avec-nom="false" :taille="14" />
+                <SourceLogo :source="b.site_source" :avec-nom="false" :taille="14" />
                 <span
                   v-if="doublons.get(b.id)"
                   class="rounded-full bg-brand-light px-1.5 py-0.5 text-[10px] font-semibold text-[#8a6d1c]"
@@ -198,19 +198,19 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="hidden w-10 shrink-0 xl:block"><BadgeDPE :dpe="b.dpe" /></div>
 
-          <div class="w-20 shrink-0"><ScoreBien :score="score(b)" /></div>
+          <div class="w-20 shrink-0"><ScoreBadge :score="score(b)" /></div>
 
           <div v-if="trajetsActifs" class="hidden w-16 shrink-0 lg:block">
-            <PopoverTrajets :bien-id="b.id" />
+            <CommutesPopover :bien-id="b.id" />
           </div>
 
           <div class="hidden w-24 shrink-0 xl:block">
-            <BadgeVisite v-if="b.visite_le" :visite-le="b.visite_le" compact />
+            <VisitBadge v-if="b.visite_le" :visite-le="b.visite_le" compact />
             <span v-else class="text-sm text-stone">—</span>
           </div>
 
           <div class="hidden shrink-0 sm:block">
-            <SelecteurStatut
+            <StatusSelector
               :statut="b.statut"
               :vers-le-haut="versLeHaut(i)"
               @change="emit('statut', b.id, $event)"
@@ -247,7 +247,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       </div>
     </div>
 
-    <PaginationListe
+    <ListPagination
       class="mt-4"
       :page="page"
       :total="total"

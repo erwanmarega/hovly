@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <ReglagePush variante="ligne" />
+        <PushSettings variante="ligne" />
 
         <div v-if="chargement && !alertes.length" class="space-y-2 p-3">
           <span
@@ -110,7 +110,7 @@ onBeforeUnmount(() => {
 
         <ul v-else class="max-h-[22rem] space-y-1.5 overflow-y-auto p-2">
           <li v-for="a in recentes" :key="a.id">
-            <LigneAlerte :alerte="a" compact @click="ouvert = false" />
+            <AlertRow :alerte="a" compact @click="ouvert = false" />
           </li>
         </ul>
 

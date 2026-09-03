@@ -59,7 +59,7 @@ const enPause = computed(() => !props.recherche.active)
         :aria-expanded="ouverte"
         @click="emit('basculer', recherche.id)"
       >
-        <LogoSource
+        <SourceLogo
           v-if="recherche.site_source"
           :source="recherche.site_source"
           :avec-nom="false"

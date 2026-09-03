@@ -98,7 +98,7 @@ async function motDePasseOublie() {
             Tu as été déconnecté après 15 minutes d’inactivité.
           </p>
 
-          <BoutonGoogle
+          <GoogleButton
             class="mt-8"
             :disabled="occupe"
             @erreur="error = $event"
@@ -111,7 +111,7 @@ async function motDePasseOublie() {
           </div>
 
           <form class="space-y-4" @submit.prevent="handleLogin">
-            <ChampTexte
+            <TextField
               id="email"
               v-model="email"
               label="Email"
@@ -122,7 +122,7 @@ async function motDePasseOublie() {
               :invalide="!!error"
             />
 
-            <ChampTexte
+            <TextField
               id="password"
               v-model="password"
               label="Mot de passe"
@@ -141,7 +141,7 @@ async function motDePasseOublie() {
                   {{ envoiLien ? 'Envoi…' : 'Oublié ?' }}
                 </button>
               </template>
-            </ChampTexte>
+            </TextField>
 
             <p
               v-if="error"
@@ -198,6 +198,6 @@ async function motDePasseOublie() {
       </p>
     </div>
 
-    <PanneauMarque />
+    <BrandPanel />
   </div>
 </template>

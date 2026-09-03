@@ -59,13 +59,13 @@ const quand = computed(() =>
       </a>
 
       <p class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-stone">
-        <LogoSource v-if="source" :source="source" :avec-nom="false" :taille="14" />
+        <SourceLogo v-if="source" :source="source" :avec-nom="false" :taille="14" />
         <span v-if="lieu" class="truncate">{{ lieu }}</span>
         <span class="shrink-0">· {{ quand }}</span>
       </p>
 
       <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-        <StatsBien
+        <PropertyStats
           :surface="resultat.surface"
           :nb-pieces="resultat.nb_pieces"
           pieces-label="p"
@@ -79,7 +79,7 @@ const quand = computed(() =>
               {{ formatPrice(resultat.prix) }}
             </span>
           </template>
-        </StatsBien>
+        </PropertyStats>
       </div>
     </div>
 
