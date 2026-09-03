@@ -6,68 +6,68 @@ useHead({ title: 'Comparer — Hovly' })
 const { biens, refresh } = useProperties()
 const { pending } = useAsyncData('biens-comparer', () => refresh(), { server: false })
 
-const { selection, remove: retirer, clear: vider } = useComparator()
+const { selection, remove, clear } = useComparator()
 const { preferences } = usePreferences()
 
-const { create: creerPartage } = useShares()
-const partageOuvert = ref(false)
-const partageEnCours = ref(false)
-const partageErreur = ref('')
-const partageLien = ref<string | null>(null)
+const { create: createShare } = useShares()
+const shareOpen = ref(false)
+const sharing = ref(false)
+const shareError = ref('')
+const shareLink = ref<string | null>(null)
 
-async function creerLienPartage(titre: string) {
-  partageEnCours.value = true
-  partageErreur.value = ''
+async function createShareLink(title: string) {
+  sharing.value = true
+  shareError.value = ''
   try {
-    const partage = await creerPartage(selection.value, titre || undefined)
-    partageLien.value = `${window.location.origin}/partage/${partage.token}`
+    const share = await createShare(selection.value, title || undefined)
+    shareLink.value = `${window.location.origin}/partage/${share.token}`
   } catch {
-    partageErreur.value = 'Impossible de créer le lien. Réessaie.'
+    shareError.value = 'Impossible de créer le lien. Réessaie.'
   } finally {
-    partageEnCours.value = false
+    sharing.value = false
   }
 }
 
-function fermerPartage() {
-  partageOuvert.value = false
-  partageLien.value = null
+function closeShare() {
+  shareOpen.value = false
+  shareLink.value = null
 }
 
-const choisis = computed(() =>
+const selected = computed(() =>
   selection.value
     .map((id) => biens.value.find((b) => b.id === id))
     .filter((b): b is Property => Boolean(b))
 )
 
-const contexte = computed(() => representatives(biens.value))
-const scores = computed(() => choisis.value.map((b) => scoreProperty(b, contexte.value, preferences.value)))
-const { commutes: trajets, ancres, refresh: refreshTrajets } = useCommutes()
-useAsyncData('trajets-comparer', () => refreshTrajets(), { server: false })
+const context = computed(() => representatives(biens.value))
+const scores = computed(() => selected.value.map((b) => scoreProperty(b, context.value, preferences.value)))
+const { commutes, ancres, refresh: refreshCommutes } = useCommutes()
+useAsyncData('trajets-comparer', () => refreshCommutes(), { server: false })
 
-const { loadAll: chargerMarches, get: marchePour } = useMarket()
-watch(choisis, (liste) => chargerMarches(liste), { immediate: true })
-const ecartsDvf = computed(() =>
-  choisis.value.map((b) => {
-    const m = marchePour(b.id)
+const { loadAll: loadMarkets, get: marketFor } = useMarket()
+watch(selected, (list) => loadMarkets(list), { immediate: true })
+const dvfGaps = computed(() =>
+  selected.value.map((b) => {
+    const m = marketFor(b.id)
     const pm2 = pricePerSqm(b)
     return looksLikeSale(b) && m && pm2 ? gapPercent(pm2, m) : null
   })
 )
 
-const lignes = computed(() =>
-  compare(choisis.value, scores.value, optionsFromPreferences(preferences.value), {
+const rows = computed(() =>
+  compare(selected.value, scores.value, optionsFromPreferences(preferences.value), {
     ancres: ancres.value,
-    index: indexCommutes(trajets.value)
-  }, ecartsDvf.value)
+    index: indexCommutes(commutes.value)
+  }, dvfGaps.value)
 )
 
-const gagnant = computed(() => {
-  if (choisis.value.length < 2) return null
+const winner = computed(() => {
+  if (selected.value.length < 2) return null
   let idx = 0
   scores.value.forEach((s, i) => {
     if (s.total > scores.value[idx]!.total) idx = i
   })
-  return { bien: choisis.value[idx]!, score: scores.value[idx]!, index: idx }
+  return { bien: selected.value[idx]!, score: scores.value[idx]!, index: idx }
 })
 
 const sourceLabels: Record<string, string> = {
@@ -117,16 +117,16 @@ const sourceLabels: Record<string, string> = {
               Choisir des biens
             </NuxtLink>
             <button
-              v-if="choisis.length"
+              v-if="selected.length"
               class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
-              @click="partageOuvert = true"
+              @click="shareOpen = true"
             >
               Partager
             </button>
             <button
-              v-if="choisis.length"
+              v-if="selected.length"
               class="action rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white"
-              @click="vider"
+              @click="clear"
             >
               Tout retirer
             </button>
@@ -135,19 +135,19 @@ const sourceLabels: Record<string, string> = {
       </section>
 
       <ShareModal
-        :open="partageOuvert"
-        :property-count="choisis.length"
-        :loading="partageEnCours"
-        :error="partageErreur"
-        :link="partageLien"
-        @create="creerLienPartage"
-        @close="fermerPartage"
+        :open="shareOpen"
+        :property-count="selected.length"
+        :loading="sharing"
+        :error="shareError"
+        :link="shareLink"
+        @create="createShareLink"
+        @close="closeShare"
       />
 
       <div v-if="pending" class="mt-6 h-96 animate-pulse rounded-feature border border-hairline-soft bg-white" />
 
       <div
-        v-else-if="choisis.length < 2"
+        v-else-if="selected.length < 2"
         class="mt-6 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
         <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-light text-ink">
@@ -166,7 +166,7 @@ const sourceLabels: Record<string, string> = {
           </svg>
         </div>
         <p class="mt-4 text-lg font-medium text-ink-deep">
-          {{ choisis.length === 1 ? 'Encore un bien à choisir' : 'Sélectionne au moins deux biens' }}
+          {{ selected.length === 1 ? 'Encore un bien à choisir' : 'Sélectionne au moins deux biens' }}
         </p>
         <p class="mx-auto mt-1 max-w-sm text-sm text-slate">
           Depuis le tableau de bord, coche les biens à confronter — loyer, surface, DPE, score.
@@ -181,13 +181,13 @@ const sourceLabels: Record<string, string> = {
 
       <template v-else>
         <div
-          v-if="gagnant"
+          v-if="winner"
           class="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-teal-deep/30 bg-teal/30 px-4 py-3"
         >
           <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-teal text-sm">★</span>
           <p class="text-sm text-ink">
-            <span class="font-semibold">{{ gagnant.bien.titre }}</span>
-            mène avec {{ gagnant.score.total }} points{{ gagnant.score.customized ? ' selon tes critères' : '' }}.
+            <span class="font-semibold">{{ winner.bien.titre }}</span>
+            mène avec {{ winner.score.total }} points{{ winner.score.customized ? ' selon tes critères' : '' }}.
           </p>
         </div>
 
@@ -197,20 +197,20 @@ const sourceLabels: Record<string, string> = {
               <tr>
                 <th class="sticky left-0 z-10 w-28 bg-white p-3 text-left align-bottom sm:w-40 sm:p-4">
                   <span class="text-xs font-semibold uppercase tracking-wide text-stone">
-                    {{ choisis.length }} biens
+                    {{ selected.length }} biens
                   </span>
                 </th>
                 <th
-                  v-for="(b, i) in choisis"
+                  v-for="(b, i) in selected"
                   :key="b.id"
                   class="border-l border-hairline-soft p-4 text-left align-top"
-                  :class="gagnant?.index === i && 'bg-teal/15'"
+                  :class="winner?.index === i && 'bg-teal/15'"
                 >
                   <div class="relative">
                     <button
                       class="absolute right-0 top-0 grid size-6 place-items-center rounded-full text-stone transition hover:bg-surface hover:text-ink"
                       :aria-label="`Retirer ${b.titre}`"
-                      @click="retirer(b.id)"
+                      @click="remove(b.id)"
                     >
                       ×
                     </button>
@@ -250,7 +250,7 @@ const sourceLabels: Record<string, string> = {
 
             <tbody>
               <tr
-                v-for="l in lignes"
+                v-for="l in rows"
                 :key="l.key"
                 class="border-t border-hairline-soft transition hover:bg-surface-soft"
               >
@@ -263,11 +263,11 @@ const sourceLabels: Record<string, string> = {
                   </span>
                 </th>
                 <td
-                  v-for="(valeur, i) in l.display"
+                  v-for="(value, i) in l.display"
                   :key="i"
                   class="border-l border-hairline-soft p-4 align-middle tabular-nums"
                   :class="[
-                    gagnant?.index === i && 'bg-teal/10',
+                    winner?.index === i && 'bg-teal/10',
                     l.best.includes(i) ? 'font-semibold text-[#0a4a42]' : 'text-slate'
                   ]"
                 >
@@ -275,7 +275,7 @@ const sourceLabels: Record<string, string> = {
                     v-if="l.best.includes(i)"
                     class="mr-1.5 inline-block rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold"
                   >★</span>
-                  {{ valeur }}
+                  {{ value }}
                 </td>
               </tr>
 
@@ -286,7 +286,7 @@ const sourceLabels: Record<string, string> = {
                   Ma note
                 </th>
                 <td
-                  v-for="b in choisis"
+                  v-for="b in selected"
                   :key="b.id"
                   class="border-l border-hairline-soft p-4 align-top text-sm text-slate"
                 >
@@ -296,7 +296,7 @@ const sourceLabels: Record<string, string> = {
 
               <tr class="border-t border-hairline-soft">
                 <th class="sticky left-0 z-10 bg-white p-4" />
-                <td v-for="b in choisis" :key="b.id" class="border-l border-hairline-soft p-4">
+                <td v-for="b in selected" :key="b.id" class="border-l border-hairline-soft p-4">
                   <div class="flex flex-wrap items-center gap-2">
                     <NuxtLink
                       :to="`/bien/${b.id}`"
