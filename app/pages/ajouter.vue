@@ -29,7 +29,7 @@ const LABELS: Record<SiteSource, string> = {
 }
 const dpeOptions: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
-const ETAPES_EXTRACTION = [
+const EXTRACTION_STEPS = [
   'Connexion à l’annonce',
   'Lecture de la page',
   'Extraction des caractéristiques',
@@ -37,42 +37,42 @@ const ETAPES_EXTRACTION = [
 ]
 
 const mode = ref<'simple' | 'masse'>('simple')
-const etape = ref<'url' | 'edition'>('url')
+const step = ref<'url' | 'edition'>('url')
 
-const collageMasse = ref('')
-const entrees = ref<ImportEntry[]>([])
-const importEnCours = ref(false)
-const indexCourant = ref(0)
+const bulkPaste = ref('')
+const entries = ref<ImportEntry[]>([])
+const importing = ref(false)
+const currentIndex = ref(0)
 
-const resume = computed(() => importSummary(entrees.value))
+const summary = computed(() => importSummary(entries.value))
 
-const masseAvecLeboncoin = computed(() => entrees.value.some((e) => e.source === 'leboncoin'))
+const bulkHasLeboncoin = computed(() => entries.value.some((e) => e.source === 'leboncoin'))
 
-watch(collageMasse, (texte) => {
-  if (importEnCours.value) return
-  entrees.value = parseUrls(
-    texte,
+watch(bulkPaste, (text) => {
+  if (importing.value) return
+  entries.value = parseUrls(
+    text,
     biens.value.map((b) => b.url_source)
   )
 })
 
-async function lancerImport() {
-  importEnCours.value = true
-  const aTraiter = entrees.value.filter((e) => e.statut === 'prete')
+async function runImport() {
+  importing.value = true
+  const toProcess = entries.value.filter((e) => e.status === 'ready')
 
-  for (const entree of aTraiter) {
-    indexCourant.value = entrees.value.indexOf(entree)
-    entree.statut = 'analyse'
+  for (const entry of toProcess) {
+    currentIndex.value = entries.value.indexOf(entry)
+    entry.status = 'analyzing'
     try {
       const b = await $fetch<Partial<Property>>('/api/scrape', {
         method: 'POST',
-        body: { url: entree.url }
+        body: { url: entry.url }
       })
       if (!b.titre && !b.prix) throw new Error('Aucune donnée extraite')
 
       await add({
-        url_source: entree.url,
-        site_source: entree.source!,
+        url_source: entry.url,
+        site_source: entry.source!,
         titre: b.titre ?? 'Sans titre',
         prix: b.prix ?? 0,
         surface: b.surface ?? 0,
@@ -87,27 +87,27 @@ async function lancerImport() {
         description: b.description ?? null,
         statut: 'a_visiter'
       })
-      entree.statut = 'ajoutee'
-      entree.titre = b.titre ?? undefined
+      entry.status = 'added'
+      entry.titre = b.titre ?? undefined
     } catch (e: unknown) {
-      entree.statut = 'echec'
-      entree.message = errorMessage(e, 'Extraction impossible')
+      entry.status = 'failed'
+      entry.message = errorMessage(e, 'Extraction impossible')
     }
   }
 
-  importEnCours.value = false
+  importing.value = false
 }
 const url = ref('')
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
-const urlEstRecherche = ref(false)
-const etapeExtraction = ref(0)
-const collage = ref(false)
-let minuteur: ReturnType<typeof setInterval> | undefined
+const urlIsSearch = ref(false)
+const extractionStep = ref(0)
+const pasted = ref(false)
+let timer: ReturnType<typeof setInterval> | undefined
 
-const sourceDetectee = computed(() => (url.value.trim() ? detectSource(url.value.trim()) : null))
-const urlInvalide = computed(() => url.value.trim().length > 8 && !sourceDetectee.value)
+const detectedSource = computed(() => (url.value.trim() ? detectSource(url.value.trim()) : null))
+const urlInvalid = computed(() => url.value.trim().length > 8 && !detectedSource.value)
 
 const draft = reactive({
   titre: '',
@@ -128,13 +128,13 @@ const draft = reactive({
 
 const pricePerSqm = computed(() => (draft.surface ? Math.round(draft.prix / draft.surface) : 0))
 
-const scoreApercu = computed(() => {
+const scorePreview = computed(() => {
   if (!draft.prix || !draft.surface) return null
-  const provisoire = {
+  const preview = {
     id: 'apercu',
     user_id: '',
     url_source: url.value,
-    site_source: sourceDetectee.value ?? 'pap',
+    site_source: detectedSource.value ?? 'pap',
     titre: draft.titre,
     transaction: draft.transaction,
     prix: Math.round(draft.prix * 100),
@@ -162,25 +162,25 @@ const scoreApercu = computed(() => {
     actif: true,
     created_at: new Date().toISOString()
   } satisfies Property
-  return scoreProperty(provisoire, representatives(biens.value), preferences.value)
+  return scoreProperty(preview, representatives(biens.value), preferences.value)
 })
 
-async function collerDepuisPressePapier() {
+async function pasteFromClipboard() {
   try {
-    const texte = await navigator.clipboard.readText()
-    if (texte) {
-      url.value = texte.trim()
-      collage.value = true
-      setTimeout(() => (collage.value = false), 1200)
+    const text = await navigator.clipboard.readText()
+    if (text) {
+      url.value = text.trim()
+      pasted.value = true
+      setTimeout(() => (pasted.value = false), 1200)
     }
   } catch {
     error.value = 'Accès au presse-papier refusé. Colle l’URL à la main.'
   }
 }
 
-async function analyser() {
+async function analyze() {
   error.value = ''
-  urlEstRecherche.value = false
+  urlIsSearch.value = false
   const source = detectSource(url.value)
   if (!source) {
     error.value =
@@ -189,9 +189,9 @@ async function analyser() {
   }
 
   loading.value = true
-  etapeExtraction.value = 0
-  minuteur = setInterval(() => {
-    if (etapeExtraction.value < ETAPES_EXTRACTION.length - 1) etapeExtraction.value++
+  extractionStep.value = 0
+  timer = setInterval(() => {
+    if (extractionStep.value < EXTRACTION_STEPS.length - 1) extractionStep.value++
   }, 1400)
 
   try {
@@ -211,33 +211,33 @@ async function analyser() {
     draft.ville = b.ville ?? ''
     draft.code_postal = b.code_postal ?? ''
     draft.photos = b.photos ?? []
-    etape.value = 'edition'
+    step.value = 'edition'
   } catch (e: unknown) {
     // Une page de résultats n'est pas un bien : c'est une veille qui s'ouvre.
     // Marqueur posé par le serveur, plutôt qu'une tournure française à reconnaître.
     if (errorData(e)?.code === 'page_recherche') {
-      urlEstRecherche.value = true
+      urlIsSearch.value = true
       return
     }
 
     error.value = errorMessage(e, 'Extraction impossible. Complète à la main.')
-    etape.value = 'edition'
+    step.value = 'edition'
   } finally {
-    clearInterval(minuteur)
+    clearInterval(timer)
     loading.value = false
   }
 }
 
 onMounted(() => {
-  const depuisLanding = useRoute().query.url
-  if (typeof depuisLanding !== 'string' || !depuisLanding) return
-  url.value = depuisLanding
-  if (detectSource(depuisLanding)) analyser()
+  const fromLanding = useRoute().query.url
+  if (typeof fromLanding !== 'string' || !fromLanding) return
+  url.value = fromLanding
+  if (detectSource(fromLanding)) analyze()
 })
 
-onBeforeUnmount(() => clearInterval(minuteur))
+onBeforeUnmount(() => clearInterval(timer))
 
-const manquants = computed(() => {
+const missingFields = computed(() => {
   const m: string[] = []
   if (!draft.titre) m.push('titre')
   if (!draft.prix) m.push(draft.transaction === 'achat' ? 'prix de vente' : 'loyer')
@@ -245,10 +245,10 @@ const manquants = computed(() => {
   return m
 })
 
-async function enregistrer() {
+async function save() {
   error.value = ''
-  if (manquants.value.length) {
-    error.value = `Champs requis : ${manquants.value.join(', ')}.`
+  if (missingFields.value.length) {
+    error.value = `Champs requis : ${missingFields.value.join(', ')}.`
     return
   }
   const source = detectSource(url.value)!
@@ -310,7 +310,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
             <span
               class="grid size-6 place-items-center rounded-full transition"
               :class="
-                (i === 0 && etape === 'url') || (i === 1 && etape === 'edition')
+                (i === 0 && step === 'url') || (i === 1 && step === 'edition')
                   ? 'bg-ink text-white'
                   : i === 0
                     ? 'bg-success/15 text-success'
@@ -318,7 +318,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               "
             >
               <svg
-                v-if="i === 0 && etape === 'edition'"
+                v-if="i === 0 && step === 'edition'"
                 class="size-3.5"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -331,7 +331,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
             </span>
             <span
               :class="
-                (i === 0 && etape === 'url') || (i === 1 && etape === 'edition')
+                (i === 0 && step === 'url') || (i === 1 && step === 'edition')
                   ? 'text-ink'
                   : 'text-stone'
               "
@@ -342,7 +342,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
       </div>
 
       <Transition name="etape" mode="out-in">
-        <section v-if="etape === 'url'" key="url" class="mt-8">
+        <section v-if="step === 'url'" key="url" class="mt-8">
           <div class="mb-5 flex items-center gap-1 rounded-full bg-surface p-1 w-fit">
             <button
               v-for="m in [
@@ -362,81 +362,81 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
             <label for="masse" :class="labelCls">Colle tes liens, un par ligne</label>
             <textarea
               id="masse"
-              v-model="collageMasse"
+              v-model="bulkPaste"
               rows="6"
-              :disabled="importEnCours"
+              :disabled="importing"
               placeholder="https://www.pap.fr/annonces/…&#10;https://www.leboncoin.fr/ad/locations/…&#10;https://www.bienici.com/annonce/…"
               class="w-full resize-y rounded-xl border border-hairline-strong bg-white px-4 py-3 font-mono text-xs outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20 disabled:opacity-60"
             />
 
-            <LeboncoinNotice v-if="masseAvecLeboncoin" class="mt-4" />
+            <LeboncoinNotice v-if="bulkHasLeboncoin" class="mt-4" />
 
-            <div v-if="entrees.length" class="mt-5">
+            <div v-if="entries.length" class="mt-5">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <p class="text-sm text-slate">
-                  <span class="font-semibold text-ink">{{ resume.pretes }}</span> prête{{ resume.pretes > 1 ? 's' : '' }} à importer
-                  <template v-if="resume.ignorees">
-                    · <span class="text-stone">{{ resume.ignorees }} ignorée{{ resume.ignorees > 1 ? 's' : '' }}</span>
+                  <span class="font-semibold text-ink">{{ summary.ready }}</span> prête{{ summary.ready > 1 ? 's' : '' }} à importer
+                  <template v-if="summary.ignored">
+                    · <span class="text-stone">{{ summary.ignored }} ignorée{{ summary.ignored > 1 ? 's' : '' }}</span>
                   </template>
-                  <template v-if="resume.ajoutees">
-                    · <span class="text-success">{{ resume.ajoutees }} ajoutée{{ resume.ajoutees > 1 ? 's' : '' }}</span>
+                  <template v-if="summary.added">
+                    · <span class="text-success">{{ summary.added }} ajoutée{{ summary.added > 1 ? 's' : '' }}</span>
                   </template>
-                  <template v-if="resume.echecs">
-                    · <span class="text-[#600000]">{{ resume.echecs }} en échec</span>
+                  <template v-if="summary.failed">
+                    · <span class="text-[#600000]">{{ summary.failed }} en échec</span>
                   </template>
                 </p>
 
                 <button
-                  :disabled="importEnCours || !resume.pretes"
+                  :disabled="importing || !summary.ready"
                   class="analyser h-11 shrink-0 rounded-full bg-ink px-6 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
-                  @click="lancerImport"
+                  @click="runImport"
                 >
                   {{
-                    importEnCours
-                      ? `Import ${resume.ajoutees + resume.echecs}/${resume.total - resume.ignorees}…`
-                      : `Importer ${resume.pretes} annonce${resume.pretes > 1 ? 's' : ''}`
+                    importing
+                      ? `Import ${summary.added + summary.failed}/${summary.total - summary.ignored}…`
+                      : `Importer ${summary.ready} annonce${summary.ready > 1 ? 's' : ''}`
                   }}
                 </button>
               </div>
 
               <div
-                v-if="importEnCours"
+                v-if="importing"
                 class="mt-3 h-1 overflow-hidden rounded-full bg-surface"
               >
                 <div
                   class="h-full rounded-full bg-ink transition-all duration-500"
                   :style="{
-                    width: `${((resume.ajoutees + resume.echecs) / Math.max(1, resume.total - resume.ignorees)) * 100}%`
+                    width: `${((summary.added + summary.failed) / Math.max(1, summary.total - summary.ignored)) * 100}%`
                   }"
                 />
               </div>
 
               <ul class="mt-4 divide-y divide-hairline-soft">
                 <li
-                  v-for="(e, i) in entrees"
+                  v-for="(e, i) in entries"
                   :key="i"
                   class="flex items-center gap-3 py-2.5 text-sm"
                 >
                   <span
                     class="grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold"
                     :class="{
-                      'bg-surface text-stone': e.statut === 'prete',
-                      'bg-brand-light text-[#8a6d1c]': ['source_inconnue', 'deja_ajoutee', 'doublon_liste'].includes(e.statut),
-                      'bg-teal text-[#0a4a42]': e.statut === 'ajoutee',
-                      'bg-coral text-[#600000]': e.statut === 'echec'
+                      'bg-surface text-stone': e.status === 'ready',
+                      'bg-brand-light text-[#8a6d1c]': ['unknown_source', 'already_added', 'duplicate_in_list'].includes(e.status),
+                      'bg-teal text-[#0a4a42]': e.status === 'added',
+                      'bg-coral text-[#600000]': e.status === 'failed'
                     }"
                   >
-                    <span v-if="e.statut === 'analyse'" class="size-3 animate-spin rounded-full border-2 border-stone border-t-ink" />
-                    <template v-else-if="e.statut === 'ajoutee'">✓</template>
-                    <template v-else-if="e.statut === 'echec'">✕</template>
-                    <template v-else-if="e.statut === 'prete'">{{ i + 1 }}</template>
+                    <span v-if="e.status === 'analyzing'" class="size-3 animate-spin rounded-full border-2 border-stone border-t-ink" />
+                    <template v-else-if="e.status === 'added'">✓</template>
+                    <template v-else-if="e.status === 'failed'">✕</template>
+                    <template v-else-if="e.status === 'ready'">{{ i + 1 }}</template>
                     <template v-else>!</template>
                   </span>
 
                   <SourceLogo v-if="e.source" :source="e.source" :with-name="false" :size="16" />
                   <span v-else class="size-4 shrink-0 rounded bg-surface" />
 
-                  <span class="min-w-0 flex-1 truncate" :class="e.statut === 'echec' ? 'text-[#600000]' : 'text-slate'">
+                  <span class="min-w-0 flex-1 truncate" :class="e.status === 'failed' ? 'text-[#600000]' : 'text-slate'">
                     {{ e.titre || e.url }}
                   </span>
 
@@ -445,11 +445,11 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               </ul>
 
               <NuxtLink
-                v-if="!importEnCours && resume.ajoutees"
+                v-if="!importing && summary.added"
                 to="/dashboard"
                 class="mt-5 inline-flex rounded-full border border-hairline px-5 py-2.5 text-sm font-medium text-steel transition hover:bg-surface"
               >
-                Voir mes {{ resume.ajoutees }} nouveaux biens
+                Voir mes {{ summary.added }} nouveaux biens
               </NuxtLink>
             </div>
 
@@ -460,7 +460,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
           </div>
 
           <div v-else class="rounded-feature border border-hairline-soft bg-white p-8">
-            <form @submit.prevent="analyser">
+            <form @submit.prevent="analyze">
               <label for="url" :class="labelCls">Lien de l’annonce</label>
               <div class="flex flex-col gap-3 sm:flex-row">
                 <div class="relative flex-1">
@@ -470,14 +470,14 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     type="url"
                     placeholder="https://www.pap.fr/annonces/…"
                     :class="[inputCls, 'pr-24']"
-                    :aria-invalid="urlInvalide"
+                    :aria-invalid="urlInvalid"
                   >
                   <button
                     type="button"
                     class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-hairline bg-surface px-2.5 py-1 text-xs font-medium text-steel transition hover:bg-white"
-                    @click="collerDepuisPressePapier"
+                    @click="pasteFromClipboard"
                   >
-                    {{ collage ? 'Collé ✓' : 'Coller' }}
+                    {{ pasted ? 'Collé ✓' : 'Coller' }}
                   </button>
                 </div>
                 <button
@@ -491,15 +491,15 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
 
               <Transition name="etat" mode="out-in">
                 <p
-                  v-if="sourceDetectee"
+                  v-if="detectedSource"
                   key="ok"
                   class="mt-3 inline-flex items-center gap-2 rounded-full bg-teal/40 px-3 py-1.5 text-xs font-semibold text-[#0a4a42]"
                 >
-                  <SourceLogo :source="sourceDetectee" :with-name="false" :size="16" />
-                  {{ LABELS[sourceDetectee] }} reconnu
+                  <SourceLogo :source="detectedSource" :with-name="false" :size="16" />
+                  {{ LABELS[detectedSource] }} reconnu
                 </p>
                 <p
-                  v-else-if="urlInvalide"
+                  v-else-if="urlInvalid"
                   key="ko"
                   class="mt-3 inline-flex rounded-full bg-coral/30 px-3 py-1.5 text-xs font-semibold text-[#600000]"
                 >
@@ -508,12 +508,12 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                 <span v-else key="rien" />
               </Transition>
 
-              <LeboncoinNotice v-if="sourceDetectee === 'leboncoin'" class="mt-3" />
+              <LeboncoinNotice v-if="detectedSource === 'leboncoin'" class="mt-3" />
 
               <p v-if="error" class="mt-3 text-sm font-medium text-[#600000]">{{ error }}</p>
 
               <div
-                v-if="urlEstRecherche"
+                v-if="urlIsSearch"
                 class="mt-4 rounded-2xl border border-blue/40 bg-blue/5 p-4"
               >
                 <p class="text-sm font-medium text-ink">
@@ -536,13 +536,13 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               <div v-if="loading" class="mt-7 border-t border-hairline-soft pt-6">
                 <ul class="space-y-2.5">
                   <li
-                    v-for="(l, i) in ETAPES_EXTRACTION"
+                    v-for="(l, i) in EXTRACTION_STEPS"
                     :key="l"
                     class="flex items-center gap-3 text-sm transition"
-                    :class="i <= etapeExtraction ? 'text-ink' : 'text-stone'"
+                    :class="i <= extractionStep ? 'text-ink' : 'text-stone'"
                   >
                     <span
-                      v-if="i < etapeExtraction"
+                      v-if="i < extractionStep"
                       class="grid size-5 shrink-0 place-items-center rounded-full bg-success/15 text-success"
                     >
                       <svg
@@ -556,7 +556,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                       </svg>
                     </span>
                     <span
-                      v-else-if="i === etapeExtraction"
+                      v-else-if="i === extractionStep"
                       class="size-5 shrink-0 animate-spin rounded-full border-2 border-hairline border-t-ink"
                     />
                     <span v-else class="size-5 shrink-0 rounded-full border border-hairline" />
@@ -574,7 +574,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                 v-for="s in SOURCES"
                 :key="s"
                 class="source-chip inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-3.5 py-2 text-sm font-medium text-steel transition"
-                :class="sourceDetectee === s && 'border-ink text-ink'"
+                :class="detectedSource === s && 'border-ink text-ink'"
               >
                 <SourceLogo :source="s" :with-name="false" :size="18" />
                 {{ LABELS[s] }}
@@ -597,7 +597,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
               :class="error ? 'bg-coral/30 text-[#600000]' : 'bg-teal/40 text-[#0a4a42]'"
             >
               <span>{{ error ? '⚠ Extraction incomplète — saisis à la main' : '✓ Annonce extraite — vérifie et complète' }}</span>
-              <button class="font-medium text-blue hover:underline" @click="etape = 'url'">
+              <button class="font-medium text-blue hover:underline" @click="step = 'url'">
                 Changer d’URL
               </button>
             </div>
@@ -758,11 +758,11 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     {{ draft.photos.length }} photos
                   </span>
                   <span
-                    v-if="sourceDetectee"
+                    v-if="detectedSource"
                     class="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink backdrop-blur-sm"
                   >
-                    <SourceLogo :source="sourceDetectee" :with-name="false" :size="14" />
-                    {{ LABELS[sourceDetectee] }}
+                    <SourceLogo :source="detectedSource" :with-name="false" :size="14" />
+                    {{ LABELS[detectedSource] }}
                   </span>
                 </div>
 
@@ -791,20 +791,20 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     </div>
                   </div>
 
-                  <div v-if="scoreApercu" class="mt-5 border-t border-hairline-soft pt-4">
+                  <div v-if="scorePreview" class="mt-5 border-t border-hairline-soft pt-4">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-semibold uppercase tracking-wide text-stone">
                         Score estimé
                       </span>
-                      <ScoreBadge :score="scoreApercu" />
+                      <ScoreBadge :score="scorePreview" />
                     </div>
                   </div>
                 </div>
               </div>
 
               <div class="rounded-feature border border-hairline-soft bg-white p-5">
-                <p v-if="manquants.length" class="text-xs text-stone">
-                  Encore requis : <span class="font-semibold text-ink">{{ manquants.join(', ') }}</span>
+                <p v-if="missingFields.length" class="text-xs text-stone">
+                  Encore requis : <span class="font-semibold text-ink">{{ missingFields.join(', ') }}</span>
                 </p>
                 <p v-else class="text-xs text-success">Tout est prêt.</p>
 
@@ -816,9 +816,9 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     Annuler
                   </NuxtLink>
                   <button
-                    :disabled="saving || manquants.length > 0"
+                    :disabled="saving || missingFields.length > 0"
                     class="flex-1 rounded-full bg-ink py-2.5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
-                    @click="enregistrer"
+                    @click="save"
                   >
                     {{ saving ? 'Ajout…' : 'Ajouter' }}
                   </button>
