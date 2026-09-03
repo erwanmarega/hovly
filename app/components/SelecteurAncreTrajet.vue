@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { ancres, ancreChoisie, choisirAncre } = useTrajets()
+const { ancres, selectedAnchor: ancreChoisie, selectAnchor: choisirAncre } = useCommutes()
 
 const utile = computed(() => ancres.value.length > 1)
 </script>
@@ -17,7 +17,7 @@ const utile = computed(() => ancres.value.length > 1)
     >
       <option value="">Le plus long</option>
       <option v-for="a in ancres" :key="a.id" :value="a.id">
-        {{ a.label }} — {{ LIBELLES_MODE[a.mode] }}
+        {{ a.label }} — {{ MODE_LABELS[a.mode] }}
       </option>
     </select>
   </div>

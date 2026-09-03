@@ -3,8 +3,8 @@ import type { Property } from '~/types'
 
 const props = defineProps<{ bien: Property }>()
 
-const { ancres, actif, calculable, disponible, calcul, erreur, pour, calculer, chargerEtat } =
-  useTrajets()
+const { ancres, active: actif, calculable, isAvailable: disponible, calculating: calcul, error: erreur, forProperty: pour, calculate: calculer, loadModesState: chargerEtat } =
+  useCommutes()
 
 onMounted(chargerEtat)
 
@@ -15,7 +15,7 @@ const manquants = computed(() =>
 const localise = computed(() => props.bien.lat != null && props.bien.lon != null)
 
 const modesManquants = computed(() => [
-  ...new Set(ancres.value.filter((a) => !disponible(a.mode)).map((a) => LIBELLES_MODE[a.mode]))
+  ...new Set(ancres.value.filter((a) => !disponible(a.mode)).map((a) => MODE_LABELS[a.mode]))
 ])
 
 const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport'))
@@ -58,7 +58,7 @@ const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport
           <span class="min-w-0">
             <span class="block truncate font-medium text-ink">{{ t.ancre.label }}</span>
             <span class="block truncate text-xs text-stone">
-              {{ LIBELLES_MODE[t.ancre.mode] }}
+              {{ MODE_LABELS[t.ancre.mode] }}
               <template v-if="t.distance_m != null"> · {{ formatDistance(t.distance_m) }}</template>
             </span>
           </span>
@@ -75,7 +75,7 @@ const aTransport = computed(() => ancres.value.some((a) => a.mode === 'transport
           "
           :title="t.ancre.maxMinutes ? `Objectif : ${t.ancre.maxMinutes} min` : undefined"
         >
-          <template v-if="t.calcule">{{ formatDuree(t.duree_s) }}</template>
+          <template v-if="t.calcule">{{ formatDuration(t.duree_s) }}</template>
           <template v-else-if="!disponible(t.ancre.mode)">non configuré</template>
           <template v-else>à calculer</template>
         </span>

@@ -41,7 +41,7 @@ const choisis = computed(() =>
 
 const contexte = computed(() => representatives(biens.value))
 const scores = computed(() => choisis.value.map((b) => scoreProperty(b, contexte.value, preferences.value)))
-const { trajets, ancres, refresh: refreshTrajets } = useTrajets()
+const { commutes: trajets, ancres, refresh: refreshTrajets } = useCommutes()
 useAsyncData('trajets-comparer', () => refreshTrajets(), { server: false })
 
 const { loadAll: chargerMarches, get: marchePour } = useMarket()
@@ -57,7 +57,7 @@ const ecartsDvf = computed(() =>
 const lignes = computed(() =>
   compare(choisis.value, scores.value, optionsFromPreferences(preferences.value), {
     ancres: ancres.value,
-    index: indexer(trajets.value)
+    index: indexCommutes(trajets.value)
   }, ecartsDvf.value)
 )
 

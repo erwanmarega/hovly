@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ bienId: string }>()
 
-const { pour, retenu, ancreChoisie, choisirAncre } = useTrajets()
+const { forProperty: pour, selected: retenu, selectedAnchor: ancreChoisie, selectAnchor: choisirAncre } = useCommutes()
 
 const ouvert = ref(false)
 const declencheur = ref<HTMLElement | null>(null)
@@ -71,10 +71,10 @@ function afficherDansLaColonne(ancreId: string | null) {
         v-if="affiche"
         class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
         :class="affiche.depasse ? 'bg-coral text-[#600000]' : 'bg-teal text-[#0a4a42]'"
-        :title="`${affiche.ancre.label} ${LIBELLES_MODE[affiche.ancre.mode]}`"
+        :title="`${affiche.ancre.label} ${MODE_LABELS[affiche.ancre.mode]}`"
       >
         <IconeMode :mode="affiche.ancre.mode" class="size-3" />
-        {{ formatDuree(affiche.duree_s) }}
+        {{ formatDuration(affiche.duree_s) }}
       </span>
       <span v-else class="text-stone">—</span>
     </button>
@@ -110,14 +110,14 @@ function afficherDansLaColonne(ancreId: string | null) {
                 :class="ancreChoisie?.id === t.ancre.id ? 'font-semibold text-ink' : 'text-slate'"
               >{{ t.ancre.label }}</span>
               <span class="block truncate text-left text-[11px] text-stone">
-                {{ LIBELLES_MODE[t.ancre.mode] }}
+                {{ MODE_LABELS[t.ancre.mode] }}
               </span>
             </span>
             <span
               class="shrink-0 text-xs font-semibold tabular-nums"
               :class="t.depasse ? 'text-[#600000]' : 'text-steel'"
             >
-              {{ formatDuree(t.duree_s) }}
+              {{ formatDuration(t.duree_s) }}
             </span>
           </button>
 

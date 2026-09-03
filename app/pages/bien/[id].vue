@@ -40,7 +40,7 @@ const { biens, refresh: refreshBiens } = useProperties();
 const { preferences } = usePreferences();
 useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
 
-const { refresh: refreshTrajets } = useTrajets();
+const { refresh: refreshTrajets } = useCommutes();
 useAsyncData("trajets-bien", () => refreshTrajets(), { server: false });
 
 const { load: chargerMarche, get: marchePour } = useMarket();

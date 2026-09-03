@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import type { Anchor, Commute } from '../app/types'
 import {
-  cleTrajet,
+  commuteKey,
   formatDistance,
-  formatDuree,
-  indexer,
-  nbDepassements,
-  trajetLePlusLong,
-  trajetPourAncre,
-  trajetRetenu,
-  trajetsDuBien
-} from '../app/composables/useTrajets'
+  formatDuration,
+  indexCommutes,
+  exceededCount,
+  longestCommute,
+  commuteForAnchor,
+  selectedCommute,
+  propertyCommutes
+} from '../app/composables/useCommutes'
 import {
   dureeDepuisItineraires,
   paquets,
@@ -45,19 +45,19 @@ function trajet(over: Partial<Commute> = {}): Commute {
   }
 }
 
-describe('formatDuree', () => {
+describe('formatDuration', () => {
   it('reste en minutes sous une heure', () => {
-    expect(formatDuree(480)).toBe('8 min')
-    expect(formatDuree(0)).toBe('0 min')
+    expect(formatDuration(480)).toBe('8 min')
+    expect(formatDuration(0)).toBe('0 min')
   })
 
   it('passe en heures au-delà, minutes sur deux chiffres', () => {
-    expect(formatDuree(3900)).toBe('1 h 05')
-    expect(formatDuree(7200)).toBe('2 h 00')
+    expect(formatDuration(3900)).toBe('1 h 05')
+    expect(formatDuration(7200)).toBe('2 h 00')
   })
 
   it('affiche un tiret quand rien n’est calculé', () => {
-    expect(formatDuree(null)).toBe('—')
+    expect(formatDuration(null)).toBe('—')
   })
 })
 
@@ -69,12 +69,12 @@ describe('formatDistance', () => {
   })
 })
 
-describe('trajetsDuBien', () => {
+describe('propertyCommutes', () => {
   const ancres = [ancre(), ancre({ id: 'ecole', label: 'École', mode: 'marche', maxMinutes: 15 })]
 
   it('rend une entrée par ancre, dans l’ordre des préférences', () => {
-    const index = indexer([trajet()])
-    const liste = trajetsDuBien('b1', ancres, index)
+    const index = indexCommutes([trajet()])
+    const liste = propertyCommutes('b1', ancres, index)
 
     expect(liste.map((t) => t.ancre.id)).toEqual(['boulot', 'ecole'])
     expect(liste[0]!.calcule).toBe(true)
@@ -84,107 +84,107 @@ describe('trajetsDuBien', () => {
   })
 
   it('ne rattache pas un trajet calculé pour un autre mode', () => {
-    const index = indexer([trajet({ ancre: 'ecole', mode: 'velo' })])
-    expect(trajetsDuBien('b1', ancres, index)[1]!.calcule).toBe(false)
+    const index = indexCommutes([trajet({ ancre: 'ecole', mode: 'velo' })])
+    expect(propertyCommutes('b1', ancres, index)[1]!.calcule).toBe(false)
   })
 
   it('signale le dépassement de la durée maximale', () => {
-    const court = indexer([trajet({ ancre: 'ecole', mode: 'marche', duree_s: 600 })])
-    const long = indexer([trajet({ ancre: 'ecole', mode: 'marche', duree_s: 1200 })])
+    const court = indexCommutes([trajet({ ancre: 'ecole', mode: 'marche', duree_s: 600 })])
+    const long = indexCommutes([trajet({ ancre: 'ecole', mode: 'marche', duree_s: 1200 })])
 
-    expect(trajetsDuBien('b1', ancres, court)[1]!.depasse).toBe(false)
-    expect(trajetsDuBien('b1', ancres, long)[1]!.depasse).toBe(true)
+    expect(propertyCommutes('b1', ancres, court)[1]!.depasse).toBe(false)
+    expect(propertyCommutes('b1', ancres, long)[1]!.depasse).toBe(true)
   })
 
   it('ne dépasse jamais quand aucune limite n’est fixée', () => {
-    const index = indexer([trajet({ duree_s: 99999 })])
-    expect(trajetsDuBien('b1', ancres, index)[0]!.depasse).toBe(false)
+    const index = indexCommutes([trajet({ duree_s: 99999 })])
+    expect(propertyCommutes('b1', ancres, index)[0]!.depasse).toBe(false)
   })
 })
 
-describe('trajetLePlusLong', () => {
+describe('longestCommute', () => {
   const ancres = [ancre(), ancre({ id: 'gare', label: 'Gare', mode: 'velo' })]
 
   it('retient le trajet le plus long', () => {
-    const index = indexer([
+    const index = indexCommutes([
       trajet({ duree_s: 900 }),
       trajet({ id: 't2', ancre: 'gare', mode: 'velo', duree_s: 1500 })
     ])
-    expect(trajetLePlusLong(trajetsDuBien('b1', ancres, index))?.ancre.id).toBe('gare')
+    expect(longestCommute(propertyCommutes('b1', ancres, index))?.ancre.id).toBe('gare')
   })
 
   it('ignore les trajets non calculés', () => {
-    const index = indexer([trajet({ duree_s: 900 })])
-    expect(trajetLePlusLong(trajetsDuBien('b1', ancres, index))?.ancre.id).toBe('boulot')
+    const index = indexCommutes([trajet({ duree_s: 900 })])
+    expect(longestCommute(propertyCommutes('b1', ancres, index))?.ancre.id).toBe('boulot')
   })
 
   it('rend null quand rien n’est calculé', () => {
-    expect(trajetLePlusLong(trajetsDuBien('b1', ancres, new Map()))).toBeNull()
+    expect(longestCommute(propertyCommutes('b1', ancres, new Map()))).toBeNull()
   })
 })
 
-describe('trajetPourAncre', () => {
+describe('commuteForAnchor', () => {
   const ancres = [ancre(), ancre({ id: 'gare', label: 'Gare', mode: 'transport' })]
 
   it('rend le trajet de l’ancre demandée, pas le plus long', () => {
-    const index = indexer([
+    const index = indexCommutes([
       trajet({ duree_s: 900 }),
       trajet({ id: 't2', ancre: 'gare', mode: 'transport', duree_s: 2400 })
     ])
-    const liste = trajetsDuBien('b1', ancres, index)
+    const liste = propertyCommutes('b1', ancres, index)
 
-    expect(trajetPourAncre(liste, 'boulot')?.duree_s).toBe(900)
-    expect(trajetPourAncre(liste, 'gare')?.duree_s).toBe(2400)
+    expect(commuteForAnchor(liste, 'boulot')?.duree_s).toBe(900)
+    expect(commuteForAnchor(liste, 'gare')?.duree_s).toBe(2400)
   })
 
   it('rend null quand l’ancre n’est pas calculée ou n’existe pas', () => {
-    const liste = trajetsDuBien('b1', ancres, indexer([trajet({ duree_s: 900 })]))
+    const liste = propertyCommutes('b1', ancres, indexCommutes([trajet({ duree_s: 900 })]))
 
-    expect(trajetPourAncre(liste, 'gare')).toBeNull()
-    expect(trajetPourAncre(liste, 'inconnue')).toBeNull()
+    expect(commuteForAnchor(liste, 'gare')).toBeNull()
+    expect(commuteForAnchor(liste, 'inconnue')).toBeNull()
   })
 })
 
-describe('trajetRetenu', () => {
+describe('selectedCommute', () => {
   const ancres = [ancre(), ancre({ id: 'gare', label: 'Gare', mode: 'transport' })]
-  const index = indexer([
+  const index = indexCommutes([
     trajet({ duree_s: 900 }),
     trajet({ id: 't2', ancre: 'gare', mode: 'transport', duree_s: 2400 })
   ])
-  const liste = trajetsDuBien('b1', ancres, index)
+  const liste = propertyCommutes('b1', ancres, index)
 
   it('retombe sur le plus long sans ancre choisie', () => {
-    expect(trajetRetenu(liste, null)?.ancre.id).toBe('gare')
+    expect(selectedCommute(liste, null)?.ancre.id).toBe('gare')
   })
 
   it('respecte l’ancre choisie même si elle n’est pas la plus longue', () => {
-    expect(trajetRetenu(liste, 'boulot')?.ancre.id).toBe('boulot')
+    expect(selectedCommute(liste, 'boulot')?.ancre.id).toBe('boulot')
   })
 
   it('rend null plutôt que de retomber sur une autre ancre', () => {
-    const partiel = trajetsDuBien('b1', ancres, indexer([trajet({ duree_s: 900 })]))
-    expect(trajetRetenu(partiel, 'gare')).toBeNull()
+    const partiel = propertyCommutes('b1', ancres, indexCommutes([trajet({ duree_s: 900 })]))
+    expect(selectedCommute(partiel, 'gare')).toBeNull()
   })
 })
 
-describe('nbDepassements', () => {
+describe('exceededCount', () => {
   it('compte les ancres hors limite', () => {
     const ancres = [
       ancre({ maxMinutes: 10 }),
       ancre({ id: 'gare', mode: 'velo', maxMinutes: 30 })
     ]
-    const index = indexer([
+    const index = indexCommutes([
       trajet({ duree_s: 900 }),
       trajet({ id: 't2', ancre: 'gare', mode: 'velo', duree_s: 600 })
     ])
-    expect(nbDepassements(trajetsDuBien('b1', ancres, index))).toBe(1)
+    expect(exceededCount(propertyCommutes('b1', ancres, index))).toBe(1)
   })
 })
 
-describe('cleTrajet', () => {
+describe('commuteKey', () => {
   it('distingue bien, ancre et mode', () => {
-    expect(cleTrajet('b1', 'boulot', 'velo')).not.toBe(cleTrajet('b1', 'boulot', 'marche'))
-    expect(cleTrajet('b1', 'boulot', 'velo')).not.toBe(cleTrajet('b2', 'boulot', 'velo'))
+    expect(commuteKey('b1', 'boulot', 'velo')).not.toBe(commuteKey('b1', 'boulot', 'marche'))
+    expect(commuteKey('b1', 'boulot', 'velo')).not.toBe(commuteKey('b2', 'boulot', 'velo'))
   })
 })
 

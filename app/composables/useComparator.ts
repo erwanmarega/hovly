@@ -4,7 +4,7 @@ import type { OptionsCout } from '~/composables/useActualCost'
 import { actualCost } from '~/composables/useActualCost'
 import { isPurchase } from '~/composables/useProperties'
 import { pricePerSqm } from '~/composables/useMarket'
-import { cleTrajet, formatDuree } from '~/composables/useTrajets'
+import { commuteKey, formatDuration } from '~/composables/useCommutes'
 
 export const MAX_COMPARISON = 4
 
@@ -86,8 +86,8 @@ export function compare(
       `trajet-${ancre.id}`,
       ancre.label,
       'min',
-      properties.map((b) => trajets!.index.get(cleTrajet(b.id, ancre.id, ancre.mode))?.duree_s ?? null),
-      (v) => formatDuree(v)
+      properties.map((b) => trajets!.index.get(commuteKey(b.id, ancre.id, ancre.mode))?.duree_s ?? null),
+      (v) => formatDuration(v)
     )
   )
 

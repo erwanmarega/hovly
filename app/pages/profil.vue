@@ -156,12 +156,12 @@ const apercu = computed(() => {
 })
 
 const {
-  calcul: calculTrajets,
-  erreur: erreurTrajets,
-  calculer: calculerTrajets,
+  calculating: calculTrajets,
+  error: erreurTrajets,
+  calculate: calculerTrajets,
   calculable: trajetsCalculables,
-  chargerEtat: chargerEtatTrajets
-} = useTrajets()
+  loadModesState: chargerEtatTrajets
+} = useCommutes()
 
 onMounted(chargerEtatTrajets)
 

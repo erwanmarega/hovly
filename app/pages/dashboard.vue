@@ -60,7 +60,7 @@ const triAsc = ref(false);
 const { preferences } = usePreferences();
 
 const { calculate: coutDe } = useActualCost();
-const { retenu: trajetDe, refresh: refreshTrajets } = useTrajets();
+const { selected: trajetDe, refresh: refreshTrajets } = useCommutes();
 useAsyncData("trajets-dashboard", () => refreshTrajets(), { server: false });
 
 const trajetSec = (b: Property) =>
