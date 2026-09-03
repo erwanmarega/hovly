@@ -44,12 +44,12 @@ export function saleFromFeature(f: any, typeLocal: TypeLocalDvf = 'Appartement')
   // On ne compare qu'au même type de bien que celui suivi (maison ou appartement).
   if (p.type_local !== typeLocal) return null
 
-  const valeur = dvfNumber(p.valeur_fonciere)
+  const value = dvfNumber(p.valeur_fonciere)
   // Le millésime a corrigé la coquille historique du nom de champ.
   const surface = dvfNumber(p.surface_reelle_bati ?? p.surface_relle_batiment)
-  if (!valeur || !surface || surface < 9 || surface > 500) return null
+  if (!value || !surface || surface < 9 || surface > 500) return null
 
-  const prixM2 = Math.round(valeur / surface)
+  const prixM2 = Math.round(value / surface)
   if (prixM2 < M2_MIN || prixM2 > M2_MAX) return null
 
   const date = typeof p.date_mutation === 'string' ? p.date_mutation : ''

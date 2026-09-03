@@ -7,19 +7,19 @@ export const MAX_ANCHORS = 5
 const cleanId = (v: unknown) =>
   typeof v === 'string' ? v.replace(/[^a-z0-9-]/gi, '').slice(0, 32) : ''
 
-function validAnchors(brut: unknown): Anchor[] {
-  if (!Array.isArray(brut)) return []
+function validAnchors(raw: unknown): Anchor[] {
+  if (!Array.isArray(raw)) return []
 
-  const vues = new Set<string>()
+  const seen = new Set<string>()
   const out: Anchor[] = []
 
-  for (const a of brut) {
+  for (const a of raw) {
     const id = cleanId(a?.id)
-    if (!id || vues.has(id)) continue
+    if (!id || seen.has(id)) continue
     if (typeof a.lat !== 'number' || typeof a.lon !== 'number') continue
     if (!Number.isFinite(a.lat) || !Number.isFinite(a.lon)) continue
 
-    vues.add(id)
+    seen.add(id)
     out.push({
       id,
       label: String(a.label ?? '').slice(0, 40) || 'Ancre',
@@ -38,30 +38,30 @@ function validAnchors(brut: unknown): Anchor[] {
   return out
 }
 
-function normalize(brut: unknown): Preferences {
-  const p = (brut ?? {}) as Partial<Preferences>
-  const nombre = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null)
+function normalize(raw: unknown): Preferences {
+  const p = (raw ?? {}) as Partial<Preferences>
+  const number = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null)
 
   return {
-    budgetMax: nombre(p.budgetMax),
-    surfaceMin: nombre(p.surfaceMin),
-    piecesMin: nombre(p.piecesMin),
+    budgetMax: number(p.budgetMax),
+    surfaceMin: number(p.surfaceMin),
+    piecesMin: number(p.piecesMin),
     dpeMin: p.dpeMin ?? null,
     poidsPrix: p.poidsPrix ?? DEFAULT_PREFERENCES.poidsPrix,
     poidsDpe: p.poidsDpe ?? DEFAULT_PREFERENCES.poidsDpe,
     poidsCharges: p.poidsCharges ?? DEFAULT_PREFERENCES.poidsCharges,
-    prixKwh: nombre(p.prixKwh),
+    prixKwh: number(p.prixKwh),
     chauffageDansCharges: p.chauffageDansCharges === true,
-    budgetAchatMax: nombre(p.budgetAchatMax),
-    apport: nombre(p.apport),
-    tauxEmprunt: nombre(p.tauxEmprunt),
-    dureeEmpruntAns: nombre(p.dureeEmpruntAns),
+    budgetAchatMax: number(p.budgetAchatMax),
+    apport: number(p.apport),
+    tauxEmprunt: number(p.tauxEmprunt),
+    dureeEmpruntAns: number(p.dureeEmpruntAns),
     ancres: validAnchors(p.ancres)
   }
 }
 
-export function shouldSync(distant: Preferences, attendu: string): boolean {
-  return !attendu || JSON.stringify(distant) === attendu
+export function shouldSync(remote: Preferences, expected: string): boolean {
+  return !expected || JSON.stringify(remote) === expected
 }
 
 export function usePreferences() {
@@ -70,14 +70,14 @@ export function usePreferences() {
 
   const preferences = useState<Preferences>('preferences', () => ({ ...DEFAULT_PREFERENCES }))
   const saving = useState('preferences-saving', () => false)
-  const attendu = useState('preferences-attendu', () => '')
+  const expected = useState('preferences-attendu', () => '')
   const hydrated = useState('preferences-hydratees', () => false)
 
   watchEffect(() => {
-    const distant = normalize(user.value?.user_metadata?.preferences)
-    if (!shouldSync(distant, attendu.value)) return
-    attendu.value = ''
-    preferences.value = distant
+    const remote = normalize(user.value?.user_metadata?.preferences)
+    if (!shouldSync(remote, expected.value)) return
+    expected.value = ''
+    preferences.value = remote
   })
 
   async function hydrate() {
@@ -87,26 +87,26 @@ export function usePreferences() {
     const { data, error } = await supabase.auth.getUser()
     if (error || !data.user) return
 
-    const distant = normalize(data.user.user_metadata?.preferences)
-    if (!shouldSync(distant, attendu.value)) return
+    const remote = normalize(data.user.user_metadata?.preferences)
+    if (!shouldSync(remote, expected.value)) return
 
-    attendu.value = JSON.stringify(distant)
-    preferences.value = distant
+    expected.value = JSON.stringify(remote)
+    preferences.value = remote
   }
 
   if (import.meta.client && user.value) hydrate()
 
   const customized = computed(() => isCustomized(preferences.value))
 
-  async function save(valeurs: Preferences): Promise<boolean> {
+  async function save(values: Preferences): Promise<boolean> {
     saving.value = true
-    const propres = normalize(valeurs)
-    const { error } = await supabase.auth.updateUser({ data: { preferences: propres } })
+    const clean = normalize(values)
+    const { error } = await supabase.auth.updateUser({ data: { preferences: clean } })
     saving.value = false
     if (error) return false
 
-    attendu.value = JSON.stringify(propres)
-    preferences.value = propres
+    expected.value = JSON.stringify(clean)
+    preferences.value = clean
 
     await supabase.auth.refreshSession()
     return true

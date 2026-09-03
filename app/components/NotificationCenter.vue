@@ -1,12 +1,12 @@
 <script setup lang="ts">
 const MAX_PREVIEW = 5
 
-const { alertes, unread: nonVues, refresh, markAllRead: marquerLues } = useAlerts()
+const { alerts, unread, refresh, markAllRead } = useAlerts()
 
 const open = ref(false)
 const loading = ref(false)
 
-const recentes = computed(() => alertes.value.slice(0, MAX_PREVIEW))
+const recent = computed(() => alerts.value.slice(0, MAX_PREVIEW))
 
 async function load() {
   loading.value = true
@@ -27,7 +27,7 @@ function onKey(e: KeyboardEvent) {
 }
 
 function onSwMessage(e: MessageEvent) {
-  if (e.data?.type === 'PUSH_ALERTE') load()
+  if (e.data?.type === 'PUSH_ALERT') load()
 }
 
 onMounted(() => {
@@ -52,7 +52,7 @@ onBeforeUnmount(() => {
     >
       <svg
         class="cloche size-4"
-        :class="nonVues > 0 && 'sonne'"
+        :class="unread > 0 && 'sonne'"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -63,10 +63,10 @@ onBeforeUnmount(() => {
         <path d="M13.7 21a2 2 0 0 1-3.4 0" />
       </svg>
       <span
-        v-if="nonVues > 0"
+        v-if="unread > 0"
         class="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-coral-soft px-1 text-[10px] font-bold text-white ring-2 ring-white"
       >
-        {{ nonVues > 9 ? '9+' : nonVues }}
+        {{ unread > 9 ? "9+" : unread }}
       </span>
     </button>
 
@@ -83,11 +83,11 @@ onBeforeUnmount(() => {
       >
         <div class="flex items-center gap-2 border-b border-hairline-soft px-3 py-2.5">
           <p class="text-sm font-semibold">Notifications</p>
-          <span v-if="nonVues > 0" class="text-xs text-stone">{{ nonVues }} non lue{{ nonVues > 1 ? 's' : '' }}</span>
+          <span v-if="unread > 0" class="text-xs text-stone">{{ unread }} non lue{{ unread > 1 ? "s" : "" }}</span>
           <button
-            v-if="nonVues > 0"
+            v-if="unread > 0"
             class="ml-auto text-xs font-medium text-blue hover:underline"
-            @click="marquerLues"
+            @click="markAllRead"
           >
             Tout marquer lu
           </button>
@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
 
         <PushSettings variant="line" />
 
-        <div v-if="loading && !alertes.length" class="space-y-2 p-3">
+        <div v-if="loading && !alerts.length" class="space-y-2 p-3">
           <span
             v-for="n in 3"
             :key="n"
@@ -104,12 +104,12 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <p v-else-if="!recentes.length" class="px-3 py-8 text-center text-sm text-stone">
+        <p v-else-if="!recent.length" class="px-3 py-8 text-center text-sm text-stone">
           Aucune alerte pour l’instant.
         </p>
 
         <ul v-else class="max-h-[22rem] space-y-1.5 overflow-y-auto p-2">
-          <li v-for="a in recentes" :key="a.id">
+          <li v-for="a in recent" :key="a.id">
             <AlertRow :alert="a" compact @click="open = false" />
           </li>
         </ul>

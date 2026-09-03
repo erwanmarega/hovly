@@ -19,35 +19,35 @@ export interface PushPayload {
 let configured = false
 
 export function pushAvailable(): boolean {
-  const publique = process.env.VAPID_PUBLIC_KEY
-  const privee = process.env.VAPID_PRIVATE_KEY
-  if (!publique || !privee) return false
+  const publicKey = process.env.VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+  if (!publicKey || !privateKey) return false
 
   if (!configured) {
     const subject = process.env.VAPID_SUBJECT || 'mailto:contact@hovly.app'
-    webpush.setVapidDetails(subject, publique, privee)
+    webpush.setVapidDetails(subject, publicKey, privateKey)
     configured = true
   }
   return true
 }
 
-export function alertPayload(alerte: CreatedAlert): PushPayload {
-  if (alerte.type === 'baisse_prix') {
-    const ancien = formatPrice(alerte.ancien_prix)
-    const nouveau = formatPrice(alerte.nouveau_prix)
+export function alertPayload(alert: CreatedAlert): PushPayload {
+  if (alert.type === 'baisse_prix') {
+    const previous = formatPrice(alert.ancien_prix)
+    const updated = formatPrice(alert.nouveau_prix)
     return {
-      titre: `Baisse de prix — ${alerte.titre}`,
-      corps: ancien && nouveau ? `${ancien} → ${nouveau}` : 'Le prix a baissé.',
-      url: `/bien/${alerte.bien_id}`,
-      tag: `bien-${alerte.bien_id}`
+      titre: `Baisse de prix — ${alert.titre}`,
+      corps: previous && updated ? `${previous} → ${updated}` : 'Le prix a baissé.',
+      url: `/bien/${alert.bien_id}`,
+      tag: `bien-${alert.bien_id}`
     }
   }
 
   return {
-    titre: `Annonce supprimée — ${alerte.titre}`,
+    titre: `Annonce supprimée — ${alert.titre}`,
     corps: 'Le bien est probablement loué ou vendu. Il reste consultable dans Hovly.',
-    url: `/bien/${alerte.bien_id}`,
-    tag: `bien-${alerte.bien_id}`
+    url: `/bien/${alert.bien_id}`,
+    tag: `bien-${alert.bien_id}`
   }
 }
 
@@ -88,13 +88,13 @@ export async function sendPush(
     } catch (e: unknown) {
       const err = e as { statusCode?: number; body?: string; message?: string }
       result.failed++
-      const raison = `${err.statusCode ?? ''} ${err.body || err.message || 'erreur inconnue'}`.trim()
-      if (!result.reasons.includes(raison)) result.reasons.push(raison)
+      const reason = `${err.statusCode ?? ''} ${err.body || err.message || 'erreur inconnue'}`.trim()
+      if (!result.reasons.includes(reason)) result.reasons.push(reason)
 
       if (err.statusCode === 404 || err.statusCode === 410) {
         await client.from('push_abonnements').delete().eq('id', a.id)
       } else {
-        await client.from('push_abonnements').update({ derniere_erreur: raison }).eq('id', a.id)
+        await client.from('push_abonnements').update({ derniere_erreur: reason }).eq('id', a.id)
       }
     }
   }
@@ -105,7 +105,7 @@ export async function sendPush(
 export async function sendAlertPush(
   client: any,
   userId: string,
-  alerte: CreatedAlert
+  alert: CreatedAlert
 ): Promise<SendSummary> {
-  return sendPush(client, userId, alertPayload(alerte))
+  return sendPush(client, userId, alertPayload(alert))
 }

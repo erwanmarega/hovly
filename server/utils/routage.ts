@@ -30,39 +30,39 @@ function numberOrNull(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null
 }
 
-export function batches<T>(liste: T[], taille = MAX_ORIGINS): T[][] {
+export function batches<T>(list: T[], size = MAX_ORIGINS): T[][] {
   const out: T[][] = []
-  for (let i = 0; i < liste.length; i += taille) out.push(liste.slice(i, i + taille))
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size))
   return out
 }
 
 async function orsMatrix(
-  origines: Point[],
-  ancre: Point,
+  origins: Point[],
+  anchor: Point,
   mode: Exclude<TravelMode, 'transport'>
 ): Promise<Duration[]> {
-  const cle = process.env.ORS_API_KEY
-  if (!cle) throw createError({ statusCode: 503, statusMessage: 'ORS_API_KEY absente' })
+  const apiKey = process.env.ORS_API_KEY
+  if (!apiKey) throw createError({ statusCode: 503, statusMessage: 'ORS_API_KEY absente' })
 
-  const locations = [...origines.map((o) => [o.lon, o.lat]), [ancre.lon, ancre.lat]]
+  const locations = [...origins.map((o) => [o.lon, o.lat]), [anchor.lon, anchor.lat]]
 
-  const reponse = await $fetch<{ durations?: number[][]; distances?: number[][] }>(
+  const response = await $fetch<{ durations?: number[][]; distances?: number[][] }>(
     `https://api.openrouteservice.org/v2/matrix/${ORS_PROFILES[mode]}`,
     {
       method: 'POST',
-      headers: { Authorization: cle, 'Content-Type': 'application/json' },
+      headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
       body: {
         locations,
-        sources: origines.map((_, i) => i),
-        destinations: [origines.length],
+        sources: origins.map((_, i) => i),
+        destinations: [origins.length],
         metrics: ['duration', 'distance']
       }
     }
   )
 
-  return origines.map((_, i) => ({
-    duree_s: numberOrNull(reponse.durations?.[i]?.[0]),
-    distance_m: numberOrNull(reponse.distances?.[i]?.[0])
+  return origins.map((_, i) => ({
+    duree_s: numberOrNull(response.durations?.[i]?.[0]),
+    distance_m: numberOrNull(response.distances?.[i]?.[0])
   }))
 }
 
@@ -83,19 +83,19 @@ function usesTransit(legs?: { mode?: string }[]): boolean {
   return legs.some((l) => !!l.mode && !NON_TRANSIT_MODES.has(l.mode))
 }
 
-export function durationFromItineraries(reponse: TransitousResponse): number | null {
-  const utiles = (reponse.itineraries ?? []).filter(
+export function durationFromItineraries(response: TransitousResponse): number | null {
+  const valid = (response.itineraries ?? []).filter(
     (i) => typeof i.duration === 'number' && i.duration > 0 && usesTransit(i.legs)
   )
-  if (!utiles.length) return null
-  return Math.round(Math.min(...utiles.map((i) => i.duration!)))
+  if (!valid.length) return null
+  return Math.round(Math.min(...valid.map((i) => i.duration!)))
 }
 
 function parisOffset(d: Date): string {
-  const nom = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, timeZoneName: 'longOffset' })
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, timeZoneName: 'longOffset' })
     .formatToParts(d)
     .find((p) => p.type === 'timeZoneName')?.value
-  const offset = nom?.replace('GMT', '') ?? ''
+  const offset = name?.replace('GMT', '') ?? ''
   return offset || '+00:00'
 }
 
@@ -108,63 +108,63 @@ function parisDay(d: Date) {
     weekday: 'short'
   }).formatToParts(d)
 
-  const champ = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  const JOURS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const field = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return {
-    annee: Number(champ('year')),
-    mois: Number(champ('month')),
-    jour: Number(champ('day')),
-    semaine: JOURS.indexOf(champ('weekday'))
+    year: Number(field('year')),
+    month: Number(field('month')),
+    day: Number(field('day')),
+    weekday: DAYS.indexOf(field('weekday'))
   }
 }
 
-export function nextTuesday830(maintenant = new Date()): string {
-  const { annee, mois, jour, semaine } = parisDay(maintenant)
-  const versMardi = (2 - semaine + 7) % 7 || 7
+export function nextTuesday830(now = new Date()): string {
+  const { year, month, day, weekday } = parisDay(now)
+  const toTuesday = (2 - weekday + 7) % 7 || 7
 
-  const cible = new Date(Date.UTC(annee, mois - 1, jour + versMardi, 12))
+  const target = new Date(Date.UTC(year, month - 1, day + toTuesday, 12))
 
   const p = (n: number) => String(n).padStart(2, '0')
-  const date = `${cible.getUTCFullYear()}-${p(cible.getUTCMonth() + 1)}-${p(cible.getUTCDate())}`
-  return `${date}T08:30:00${parisOffset(cible)}`
+  const date = `${target.getUTCFullYear()}-${p(target.getUTCMonth() + 1)}-${p(target.getUTCDate())}`
+  return `${date}T08:30:00${parisOffset(target)}`
 }
 
-async function transitousItinerary(origine: Point, ancre: Point, time: string): Promise<Duration> {
+async function transitousItinerary(origin: Point, anchor: Point, time: string): Promise<Duration> {
   const url = new URL(TRANSITOUS)
-  url.searchParams.set('fromPlace', `${origine.lat},${origine.lon}`)
-  url.searchParams.set('toPlace', `${ancre.lat},${ancre.lon}`)
+  url.searchParams.set('fromPlace', `${origin.lat},${origin.lon}`)
+  url.searchParams.set('toPlace', `${anchor.lat},${anchor.lon}`)
   url.searchParams.set('time', time)
   url.searchParams.set('arriveBy', 'false')
   url.searchParams.set('numItineraries', '2')
 
   try {
-    const reponse = await $fetch<TransitousResponse>(url.toString(), {
+    const response = await $fetch<TransitousResponse>(url.toString(), {
       headers: { 'User-Agent': UA_TRANSITOUS }
     })
-    return { duree_s: durationFromItineraries(reponse), distance_m: null }
+    return { duree_s: durationFromItineraries(response), distance_m: null }
   } catch {
     return { duree_s: null, distance_m: null }
   }
 }
 
-async function transitousItineraries(origines: Point[], ancre: Point): Promise<Duration[]> {
+async function transitousItineraries(origins: Point[], anchor: Point): Promise<Duration[]> {
   const time = nextTuesday830()
-  const resultats: Duration[] = []
+  const results: Duration[] = []
 
-  for (const lot of batches(origines, TRANSIT_CONCURRENCY)) {
-    resultats.push(...(await Promise.all(lot.map((o) => transitousItinerary(o, ancre, time)))))
+  for (const batch of batches(origins, TRANSIT_CONCURRENCY)) {
+    results.push(...(await Promise.all(batch.map((o) => transitousItinerary(o, anchor, time)))))
   }
 
-  return resultats
+  return results
 }
 
 export async function durationsToAnchor(
-  origines: Point[],
-  ancre: Point,
+  origins: Point[],
+  anchor: Point,
   mode: TravelMode
 ): Promise<Duration[]> {
-  if (origines.length === 0) return []
-  if (mode === 'transport') return transitousItineraries(origines, ancre)
-  return orsMatrix(origines, ancre, mode)
+  if (origins.length === 0) return []
+  if (mode === 'transport') return transitousItineraries(origins, anchor)
+  return orsMatrix(origins, anchor, mode)
 }

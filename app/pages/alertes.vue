@@ -3,7 +3,7 @@ import type { Alert } from "~/types";
 
 useHead({ title: "Alertes — Hovly" });
 
-const { alertes, unread, refresh, markAllRead, checkNow } =
+const { alerts, unread, refresh, markAllRead, checkNow } =
   useAlerts();
 
 const { pending } = useAsyncData("alertes", () => refresh(), { server: false });
@@ -22,27 +22,27 @@ const checkMsg = ref("");
 const checkErr = ref(false);
 
 const stats = computed(() => {
-  const drops = alertes.value.filter((a) => a.type === "baisse_prix");
+  const drops = alerts.value.filter((a) => a.type === "baisse_prix");
   return {
-    total: alertes.value.length,
+    total: alerts.value.length,
     unread: unread.value,
     drops: drops.length,
-    removed: alertes.value.filter((a) => a.type === "annonce_supprimee")
+    removed: alerts.value.filter((a) => a.type === "annonce_supprimee")
       .length,
   };
 });
 
 const counts = computed(() => ({
-  all: alertes.value.length,
+  all: alerts.value.length,
   unread: unread.value,
   baisse_prix: stats.value.drops,
   annonce_supprimee: stats.value.removed,
 }));
 
 const filtered = computed(() => {
-  if (filter.value === "all") return alertes.value;
-  if (filter.value === "unread") return alertes.value.filter((a) => !a.vue);
-  return alertes.value.filter((a) => a.type === filter.value);
+  if (filter.value === "all") return alerts.value;
+  if (filter.value === "unread") return alerts.value.filter((a) => !a.vue);
+  return alerts.value.filter((a) => a.type === filter.value);
 });
 
 function dayKey(iso: string) {
@@ -259,7 +259,7 @@ async function runCheck() {
       </div>
 
       <div
-        v-else-if="!alertes.length"
+        v-else-if="!alerts.length"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
         <div

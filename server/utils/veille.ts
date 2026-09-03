@@ -33,8 +33,8 @@ const positiveInteger = (v: unknown): number | null => {
 export function watchFields(body: Record<string, any>): Record<string, unknown> {
   const patch: Record<string, unknown> = {}
 
-  for (const champ of ['prix_max', 'prix_min', 'surface_min', 'pieces_min'] as const) {
-    if (champ in body) patch[champ] = positiveInteger(body[champ])
+  for (const field of ['prix_max', 'prix_min', 'surface_min', 'pieces_min'] as const) {
+    if (field in body) patch[field] = positiveInteger(body[field])
   }
   if ('label' in body) {
     patch.label = String(body.label ?? '').trim().slice(0, 60) || 'Veille'
@@ -84,8 +84,8 @@ function asProperty(a: ListingAd): Property {
  * Écarte ce que l'utilisateur suit déjà : même URL, ou même logement reposté
  * ailleurs (multi-diffusion agence), détecté par `similarity`.
  */
-export function isKnown(a: ListingAd, biens: Property[], urlsVues: Set<string>): boolean {
-  if (urlsVues.has(a.url)) return true
+export function isKnown(a: ListingAd, biens: Property[], seenUrls: Set<string>): boolean {
+  if (seenUrls.has(a.url)) return true
   if (biens.some((b) => b.url_source === a.url)) return true
   if (!hasEnoughSignal(a)) return false
 
@@ -96,18 +96,18 @@ export function isKnown(a: ListingAd, biens: Property[], urlsVues: Set<string>):
 /** Backoff exponentiel : un site qui répond mal n'est pas martelé toutes les heures. */
 export function nextCheck(r: SavedSearch): number {
   const base = Math.max(r.frequence_min, MIN_FREQUENCY_FLOOR)
-  const facteur = 2 ** Math.min(r.echecs_consecutifs, MAX_BACKOFF_FAILURES)
-  return base * facteur
+  const factor = 2 ** Math.min(r.echecs_consecutifs, MAX_BACKOFF_FAILURES)
+  return base * factor
 }
 
-export function needsCheck(r: SavedSearch, maintenant = new Date()): boolean {
+export function needsCheck(r: SavedSearch, now = new Date()): boolean {
   if (!r.active) return false
   if (!r.derniere_verif) return true
 
-  const derniere = new Date(r.derniere_verif).getTime()
-  if (Number.isNaN(derniere)) return true
+  const last = new Date(r.derniere_verif).getTime()
+  if (Number.isNaN(last)) return true
 
-  return maintenant.getTime() - derniere >= nextCheck(r) * 60 * 1000
+  return now.getTime() - last >= nextCheck(r) * 60 * 1000
 }
 
 function row(a: ListingAd, rechercheId: string) {
@@ -132,13 +132,13 @@ function row(a: ListingAd, rechercheId: string) {
  */
 export async function checkSearch(
   client: any,
-  recherche: SavedSearch,
+  search: SavedSearch,
   biens: Property[],
-  maintenant = new Date()
+  now = new Date()
 ): Promise<WatchSummary> {
   const summary: WatchSummary = {
-    recherche_id: recherche.id,
-    label: recherche.label,
+    recherche_id: search.id,
+    label: search.label,
     trouvees: 0,
     filtrees: 0,
     connues: 0,
@@ -146,46 +146,46 @@ export async function checkSearch(
     erreur: null
   }
 
-  let annonces: ListingAd[]
+  let ads: ListingAd[]
   try {
-    annonces = (await scrapeListing(recherche.url)).ads
+    ads = (await scrapeListing(search.url)).ads
   } catch (e: any) {
     summary.erreur = e?.message || e?.statusMessage || 'erreur inconnue'
-    const echecs = recherche.echecs_consecutifs + 1
+    const failures = search.echecs_consecutifs + 1
     await client
       .from('recherches')
       .update({
-        derniere_verif: maintenant.toISOString(),
+        derniere_verif: now.toISOString(),
         derniere_erreur: summary.erreur,
-        echecs_consecutifs: echecs,
-        active: echecs < MAX_FAILURES_BEFORE_PAUSE
+        echecs_consecutifs: failures,
+        active: failures < MAX_FAILURES_BEFORE_PAUSE
       })
-      .eq('id', recherche.id)
+      .eq('id', search.id)
     return summary
   }
 
-  summary.trouvees = annonces.length
+  summary.trouvees = ads.length
 
-  const retenues = annonces.filter((a) => matches(a, recherche))
-  summary.filtrees = annonces.length - retenues.length
+  const kept = ads.filter((a) => matches(a, search))
+  summary.filtrees = ads.length - kept.length
 
   // Une annonce déjà remontée par une autre veille du même utilisateur ne doit
   // pas notifier deux fois.
-  const { data: dejaVues } = await client
+  const { data: alreadySeen } = await client
     .from('recherche_resultats')
     .select('url, recherches!inner(user_id)')
-    .eq('recherches.user_id', recherche.user_id)
+    .eq('recherches.user_id', search.user_id)
 
-  const urlsVues = new Set<string>((dejaVues ?? []).map((r: { url: string }) => r.url))
+  const seenUrls = new Set<string>((alreadySeen ?? []).map((r: { url: string }) => r.url))
 
-  const candidates = retenues.filter((a) => !isKnown(a, biens, urlsVues))
-  summary.connues = retenues.length - candidates.length
+  const candidates = kept.filter((a) => !isKnown(a, biens, seenUrls))
+  summary.connues = kept.length - candidates.length
 
   if (candidates.length) {
     const { data, error } = await client
       .from('recherche_resultats')
       .upsert(
-        candidates.map((a) => row(a, recherche.id)),
+        candidates.map((a) => row(a, search.id)),
         { onConflict: 'recherche_id,url', ignoreDuplicates: true }
       )
       .select()
@@ -197,12 +197,12 @@ export async function checkSearch(
   await client
     .from('recherches')
     .update({
-      derniere_verif: maintenant.toISOString(),
+      derniere_verif: now.toISOString(),
       derniere_erreur: null,
       echecs_consecutifs: 0,
-      site_source: recherche.site_source ?? detecterSource(recherche.url)
+      site_source: search.site_source ?? detecterSource(search.url)
     })
-    .eq('id', recherche.id)
+    .eq('id', search.id)
 
   return summary
 }
@@ -213,13 +213,13 @@ export async function checkSearch(
  * dupliqué dans `biens` au moment de la conversion — rien n'est perdu.
  */
 export async function purgeProcessedResults(client: any): Promise<number> {
-  const seuil = new Date(Date.now() - PURGE_RESULTS_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const threshold = new Date(Date.now() - PURGE_RESULTS_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
   const { data, error } = await client
     .from('recherche_resultats')
     .delete()
     .in('etat', ['garde', 'ignore'])
-    .lt('trouve_le', seuil)
+    .lt('trouve_le', threshold)
     .select('id')
 
   if (error) return 0

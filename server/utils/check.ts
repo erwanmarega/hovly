@@ -9,9 +9,9 @@ export type { CreatedAlert, CheckSummary, SendSummary }
 // Un re-scrape peut produire un prix aberrant (repli regex sur une page mal
 // rendue). Au-delà d'un ratio ×0,5–×2 la variation est considérée suspecte :
 // mieux vaut rater une vraie grosse baisse que persister un prix fantaisiste.
-export function isPricePlausible(ancien: number, nouveau: number): boolean {
-  if (ancien <= 0) return true
-  const ratio = nouveau / ancien
+export function isPricePlausible(previous: number, updated: number): boolean {
+  if (previous <= 0) return true
+  const ratio = updated / previous
   return ratio >= 0.5 && ratio <= 2
 }
 
@@ -47,40 +47,40 @@ export async function checkProperties(client: any, biens: Property[]): Promise<C
       continue
     }
 
-    const newPrix = res.data.prix ?? null
-    if (newPrix == null) continue
+    const newPrice = res.data.prix ?? null
+    if (newPrice == null) continue
 
-    if (!isPricePlausible(bien.prix, newPrix)) {
+    if (!isPricePlausible(bien.prix, newPrice)) {
       console.warn('[check] prix aberrant ignoré', {
         bien_id: bien.id,
-        ancien: bien.prix,
-        nouveau: newPrix
+        previous: bien.prix,
+        updated: newPrice
       })
       continue
     }
 
-    if (newPrix === bien.prix) continue
+    if (newPrice === bien.prix) continue
 
-    await client.from('prix_historique').insert({ bien_id: bien.id, prix: newPrix })
+    await client.from('prix_historique').insert({ bien_id: bien.id, prix: newPrice })
 
-    if (newPrix < bien.prix) {
+    if (newPrice < bien.prix) {
       await client.from('alertes').insert({
         bien_id: bien.id,
         type: 'baisse_prix',
         ancien_prix: bien.prix,
-        nouveau_prix: newPrix
+        nouveau_prix: newPrice
       })
-      await client.from('biens').update({ prix: newPrix }).eq('id', bien.id)
+      await client.from('biens').update({ prix: newPrice }).eq('id', bien.id)
       summary.priceDrops++
       summary.alerts.push({
         bien_id: bien.id,
         type: 'baisse_prix',
         ancien_prix: bien.prix,
-        nouveau_prix: newPrix,
+        nouveau_prix: newPrice,
         titre: bien.titre
       })
-    } else if (newPrix !== bien.prix) {
-      await client.from('biens').update({ prix: newPrix }).eq('id', bien.id)
+    } else if (newPrice !== bien.prix) {
+      await client.from('biens').update({ prix: newPrice }).eq('id', bien.id)
     }
   }
 

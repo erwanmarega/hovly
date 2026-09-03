@@ -15,9 +15,9 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const resume = await checkProperties(service, (biens ?? []) as Property[])
-  const emails = await notify(user.email ?? null, resume)
-  const push = await notifyPush(service, user.id, resume)
+  const summary = await checkProperties(service, (biens ?? []) as Property[])
+  const emails = await notify(user.email ?? null, summary)
+  const push = await notifyPush(service, user.id, summary)
 
-  return { ...resume, emails, push }
+  return { ...summary, emails, push }
 })

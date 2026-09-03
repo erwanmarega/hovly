@@ -27,16 +27,16 @@ export function useInactivity() {
   let active = false
 
   function read(): number {
-    const brut = localStorage.getItem(KEY)
-    const valeur = brut ? Number(brut) : NaN
-    return Number.isFinite(valeur) ? valeur : 0
+    const raw = localStorage.getItem(KEY)
+    const value = raw ? Number(raw) : NaN
+    return Number.isFinite(value) ? value : 0
   }
 
   function mark(force = false) {
-    const maintenant = Date.now()
-    if (!force && maintenant - lastWrite < WRITE_THROTTLE) return
-    lastWrite = maintenant
-    localStorage.setItem(KEY, String(maintenant))
+    const now = Date.now()
+    if (!force && now - lastWrite < WRITE_THROTTLE) return
+    lastWrite = now
+    localStorage.setItem(KEY, String(now))
   }
 
   async function signOut() {

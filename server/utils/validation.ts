@@ -93,21 +93,21 @@ function isIpv4Private(ip: string): boolean {
     return true // adresse malformée : on refuse par prudence
   }
   const [a, b, c, d] = octets as [number, number, number, number]
-  const valeur = ip4(a, b, c, d)
-  return IPV4_BLOCKS.some(([debut, fin]) => valeur >= debut && valeur <= fin)
+  const value = ip4(a, b, c, d)
+  return IPV4_BLOCKS.some(([start, end]) => value >= start && value <= end)
 }
 
 function isIpv6Private(ip: string): boolean {
-  const normalisee = ip.toLowerCase()
-  if (normalisee === '::1' || normalisee === '::') return true
+  const normalized = ip.toLowerCase()
+  if (normalized === '::1' || normalized === '::') return true
   // IPv4 mappée dans une adresse IPv6 (::ffff:a.b.c.d).
-  const mappee = normalisee.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
-  if (mappee) return isIpv4Private(mappee[1]!)
-  const premierGroupe = normalisee.split(':')[0] ?? ''
-  if (normalisee.startsWith('fe8') || normalisee.startsWith('fe9')) return true // link-local fe80::/10
-  if (normalisee.startsWith('fea') || normalisee.startsWith('feb')) return true
-  const valeurGroupe = parseInt(premierGroupe, 16)
-  if (!Number.isNaN(valeurGroupe) && valeurGroupe >= 0xfc00 && valeurGroupe <= 0xfdff) return true // ULA fc00::/7
+  const mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
+  if (mapped) return isIpv4Private(mapped[1]!)
+  const firstGroup = normalized.split(':')[0] ?? ''
+  if (normalized.startsWith('fe8') || normalized.startsWith('fe9')) return true // link-local fe80::/10
+  if (normalized.startsWith('fea') || normalized.startsWith('feb')) return true
+  const groupValue = parseInt(firstGroup, 16)
+  if (!Number.isNaN(groupValue) && groupValue >= 0xfc00 && groupValue <= 0xfdff) return true // ULA fc00::/7
   return false
 }
 
@@ -120,17 +120,17 @@ function isIpv6Private(ip: string): boolean {
  */
 export async function assertPublicHostname(hostname: string): Promise<void> {
   if (isIP(hostname)) {
-    const privee = isIP(hostname) === 4 ? isIpv4Private(hostname) : isIpv6Private(hostname)
-    if (privee) {
+    const isPrivate = isIP(hostname) === 4 ? isIpv4Private(hostname) : isIpv6Private(hostname)
+    if (isPrivate) {
       throw createError({ statusCode: 422, statusMessage: 'Cible interdite' })
     }
     return
   }
 
-  const adresses = await lookup(hostname, { all: true, verbatim: true })
-  for (const { address, family } of adresses) {
-    const privee = family === 4 ? isIpv4Private(address) : isIpv6Private(address)
-    if (privee) {
+  const addresses = await lookup(hostname, { all: true, verbatim: true })
+  for (const { address, family } of addresses) {
+    const isPrivate = family === 4 ? isIpv4Private(address) : isIpv6Private(address)
+    if (isPrivate) {
       throw createError({ statusCode: 422, statusMessage: 'Cible interdite' })
     }
   }
@@ -165,9 +165,9 @@ export async function isPublicHostname(hostname: string): Promise<boolean> {
 /**
  * Nettoie une chaîne de texte libre pour stockage en base.
  */
-export function cleanText(valeur: unknown, maxLongueur: number): string | null {
-  if (valeur == null) return null
-  const texte = String(valeur).trim()
-  if (!texte) return null
-  return texte.slice(0, maxLongueur)
+export function cleanText(value: unknown, maxLength: number): string | null {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text) return null
+  return text.slice(0, maxLength)
 }

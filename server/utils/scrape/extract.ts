@@ -182,17 +182,17 @@ function firstDefined<T>(flat: any[], lire: (n: any) => T | null | undefined): T
   return null
 }
 
-export function toInteger(texte: string | undefined): number | null {
-  if (!texte) return null
-  const clean = texte.replace(/[^\d]/g, '')
+export function toInteger(text: string | undefined): number | null {
+  if (!text) return null
+  const clean = text.replace(/[^\d]/g, '')
   if (!clean) return null
   const n = parseInt(clean, 10)
   return Number.isFinite(n) ? n : null
 }
 
-export function decimal(texte: string | undefined): number | null {
-  if (!texte) return null
-  const clean = texte.replace(/[^\d.,]/g, '').replace(',', '.')
+export function decimal(text: string | undefined): number | null {
+  if (!text) return null
+  const clean = text.replace(/[^\d.,]/g, '').replace(',', '.')
   const n = parseFloat(clean)
   return Number.isFinite(n) ? n : null
 }
@@ -218,22 +218,22 @@ export function normalizedKey(u: string): string {
 }
 
 export function collectPhotos(data: PageData, node: any): string[] {
-  const brut: string[] = []
-  if (Array.isArray(data.ogImages)) brut.push(...data.ogImages)
+  const raw: string[] = []
+  if (Array.isArray(data.ogImages)) raw.push(...data.ogImages)
   if (node?.image) {
     const imgs = Array.isArray(node.image) ? node.image : [node.image]
-    brut.push(...imgs.map((i: any) => (typeof i === 'string' ? i : i?.url ?? i?.contentUrl ?? '')))
+    raw.push(...imgs.map((i: any) => (typeof i === 'string' ? i : i?.url ?? i?.contentUrl ?? '')))
   }
-  if (Array.isArray(data.domImages)) brut.push(...data.domImages)
-  if (Array.isArray(data.scriptImages)) brut.push(...data.scriptImages)
+  if (Array.isArray(data.domImages)) raw.push(...data.domImages)
+  if (Array.isArray(data.scriptImages)) raw.push(...data.scriptImages)
 
-  const vues = new Set<string>()
+  const seen = new Set<string>()
   const out: string[] = []
-  for (const u of brut) {
+  for (const u of raw) {
     if (!isValidImage(u)) continue
-    const cle = normalizedKey(u)
-    if (vues.has(cle)) continue
-    vues.add(cle)
+    const key = normalizedKey(u)
+    if (seen.has(key)) continue
+    seen.add(key)
     out.push(u)
   }
   return out.slice(0, 20)
@@ -333,8 +333,8 @@ export function extractOrpi(estateData: string | undefined): Partial<Property> {
 
 const C21_BASE = 'https://www.century21.fr'
 
-function amountInEuros(texte: string, motif: RegExp): number | null {
-  const m = texte.match(motif)
+function amountInEuros(text: string, pattern: RegExp): number | null {
+  const m = text.match(pattern)
   if (!m?.[1]) return null
   const v = decimal(m[1].replace(/[\s\u00a0\u202f]/g, ''))
   return v == null ? null : Math.round(v)
@@ -344,17 +344,17 @@ export function extractCentury21(data: PageData): Partial<Property> {
   const txt = data.bodyText.replace(/\s+/g, ' ')
   const out: Partial<Property> = {}
 
-  const loyer = amountInEuros(txt, /Loyer de base\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
-  if (loyer != null) {
-    out.prix = loyer * 100
+  const rent = amountInEuros(txt, /Loyer de base\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
+  if (rent != null) {
+    out.prix = rent * 100
   } else {
     // Vente : le prix suit la référence (« Ref : 28123 » puis « 207 000 € »).
     // Le loyer prime : sur une location « Ref : 470 1 760 € par mois », le motif
     // vente capturerait « 1 760 » à tort. La référence est un seul jeton sans
     // espace et le prix exige un groupage strict : sinon la capture pouvait
     // démarrer au milieu d'un nombre et recoller référence + prix.
-    const vente = amountInEuros(txt, /Ref\s*:\s*\d[\d.,\u00a0\u202f]*[ \u00a0\u202f]+(\d{1,3}(?:[ .\u00a0\u202f]\d{3})+|\d+)\s*€/i)
-    if (vente != null) out.prix = vente * 100
+    const sale = amountInEuros(txt, /Ref\s*:\s*\d[\d.,\u00a0\u202f]*[ \u00a0\u202f]+(\d{1,3}(?:[ .\u00a0\u202f]\d{3})+|\d+)\s*€/i)
+    if (sale != null) out.prix = sale * 100
   }
 
   const charges = amountInEuros(txt, /Provision pour charges\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
@@ -395,8 +395,8 @@ export function extract(data: PageData): Partial<Property> {
   const flat = flattenJsonLd(data.jsonLd)
   const txt = data.bodyText
 
-  const nom = firstDefined<string>(flat, (n) => (typeof n?.name === 'string' ? n.name : null))
-  const titre = (data.ogTitle || nom || data.h1 || data.title || '').trim().slice(0, 200)
+  const name = firstDefined<string>(flat, (n) => (typeof n?.name === 'string' ? n.name : null))
+  const titre = (data.ogTitle || name || data.h1 || data.title || '').trim().slice(0, 200)
 
   let prixEuros = jsonLdPrice(flat)
   if (!prixEuros) {

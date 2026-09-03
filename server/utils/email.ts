@@ -9,7 +9,7 @@ export interface SendResult {
 
 export async function sendAlertEmail(
   to: string,
-  alerte: CreatedAlert
+  alert: CreatedAlert
 ): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -21,14 +21,14 @@ export async function sendAlertEmail(
 
   let subject: string
   let html: string
-  if (alerte.type === 'baisse_prix') {
-    subject = `Baisse de prix — ${alerte.titre}`
-    html = `<p>Bonne nouvelle ! Le prix de <strong>${alerte.titre}</strong> a baissé.</p>
-      <p>Ancien prix : <s>${formatPrice(alerte.ancien_prix)}</s><br/>
-      Nouveau prix : <strong>${formatPrice(alerte.nouveau_prix)}</strong></p>`
+  if (alert.type === 'baisse_prix') {
+    subject = `Baisse de prix — ${alert.titre}`
+    html = `<p>Bonne nouvelle ! Le prix de <strong>${alert.titre}</strong> a baissé.</p>
+      <p>Ancien prix : <s>${formatPrice(alert.ancien_prix)}</s><br/>
+      Nouveau prix : <strong>${formatPrice(alert.nouveau_prix)}</strong></p>`
   } else {
-    subject = `Annonce supprimée — ${alerte.titre}`
-    html = `<p>L'annonce <strong>${alerte.titre}</strong> n'est plus disponible (bien probablement loué ou vendu).</p>
+    subject = `Annonce supprimée — ${alert.titre}`
+    html = `<p>L'annonce <strong>${alert.titre}</strong> n'est plus disponible (bien probablement loué ou vendu).</p>
       <p>Le bien reste consultable dans Hovly, filtre « Archivés ».</p>`
   }
 
@@ -79,10 +79,10 @@ export interface WatchEmailRow {
 export async function sendWatchEmail(
   to: string | null,
   label: string,
-  lignes: WatchEmailRow[]
+  rows: WatchEmailRow[]
 ): Promise<SendResult> {
   if (!to) return { envoye: false, raison: 'aucune adresse email' }
-  if (!lignes.length) return { envoye: false, raison: 'aucune nouveauté' }
+  if (!rows.length) return { envoye: false, raison: 'aucune nouveauté' }
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -93,7 +93,7 @@ export async function sendWatchEmail(
   const from = process.env.RESEND_FROM || 'Hovly <onboarding@resend.dev>'
   const site = process.env.SITE_URL || 'https://hovly.app'
 
-  const items = lignes
+  const items = rows
     .map((l) => {
       const details = [
         formatPrice(l.prix),
@@ -107,11 +107,11 @@ export async function sendWatchEmail(
     .join('')
 
   const subject =
-    lignes.length === 1
+    rows.length === 1
       ? `1 nouveau bien — ${label}`
-      : `${lignes.length} nouveaux biens — ${label}`
+      : `${rows.length} nouveaux biens — ${label}`
 
-  const html = `<p>Ta veille <strong>${label}</strong> a trouvé ${lignes.length} annonce(s).</p>
+  const html = `<p>Ta veille <strong>${label}</strong> a trouvé ${rows.length} annonce(s).</p>
       <ul>${items}</ul>
       <p><a href="${site}/veilles">Garder ou ignorer dans Hovly</a></p>`
 
