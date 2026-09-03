@@ -1,4 +1,5 @@
 import type { MarcheQuartier } from '~/types'
+import type { TypeLocalDvf } from '../utils/dvf'
 
 const JOUR_MS = 24 * 3600 * 1000
 const TTL_DONNEES = 30 * JOUR_MS // DVF bouge lentement
@@ -13,9 +14,10 @@ export default defineEventHandler(async (event) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     throw createError({ statusCode: 400, statusMessage: 'Coordonnées invalides' })
   }
+  const typeLocal: TypeLocalDvf = q.type === 'maison' ? 'Maison' : 'Appartement'
 
   const client = serviceDb(event)
-  const cle = cleCache(lat, lon)
+  const cle = cleCache(lat, lon, typeLocal)
 
   const { data: cache } = await client
     .from('marche_quartier')
@@ -29,7 +31,7 @@ export default defineEventHandler(async (event) => {
     if (age < ttl) return { marche: cache.donnees as MarcheQuartier | null }
   }
 
-  const ventes = await ventesProches(lat, lon)
+  const ventes = await ventesProches(lat, lon, typeLocal)
   const marche = statistiquesMarche(ventes)
 
   await client

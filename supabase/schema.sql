@@ -24,6 +24,7 @@ create table if not exists public.biens (
   statut      text not null default 'a_visiter',
   transaction text not null default 'location'
     check (transaction in ('location', 'achat')),
+  type_bien   text check (type_bien in ('maison', 'appartement')),
   note_perso  text,
   actif       boolean not null default true,
   visite_le        timestamptz,

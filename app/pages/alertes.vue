@@ -98,7 +98,6 @@ async function lancerVerif() {
   }
   checking.value = false;
 }
-
 </script>
 
 <template>

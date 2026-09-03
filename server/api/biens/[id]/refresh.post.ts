@@ -16,7 +16,8 @@ const CHAMPS_RAFRAICHIS = [
   'ville',
   'code_postal',
   'photos',
-  'description'
+  'description',
+  'type_bien'
 ] as const
 
 type ChampRafraichi = (typeof CHAMPS_RAFRAICHIS)[number]

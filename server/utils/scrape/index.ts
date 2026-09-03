@@ -10,6 +10,7 @@ import {
 } from './extract'
 import { detecterSource } from './source'
 import { detecterTransaction } from './transaction'
+import { detecterTypeBien } from './type-bien'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
 import { assertHostnamePublique } from '../validation'
@@ -87,6 +88,7 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
   data.url_source = url
   data.site_source = source
   data.transaction = detecterTransaction(url, data.prix ?? null)
+  data.type_bien = detecterTypeBien(data.titre ?? '')
 
   const indisponible =
     status === 404 ||

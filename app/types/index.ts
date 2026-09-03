@@ -2,6 +2,8 @@ export type Statut = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_
 
 export type Transaction = 'location' | 'achat'
 
+export type TypeBien = 'maison' | 'appartement'
+
 // Au-delà de ce prix, une annonce sans transaction connue est traitée comme
 // une vente (repli utilisé par la détection au scraping et par la carte DVF).
 export const SEUIL_PRIX_VENTE_EUROS = 50_000
@@ -90,6 +92,7 @@ export interface Bien {
   description: string | null
   statut: Statut
   transaction: Transaction
+  type_bien: TypeBien | null
   note_perso: string | null
   visite_le: string | null
   compte_rendu: string | null

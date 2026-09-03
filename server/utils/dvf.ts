@@ -32,15 +32,17 @@ export function nombreDvf(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+export type TypeLocalDvf = 'Appartement' | 'Maison'
+
 /** Transforme une feature GeoJSON en vente exploitable, ou null. */
-export function venteDepuisFeature(f: any): VenteMarche | null {
+export function venteDepuisFeature(f: any, typeLocal: TypeLocalDvf = 'Appartement'): VenteMarche | null {
   const p = f?.properties
   if (!p) return null
   // Ventes fermes uniquement : exclut échanges, adjudications, expropriations.
   // Garde le neuf (« Vente en l'état futur d'achèvement »).
   if (typeof p.nature_mutation !== 'string' || !p.nature_mutation.startsWith('Vente')) return null
-  // On ne compare que des appartements, l'écrasante majorité des annonces suivies.
-  if (p.type_local !== 'Appartement') return null
+  // On ne compare qu'au même type de bien que celui suivi (maison ou appartement).
+  if (p.type_local !== typeLocal) return null
 
   const valeur = nombreDvf(p.valeur_fonciere)
   // Le millésime a corrigé la coquille historique du nom de champ.
@@ -54,20 +56,25 @@ export function venteDepuisFeature(f: any): VenteMarche | null {
   return { prixM2, date }
 }
 
-export function extraireVentes(json: any): VenteMarche[] {
+export function extraireVentes(json: any, typeLocal: TypeLocalDvf = 'Appartement'): VenteMarche[] {
   if (!Array.isArray(json?.features)) return []
   return json.features
-    .map(venteDepuisFeature)
+    .map((f: any) => venteDepuisFeature(f, typeLocal))
     .filter((v: VenteMarche | null): v is VenteMarche => v != null)
 }
 
-export async function ventesProches(lat: number, lon: number, dist = DIST_M): Promise<VenteMarche[]> {
+export async function ventesProches(
+  lat: number,
+  lon: number,
+  typeLocal: TypeLocalDvf = 'Appartement',
+  dist = DIST_M
+): Promise<VenteMarche[]> {
   const url = new URL(API)
   url.searchParams.set('lat', String(lat))
   url.searchParams.set('lon', String(lon))
   url.searchParams.set('dist', String(dist))
   url.searchParams.set('nature_mutation', 'Vente')
-  url.searchParams.set('type_local', 'Appartement')
+  url.searchParams.set('type_local', typeLocal)
 
   let json: any
   try {
@@ -77,7 +84,7 @@ export async function ventesProches(lat: number, lon: number, dist = DIST_M): Pr
   } catch {
     return []
   }
-  return extraireVentes(json)
+  return extraireVentes(json, typeLocal)
 }
 
 function percentile(tries: number[], p: number): number {
@@ -118,7 +125,9 @@ export function statistiquesMarche(ventes: VenteMarche[]): MarcheQuartier | null
   }
 }
 
-/** Clé de cache : maille d'environ 1 km, le marché ne varie pas à l'échelle de la rue. */
-export function cleCache(lat: number, lon: number): string {
-  return `${lat.toFixed(2)},${lon.toFixed(2)}`
+/** Clé de cache : maille d'environ 1 km (le marché ne varie pas à l'échelle de
+ * la rue), plus le type — maison et appartement ne partagent pas le même
+ * marché même aux mêmes coordonnées. */
+export function cleCache(lat: number, lon: number, typeLocal: TypeLocalDvf = 'Appartement'): string {
+  return `${lat.toFixed(2)},${lon.toFixed(2)},${typeLocal}`
 }

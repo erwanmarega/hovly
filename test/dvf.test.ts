@@ -73,9 +73,14 @@ describe('venteDepuisFeature', () => {
     expect(venteDepuisFeature(venteOk(250000, 50, { nature_mutation: 'Adjudication' }))).toBeNull()
   })
 
-  it('ignore les maisons et les locaux', () => {
+  it('ignore les maisons et les locaux par défaut (appartement)', () => {
     expect(venteDepuisFeature(venteOk(250000, 50, { type_local: 'Maison' }))).toBeNull()
     expect(venteDepuisFeature(venteOk(250000, 50, { type_local: 'Local industriel. commercial ou assimilé' }))).toBeNull()
+  })
+
+  it('compare au type demandé', () => {
+    expect(venteDepuisFeature(venteOk(250000, 50, { type_local: 'Maison' }), 'Maison')).not.toBeNull()
+    expect(venteDepuisFeature(venteOk(250000, 50), 'Maison')).toBeNull() // appartement, on veut une maison
   })
 
   it('lit l’ancien nom de champ surface_relle_batiment', () => {
@@ -114,6 +119,7 @@ describe('extraireVentes', () => {
       ]
     }
     expect(extraireVentes(json)).toHaveLength(2)
+    expect(extraireVentes(json, 'Maison')).toHaveLength(1)
   })
 
   it('tolère une réponse vide ou malformée', () => {
@@ -127,9 +133,9 @@ describe('ventesProches — requête', () => {
   const reponse = (features: unknown[]) =>
     ({ ok: true, json: async () => ({ features }) }) as unknown as Response
 
-  it('interroge l’API avec lat/lon/dist et les filtres vente + appartement', async () => {
+  it('interroge l’API avec lat/lon/dist et les filtres vente + appartement par défaut', async () => {
     fetchMock.mockResolvedValue(reponse([venteOk(250000, 50)]))
-    const ventes = await ventesProches(48.8566, 2.3522, 500)
+    const ventes = await ventesProches(48.8566, 2.3522, 'Appartement', 500)
 
     const u = new URL(fetchMock.mock.calls[0]![0] as URL)
     expect(u.origin + u.pathname).toBe('https://api.cquest.org/dvf')
@@ -139,6 +145,14 @@ describe('ventesProches — requête', () => {
     expect(u.searchParams.get('nature_mutation')).toBe('Vente')
     expect(u.searchParams.get('type_local')).toBe('Appartement')
     expect(ventes).toEqual([{ prixM2: 5000, date: '2024-03-15' }])
+  })
+
+  it('interroge l’API avec type_local=Maison quand demandé', async () => {
+    fetchMock.mockResolvedValue(reponse([venteOk(300000, 60, { type_local: 'Maison' })]))
+    await ventesProches(48.8566, 2.3522, 'Maison')
+
+    const u = new URL(fetchMock.mock.calls[0]![0] as URL)
+    expect(u.searchParams.get('type_local')).toBe('Maison')
   })
 
   it('renvoie [] si l’API est en erreur ou injoignable', async () => {
@@ -198,9 +212,14 @@ describe('statistiquesMarche', () => {
 })
 
 describe('cleCache', () => {
-  it('arrondit à la maille de 0,01°', () => {
-    expect(cleCache(48.8566, 2.3522)).toBe('48.86,2.35')
-    expect(cleCache(45.764, 4.8357)).toBe('45.76,4.84')
+  it('arrondit à la maille de 0,01° et distingue le type par défaut (appartement)', () => {
+    expect(cleCache(48.8566, 2.3522)).toBe('48.86,2.35,Appartement')
+    expect(cleCache(45.764, 4.8357)).toBe('45.76,4.84,Appartement')
+  })
+
+  it('distingue maison et appartement aux mêmes coordonnées', () => {
+    expect(cleCache(48.8566, 2.3522, 'Maison')).toBe('48.86,2.35,Maison')
+    expect(cleCache(48.8566, 2.3522, 'Maison')).not.toBe(cleCache(48.8566, 2.3522, 'Appartement'))
   })
 })
 

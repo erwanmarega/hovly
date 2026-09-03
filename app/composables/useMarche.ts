@@ -32,7 +32,7 @@ export function useMarche() {
     requetes.value = { ...requetes.value, [bien.id]: true }
     try {
       const { marche } = await $fetch<{ marche: MarcheQuartier | null }>('/api/dvf', {
-        query: { lat: bien.lat, lon: bien.lon }
+        query: { lat: bien.lat, lon: bien.lon, type: bien.type_bien ?? 'appartement' }
       })
       marches.value = { ...marches.value, [bien.id]: marche }
     } catch {
