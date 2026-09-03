@@ -1,12 +1,12 @@
 import type { VisitRating, Property, Checklist } from '~/types'
 
-export interface CritereVisite {
+export interface VisitCriterion {
   id: string
   label: string
   aide: string
 }
 
-export const CRITERES_VISITE: CritereVisite[] = [
+export const VISIT_CRITERIA: VisitCriterion[] = [
   { id: 'luminosite', label: 'Luminosité', aide: 'Orientation, pièces sombres en journée' },
   { id: 'bruit', label: 'Bruit', aide: 'Rue, voisins, fenêtres ouvertes' },
   { id: 'humidite', label: 'Humidité', aide: 'Odeur, traces sur les murs, salle de bain' },
@@ -17,12 +17,12 @@ export const CRITERES_VISITE: CritereVisite[] = [
   { id: 'quartier', label: 'Quartier', aide: 'Commerces, transports, ambiance du soir' }
 ]
 
-export interface QuestionAgent {
+export interface AgentQuestion {
   id: string
   label: string
 }
 
-export const QUESTIONS_AGENT: QuestionAgent[] = [
+export const AGENT_QUESTIONS: AgentQuestion[] = [
   { id: 'charges', label: 'Que couvrent exactement les charges ?' },
   { id: 'travaux', label: 'Des travaux votés ou prévus dans l’immeuble ?' },
   { id: 'chauffage_cout', label: 'Coût réel du chauffage sur une année ?' },
@@ -33,44 +33,44 @@ export const QUESTIONS_AGENT: QuestionAgent[] = [
   { id: 'internet', label: 'Fibre installée dans l’immeuble ?' }
 ]
 
-export const AVIS: { value: VisitRating; label: string; classe: string }[] = [
+export const RATINGS: { value: VisitRating; label: string; classe: string }[] = [
   { value: 'bon', label: 'Bon', classe: 'bg-teal text-[#0a4a42]' },
   { value: 'moyen', label: 'Moyen', classe: 'bg-brand-light text-[#8a6d1c]' },
   { value: 'mauvais', label: 'Mauvais', classe: 'bg-coral text-[#600000]' }
 ]
 
-const POIDS: Record<VisitRating, number> = { bon: 1, moyen: 0.5, mauvais: 0 }
+const WEIGHTS: Record<VisitRating, number> = { bon: 1, moyen: 0.5, mauvais: 0 }
 
-export function normaliserChecklist(brut: Partial<Checklist> | null | undefined): Checklist {
+export function normalizeChecklist(brut: Partial<Checklist> | null | undefined): Checklist {
   return {
     notes: brut?.notes && typeof brut.notes === 'object' ? { ...brut.notes } : {},
     questions: Array.isArray(brut?.questions) ? [...brut.questions] : []
   }
 }
 
-export interface BilanVisite {
+export interface VisitSummary {
   remplis: number
   total: number
   note: number | null
   mauvais: string[]
 }
 
-export function bilanVisite(brut: Partial<Checklist> | null | undefined): BilanVisite {
-  const { notes } = normaliserChecklist(brut)
-  const remplis = CRITERES_VISITE.filter((c) => notes[c.id])
-  const somme = remplis.reduce((s, c) => s + POIDS[notes[c.id]!], 0)
+export function visitSummary(brut: Partial<Checklist> | null | undefined): VisitSummary {
+  const { notes } = normalizeChecklist(brut)
+  const remplis = VISIT_CRITERIA.filter((c) => notes[c.id])
+  const somme = remplis.reduce((s, c) => s + WEIGHTS[notes[c.id]!], 0)
 
   return {
     remplis: remplis.length,
-    total: CRITERES_VISITE.length,
+    total: VISIT_CRITERIA.length,
     note: remplis.length ? Math.round((somme / remplis.length) * 100) : null,
     mauvais: remplis.filter((c) => notes[c.id] === 'mauvais').map((c) => c.label)
   }
 }
 
-export type EtatVisite = 'aucune' | 'a_venir' | 'aujourdhui' | 'passee'
+export type VisitState = 'aucune' | 'a_venir' | 'aujourdhui' | 'passee'
 
-export function etatVisite(bien: Property, maintenant = new Date()): EtatVisite {
+export function visitState(bien: Property, maintenant = new Date()): VisitState {
   if (!bien.visite_le) return 'aucune'
   const d = new Date(bien.visite_le)
   if (Number.isNaN(d.getTime())) return 'aucune'
@@ -78,30 +78,30 @@ export function etatVisite(bien: Property, maintenant = new Date()): EtatVisite 
   return d.toDateString() === maintenant.toDateString() ? 'aujourdhui' : 'a_venir'
 }
 
-export function joursAvant(iso: string, maintenant = new Date()): number {
+export function daysUntil(iso: string, maintenant = new Date()): number {
   const jour = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   return Math.round((jour(new Date(iso)) - jour(maintenant)) / 86_400_000)
 }
 
-const heure = (d: Date) =>
+const time = (d: Date) =>
   d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
-export function libelleVisite(iso: string, maintenant = new Date()): string {
+export function visitLabel(iso: string, maintenant = new Date()): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
 
-  const jours = joursAvant(iso, maintenant)
-  if (jours === 0) return `Aujourd’hui ${heure(d)}`
-  if (jours === 1) return `Demain ${heure(d)}`
-  if (jours === -1) return `Hier ${heure(d)}`
+  const jours = daysUntil(iso, maintenant)
+  if (jours === 0) return `Aujourd’hui ${time(d)}`
+  if (jours === 1) return `Demain ${time(d)}`
+  if (jours === -1) return `Hier ${time(d)}`
   if (jours > 1 && jours <= 7) {
-    return `${d.toLocaleDateString('fr-FR', { weekday: 'long' })} ${heure(d)}`
+    return `${d.toLocaleDateString('fr-FR', { weekday: 'long' })} ${time(d)}`
   }
   if (jours < 0) return `Le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
-  return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${heure(d)}`
+  return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${time(d)}`
 }
 
-export function dateVisiteLongue(iso: string): string {
+export function longVisitDate(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
   return d.toLocaleDateString('fr-FR', {
@@ -113,7 +113,7 @@ export function dateVisiteLongue(iso: string): string {
   })
 }
 
-export function versInputLocal(iso: string | null): string {
+export function toLocalInput(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
@@ -121,13 +121,13 @@ export function versInputLocal(iso: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-export function depuisInputLocal(valeur: string): string | null {
+export function fromLocalInput(valeur: string): string | null {
   if (!valeur) return null
   const d = new Date(valeur)
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
-export function creneauxRapides(maintenant = new Date()): { label: string; iso: string }[] {
+export function quickSlots(maintenant = new Date()): { label: string; iso: string }[] {
   const a = (jours: number, h: number) => {
     const d = new Date(maintenant)
     d.setDate(d.getDate() + jours)
@@ -143,26 +143,26 @@ export function creneauxRapides(maintenant = new Date()): { label: string; iso: 
   ].filter((c) => new Date(c.iso).getTime() > maintenant.getTime())
 }
 
-export function prochainesVisites(biens: Property[], maintenant = new Date()): Property[] {
+export function upcomingVisits(biens: Property[], maintenant = new Date()): Property[] {
   return biens
     .filter((b) => b.actif && b.visite_le && new Date(b.visite_le).getTime() >= maintenant.getTime())
     .sort((a, b) => new Date(a.visite_le!).getTime() - new Date(b.visite_le!).getTime())
 }
 
-export function useVisite() {
+export function useVisit() {
   const { update } = useProperties()
 
-  async function planifier(id: string, iso: string | null) {
+  async function schedule(id: string, iso: string | null) {
     await update(id, iso ? { visite_le: iso, statut: 'planifie' } : { visite_le: null })
   }
 
-  async function enregistrerChecklist(id: string, checklist: Checklist) {
+  async function saveChecklist(id: string, checklist: Checklist) {
     await update(id, { checklist })
   }
 
-  async function enregistrerCompteRendu(id: string, texte: string) {
+  async function saveReport(id: string, texte: string) {
     await update(id, { compte_rendu: texte })
   }
 
-  return { planifier, enregistrerChecklist, enregistrerCompteRendu }
+  return { schedule, saveChecklist, saveReport }
 }

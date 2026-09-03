@@ -151,7 +151,7 @@ const afficherChecklist = computed(() => {
     b.statut === "visite" ||
     b.statut === "planifie" ||
     !!b.compte_rendu ||
-    bilanVisite(b.checklist).remplis > 0
+    visitSummary(b.checklist).remplis > 0
   );
 });
 

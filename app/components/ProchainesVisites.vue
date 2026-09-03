@@ -6,11 +6,11 @@ const props = withDefaults(defineProps<{ biens: Property[]; max?: number }>(), {
 const now = useNow()
 
 const visites = computed(() =>
-  prochainesVisites(props.biens, now.value).slice(0, props.max)
+  upcomingVisits(props.biens, now.value).slice(0, props.max)
 )
 
 const restantes = computed(
-  () => Math.max(0, prochainesVisites(props.biens, now.value).length - props.max)
+  () => Math.max(0, upcomingVisits(props.biens, now.value).length - props.max)
 )
 </script>
 

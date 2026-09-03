@@ -5,11 +5,11 @@ const props = defineProps<{ bien: Property }>()
 
 const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
-const { planifier } = useVisite()
+const { schedule: planifier } = useVisit()
 const { setStatus } = useProperties()
 const now = useNow()
 
-const brouillon = ref(versInputLocal(props.bien.visite_le))
+const brouillon = ref(toLocalInput(props.bien.visite_le))
 const edition = ref(!props.bien.visite_le)
 const occupe = ref(false)
 const erreur = ref('')
@@ -17,15 +17,15 @@ const erreur = ref('')
 watch(
   () => props.bien.visite_le,
   (v) => {
-    brouillon.value = versInputLocal(v)
+    brouillon.value = toLocalInput(v)
     edition.value = !v
   }
 )
 
-const etat = computed(() => etatVisite(props.bien, now.value))
-const creneaux = computed(() => creneauxRapides(now.value))
+const etat = computed(() => visitState(props.bien, now.value))
+const creneaux = computed(() => quickSlots(now.value))
 
-const minimum = computed(() => versInputLocal(now.value.toISOString()))
+const minimum = computed(() => toLocalInput(now.value.toISOString()))
 
 async function enregistrer(iso: string | null) {
   occupe.value = true
@@ -42,7 +42,7 @@ async function enregistrer(iso: string | null) {
 }
 
 function valider() {
-  const iso = depuisInputLocal(brouillon.value)
+  const iso = fromLocalInput(brouillon.value)
   if (!iso) {
     erreur.value = 'Choisis une date et une heure.'
     return
@@ -70,7 +70,7 @@ async function marquerVisite() {
 
     <template v-if="bien.visite_le && !edition">
       <p class="mt-3 text-sm text-ink">
-        {{ dateVisiteLongue(bien.visite_le) }}
+        {{ longVisitDate(bien.visite_le) }}
       </p>
       <p v-if="etat === 'passee'" class="mt-1 text-xs text-stone">
         Visite passée — remplis la checklist tant que c’est frais.

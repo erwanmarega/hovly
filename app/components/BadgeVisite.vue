@@ -17,11 +17,11 @@ const aujourdhui = computed(
   () =>
     !!props.visiteLe &&
     !passee.value &&
-    joursAvant(props.visiteLe, now.value) === 0
+    daysUntil(props.visiteLe, now.value) === 0
 )
 
 const libelle = computed(() =>
-  props.visiteLe ? libelleVisite(props.visiteLe, now.value) : ''
+  props.visiteLe ? visitLabel(props.visiteLe, now.value) : ''
 )
 
 const teinte = computed(() => {
@@ -36,7 +36,7 @@ const teinte = computed(() => {
     v-if="visiteLe"
     class="inline-flex items-center gap-1.5 rounded-full font-semibold"
     :class="[teinte, compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs']"
-    :title="dateVisiteLongue(visiteLe)"
+    :title="longVisitDate(visiteLe)"
   >
     <svg
       class="size-3.5 shrink-0"
