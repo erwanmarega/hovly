@@ -17,8 +17,8 @@ const emit = defineEmits<{
 
 const url = ref(props.initialUrl)
 const label = ref('')
-const prixMax = ref<number | null>(null)
-const prixMin = ref<number | null>(null)
+const priceMax = ref<number | null>(null)
+const priceMin = ref<number | null>(null)
 const surfaceMin = ref<number | null>(null)
 const piecesMin = ref<number | null>(null)
 const frequency = ref(60)
@@ -47,8 +47,8 @@ function submit() {
   emit('submit', {
     url: url.value.trim(),
     label: label.value.trim(),
-    prix_max: toCents(prixMax.value),
-    prix_min: toCents(prixMin.value),
+    prix_max: toCents(priceMax.value),
+    prix_min: toCents(priceMin.value),
     surface_min: surfaceMin.value,
     pieces_min: piecesMin.value,
     frequence_min: frequency.value
@@ -105,7 +105,7 @@ function submit() {
           <label class="block">
             <span class="text-xs text-stone">Prix min (€)</span>
             <input
-              v-model.number="prixMin"
+              v-model.number="priceMin"
               type="number"
               min="0"
               class="mt-1 h-11 w-full rounded-xl border border-hairline-strong bg-white px-3 text-sm tabular-nums outline-none transition focus:border-ink-deep focus:ring-4 focus:ring-ink-deep/10"
@@ -114,7 +114,7 @@ function submit() {
           <label class="block">
             <span class="text-xs text-stone">Prix max (€)</span>
             <input
-              v-model.number="prixMax"
+              v-model.number="priceMax"
               type="number"
               min="0"
               class="mt-1 h-11 w-full rounded-xl border border-hairline-strong bg-white px-3 text-sm tabular-nums outline-none transition focus:border-ink-deep focus:ring-4 focus:ring-ink-deep/10"

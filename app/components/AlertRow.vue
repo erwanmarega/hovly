@@ -11,32 +11,32 @@ const props = withDefaults(
 
 const eur = (c: number | null) => (c == null ? "—" : formatPrice(c));
 
-const heure = (iso: string) =>
+const time = (iso: string) =>
   new Date(iso).toLocaleTimeString("fr-FR", {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-const baisse = computed(() => props.alert.type === "baisse_prix");
+const isDrop = computed(() => props.alert.type === "baisse_prix");
 
-const ecart = computed(() => {
-  const { ancien_prix: ancien, nouveau_prix: nouveau } = props.alert;
-  if (!baisse.value || !ancien || !nouveau) return null;
-  return Math.round(((nouveau - ancien) / ancien) * 100);
+const gapPercent = computed(() => {
+  const { ancien_prix: previous, nouveau_prix: updated } = props.alert;
+  if (!isDrop.value || !previous || !updated) return null;
+  return Math.round(((updated - previous) / previous) * 100);
 });
 
-const libelle = computed(() =>
-  baisse.value ? "Baisse de prix" : "Annonce supprimée"
+const label = computed(() =>
+  isDrop.value ? "Baisse de prix" : "Annonce supprimée"
 );
 
-const { markRead: marquerLue } = useAlerts();
+const { markRead } = useAlerts();
 </script>
 
 <template>
   <NuxtLink
     :to="`/bien/${alert.bien_id}`"
     class="carte flex items-center gap-4 border bg-white"
-    @click="marquerLue(alert.id)"
+    @click="markRead(alert.id)"
     :class="[
       compact ? 'gap-3 rounded-xl p-2.5' : 'rounded-2xl p-4',
       alert.vue
@@ -61,7 +61,7 @@ const { markRead: marquerLue } = useAlerts();
         class="grid place-items-center rounded-xl"
         :class="[
           compact ? 'size-10' : 'size-12',
-          baisse ? 'bg-teal text-[#0a4a42]' : 'bg-coral text-[#600000]',
+          isDrop ? 'bg-teal text-[#0a4a42]' : 'bg-coral text-[#600000]',
         ]"
       >
         <svg
@@ -73,7 +73,7 @@ const { markRead: marquerLue } = useAlerts();
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <template v-if="baisse">
+          <template v-if="isDrop">
             <path d="M22 17 13.5 8.5 8.5 13.5 2 7" />
             <path d="M16 17h6v-6" />
           </template>
@@ -86,7 +86,7 @@ const { markRead: marquerLue } = useAlerts();
       </div>
       <span
         class="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full ring-2 ring-white"
-        :class="baisse ? 'bg-teal text-[#0a4a42]' : 'bg-coral text-[#600000]'"
+        :class="isDrop ? 'bg-teal text-[#0a4a42]' : 'bg-coral text-[#600000]'"
       >
         <svg
           class="size-3"
@@ -97,7 +97,7 @@ const { markRead: marquerLue } = useAlerts();
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <template v-if="baisse">
+          <template v-if="isDrop">
             <path d="M12 5v14" />
             <path d="m19 12-7 7-7-7" />
           </template>
@@ -111,7 +111,7 @@ const { markRead: marquerLue } = useAlerts();
 
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2">
-        <span class="text-sm font-semibold">{{ libelle }}</span>
+        <span class="text-sm font-semibold">{{ label }}</span>
         <span v-if="!alert.vue" class="size-2 shrink-0 rounded-full bg-blue" />
       </div>
       <p class="truncate text-sm text-slate">
@@ -127,24 +127,24 @@ const { markRead: marquerLue } = useAlerts();
         v-if="compact"
         class="mt-0.5 flex items-center gap-1.5 text-xs text-stone"
       >
-        <template v-if="baisse">
+        <template v-if="isDrop">
           <s>{{ eur(alert.ancien_prix) }}</s>
           <span class="font-semibold text-ink">{{
             eur(alert.nouveau_prix)
           }}</span>
           <span
-            v-if="ecart !== null"
+            v-if="gapPercent !== null"
             class="rounded-full bg-teal/50 px-1.5 font-bold text-[#0a4a42]"
-            >{{ ecart }} %</span
+            >{{ gapPercent }} %</span
           >
         </template>
         <span v-else class="font-medium text-[#600000]">Plus disponible</span>
-        · {{ heure(alert.envoyee_le) }}
+        · {{ time(alert.envoyee_le) }}
       </p>
     </div>
 
     <div v-if="!compact" class="shrink-0 text-right">
-      <p v-if="baisse" class="flex items-center justify-end gap-2">
+      <p v-if="isDrop" class="flex items-center justify-end gap-2">
         <s class="text-xs font-normal text-stone">{{
           eur(alert.ancien_prix)
         }}</s>
@@ -152,13 +152,13 @@ const { markRead: marquerLue } = useAlerts();
           eur(alert.nouveau_prix)
         }}</span>
         <span
-          v-if="ecart !== null"
+          v-if="gapPercent !== null"
           class="rounded-full bg-teal/50 px-2 py-0.5 text-[11px] font-bold text-[#0a4a42]"
-          >{{ ecart }} %</span
+          >{{ gapPercent }} %</span
         >
       </p>
       <p v-else class="text-sm font-medium text-[#600000]">Plus disponible</p>
-      <p class="mt-1 text-xs text-stone">{{ heure(alert.envoyee_le) }}</p>
+      <p class="mt-1 text-xs text-stone">{{ time(alert.envoyee_le) }}</p>
     </div>
   </NuxtLink>
 </template>

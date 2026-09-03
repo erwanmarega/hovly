@@ -19,13 +19,13 @@ const pricePerSqm = computed(() => {
   return Math.round(prix / 100 / surface)
 })
 
-const titre = computed(() => props.result.titre?.trim() || 'Annonce sans titre')
+const title = computed(() => props.result.titre?.trim() || 'Annonce sans titre')
 
-const lieu = computed(() =>
+const location = computed(() =>
   [props.result.ville, props.result.code_postal].filter(Boolean).join(' ')
 )
 
-const quand = computed(() =>
+const when = computed(() =>
   new Date(props.result.trouve_le).toLocaleString('fr-FR', {
     day: 'numeric',
     month: 'short',
@@ -42,7 +42,7 @@ const quand = computed(() =>
     <img
       v-if="result.photo"
       :src="result.photo"
-      :alt="titre"
+      :alt="title"
       loading="lazy"
       class="h-28 w-full shrink-0 rounded-xl bg-surface object-cover sm:size-16"
     >
@@ -55,13 +55,13 @@ const quand = computed(() =>
         rel="noopener"
         class="line-clamp-2 font-medium text-ink hover:underline"
       >
-        {{ titre }}
+        {{ title }}
       </a>
 
       <p class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-stone">
         <SourceLogo v-if="source" :source="source" :with-name="false" :size="14" />
-        <span v-if="lieu" class="truncate">{{ lieu }}</span>
-        <span class="shrink-0">· {{ quand }}</span>
+        <span v-if="location" class="truncate">{{ location }}</span>
+        <span class="shrink-0">· {{ when }}</span>
       </p>
 
       <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">

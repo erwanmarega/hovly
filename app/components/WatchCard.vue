@@ -36,9 +36,9 @@ const lastScan = computed(() => {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
   if (minutes < 1) return "à l'instant"
   if (minutes < 60) return `il y a ${minutes} min`
-  const heures = Math.round(minutes / 60)
-  if (heures < 24) return `il y a ${heures} h`
-  return `il y a ${Math.round(heures / 24)} j`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `il y a ${hours} h`
+  return `il y a ${Math.round(hours / 24)} j`
 })
 
 const paused = computed(() => !props.search.active)

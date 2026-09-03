@@ -12,7 +12,7 @@ const MODES: { value: TravelMode; label: string }[] = [
 ]
 
 const label = ref('')
-const adresse = ref('')
+const address = ref('')
 const mode = ref<TravelMode>('transport')
 const maxMinutes = ref<number | null>(null)
 const searching = ref(false)
@@ -26,7 +26,7 @@ const inputCls =
 
 async function add() {
   error.value = ''
-  if (!adresse.value.trim()) {
+  if (!address.value.trim()) {
     error.value = 'Renseigne une adresse.'
     return
   }
@@ -35,13 +35,13 @@ async function add() {
   try {
     const loc = await $fetch<{ lat: number; lon: number; label: string }>(
       '/api/ancres/geocoder',
-      { method: 'POST', body: { adresse: adresse.value } }
+      { method: 'POST', body: { adresse: address.value } }
     )
 
     const anchor: Anchor = {
       id: `a${Date.now().toString(36)}`,
       label: label.value.trim() || loc.label.split(' ').slice(0, 3).join(' ') || 'Ancre',
-      adresse: loc.label || adresse.value.trim(),
+      adresse: loc.label || address.value.trim(),
       lat: loc.lat,
       lon: loc.lon,
       mode: mode.value,
@@ -50,7 +50,7 @@ async function add() {
 
     emit('update:anchors', [...props.anchors, anchor])
     label.value = ''
-    adresse.value = ''
+    address.value = ''
     maxMinutes.value = null
   } catch (e: unknown) {
     error.value = errorMessage(e, 'Adresse introuvable.')
@@ -146,7 +146,7 @@ function changeMode(id: string, m: TravelMode) {
       <div>
         <label :class="labelCls">Adresse</label>
         <input
-          v-model="adresse"
+          v-model="address"
           type="text"
           placeholder="12 rue de Rivoli, Paris"
           :class="inputCls"

@@ -10,16 +10,16 @@ const props = withDefaults(
   { loading: false, error: "", link: null }
 );
 
-const emit = defineEmits<{ create: [titre: string]; close: [] }>();
+const emit = defineEmits<{ create: [title: string]; close: [] }>();
 
-const titre = ref("");
+const title = ref("");
 const copied = ref(false);
 
 watch(
   () => props.open,
   (o) => {
     if (o) {
-      titre.value = "";
+      title.value = "";
       copied.value = false;
     }
   }
@@ -53,7 +53,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="titre-partage"
+        aria-labelledby="share-title"
         @click.self="!loading && emit('close')"
       >
         <div
@@ -63,7 +63,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             Partage
           </p>
           <h2
-            id="titre-partage"
+            id="share-title"
             class="mt-2 text-[22px] font-medium leading-snug tracking-tight text-ink-deep"
           >
             {{ link ? "Lien créé" : "Partager cette sélection" }}
@@ -78,7 +78,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             <label class="mt-5 block text-sm font-medium text-ink">
               Nom du partage (optionnel)
               <input
-                v-model="titre"
+                v-model="title"
                 type="text"
                 maxlength="80"
                 placeholder="Ex. Sélection pour Marie"
@@ -101,7 +101,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
               <button
                 :disabled="loading"
                 class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-sm font-medium text-ink transition hover:bg-brand-deep disabled:opacity-60"
-                @click="emit('create', titre.trim())"
+                @click="emit('create', title.trim())"
               >
                 <span
                   v-if="loading"

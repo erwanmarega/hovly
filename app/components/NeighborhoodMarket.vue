@@ -9,40 +9,40 @@ const props = defineProps<{
 const PAD_X = 12
 const W = 600
 const H = 120
-const HAUT = 20
-const BAS = 96
+const TOP = 20
+const BOTTOM = 96
 
-const fmtMois = (iso: string) =>
+const fmtMonth = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
 
-const ecart = computed(() =>
+const gap = computed(() =>
   props.market && props.pricePerSqm ? gapPercent(props.pricePerSqm, props.market) : null
 )
 
-const nbBarres = computed(() => props.market?.barres.length ?? 0)
-const largeurBarre = computed(() => (W - PAD_X * 2) / (nbBarres.value || 1))
-const hauteurMax = computed(() => Math.max(...(props.market?.barres ?? [1])))
+const barCount = computed(() => props.market?.barres.length ?? 0)
+const barWidth = computed(() => (W - PAD_X * 2) / (barCount.value || 1))
+const maxHeight = computed(() => Math.max(...(props.market?.barres ?? [1])))
 
-function hauteurBarre(count: number): number {
-  return Math.round((count / hauteurMax.value) * (BAS - HAUT))
+function barHeight(count: number): number {
+  return Math.round((count / maxHeight.value) * (BOTTOM - TOP))
 }
 
 /** Prix au m² → abscisse SVG, bornée à la plage affichée. */
-function abscisse(pricePerSqm: number): number {
+function xPosition(pricePerSqm: number): number {
   const m = props.market!
   const t = (pricePerSqm - m.min) / (m.max - m.min || 1)
   return PAD_X + Math.min(1, Math.max(0, t)) * (W - PAD_X * 2)
 }
 
-const xMediane = computed(() => (props.market ? abscisse(props.market.mediane) : 0))
-const xBien = computed(() => (props.pricePerSqm && props.market ? abscisse(props.pricePerSqm) : null))
+const xMedian = computed(() => (props.market ? xPosition(props.market.mediane) : 0))
+const xProperty = computed(() => (props.pricePerSqm && props.market ? xPosition(props.pricePerSqm) : null))
 
-const barreDuBien = computed(() => {
+const propertyBarIndex = computed(() => {
   if (!props.pricePerSqm || !props.market) return -1
   const m = props.market
   const t = (props.pricePerSqm - m.min) / (m.max - m.min || 1)
   if (t < 0 || t > 1) return -1
-  return Math.min(nbBarres.value - 1, Math.floor(t * nbBarres.value))
+  return Math.min(barCount.value - 1, Math.floor(t * barCount.value))
 })
 </script>
 
@@ -51,12 +51,12 @@ const barreDuBien = computed(() => {
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Marché du quartier</h2>
       <span
-        v-if="ecart !== null"
+        v-if="gap !== null"
         class="rounded-full px-2.5 py-1 text-xs font-semibold"
-        :class="ecart <= 0 ? 'bg-teal/40 text-[#0a4a42]' : 'bg-coral/40 text-[#600000]'"
+        :class="gap <= 0 ? 'bg-teal/40 text-[#0a4a42]' : 'bg-coral/40 text-[#600000]'"
       >
-        {{ ecart <= 0 ? '▼' : '▲' }} {{ Math.abs(ecart) }} %
-        {{ ecart <= 0 ? 'sous la médiane' : 'au-dessus' }}
+        {{ gap <= 0 ? '▼' : '▲' }} {{ Math.abs(gap) }} %
+        {{ gap <= 0 ? 'sous la médiane' : 'au-dessus' }}
       </span>
     </div>
 
@@ -68,36 +68,36 @@ const barreDuBien = computed(() => {
     <svg :viewBox="`0 0 ${W} ${H}`" class="mt-3 h-28 w-full" preserveAspectRatio="none">
       <g v-for="(count, i) in market.barres" :key="i">
         <rect
-          :x="PAD_X + i * largeurBarre + 1"
-          :y="BAS - hauteurBarre(count)"
-          :width="Math.max(largeurBarre - 2, 1)"
-          :height="hauteurBarre(count)"
+          :x="PAD_X + i * barWidth + 1"
+          :y="BOTTOM - barHeight(count)"
+          :width="Math.max(barWidth - 2, 1)"
+          :height="barHeight(count)"
           rx="2"
-          :fill="i === barreDuBien ? '#ffd02f' : '#e7e4de'"
+          :fill="i === propertyBarIndex ? '#ffd02f' : '#e7e4de'"
         />
       </g>
       <line
-        :x1="xMediane"
-        :y1="HAUT - 4"
-        :x2="xMediane"
-        :y2="BAS + 2"
+        :x1="xMedian"
+        :y1="TOP - 4"
+        :x2="xMedian"
+        :y2="BOTTOM + 2"
         stroke="#a8a29e"
         stroke-width="2"
         stroke-dasharray="4 3"
         vector-effect="non-scaling-stroke"
       />
-      <template v-if="xBien !== null">
+      <template v-if="xProperty !== null">
         <line
-          :x1="xBien"
-          :y1="HAUT - 4"
-          :x2="xBien"
-          :y2="BAS + 2"
+          :x1="xProperty"
+          :y1="TOP - 4"
+          :x2="xProperty"
+          :y2="BOTTOM + 2"
           stroke="#1a1a1a"
           stroke-width="2"
           vector-effect="non-scaling-stroke"
         />
         <polygon
-          :points="`${xBien - 5},${HAUT - 14} ${xBien + 5},${HAUT - 14} ${xBien},${HAUT - 5}`"
+          :points="`${xProperty - 5},${TOP - 14} ${xProperty + 5},${TOP - 14} ${xProperty},${TOP - 5}`"
           fill="#1a1a1a"
         />
       </template>
@@ -114,7 +114,7 @@ const barreDuBien = computed(() => {
     <p class="mt-3 border-t border-hairline-soft pt-3 text-xs text-stone">
       {{ market.nbVentes }} ventes d'appartements à moins de 500 m<template
         v-if="market.du && market.au"
-      >, entre {{ fmtMois(market.du) }} et {{ fmtMois(market.au) }}</template>.
+      >, entre {{ fmtMonth(market.du) }} et {{ fmtMonth(market.au) }}</template>.
       Source : DVF (DGFiP).
     </p>
   </div>
