@@ -8,6 +8,12 @@ export type TypeBien = 'maison' | 'appartement'
 // une vente (repli utilisé par la détection au scraping et par la carte DVF).
 export const SEUIL_PRIX_VENTE_EUROS = 50_000
 
+// Photo de repli quand le scraping n'a trouvé aucune image. Partagé
+// client/serveur : le serveur l'écrit dans `photos`, le client compare
+// `photo === PHOTO_PAR_DEFAUT` pour l'afficher en entier (object-contain)
+// plutôt qu'en cover comme une vraie photo.
+export const PHOTO_PAR_DEFAUT = '/Icon_no_photo.svg'
+
 export type DPE = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
 export type GeoPrecision = 'exacte' | 'rue' | 'ville'

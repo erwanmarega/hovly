@@ -13,7 +13,8 @@ const estAchatPartage = computed(() => estAchat(props.bien));
         v-if="bien.photos?.[0]"
         :src="bien.photos[0]"
         :alt="bien.titre ?? ''"
-        class="h-40 w-full object-cover"
+        class="h-40 w-full bg-surface"
+        :class="estPhotoParDefaut(bien.photos[0]) ? 'object-contain' : 'object-cover'"
         loading="lazy"
       />
       <div v-else class="grid h-40 w-full place-items-center bg-surface text-stone">

@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import { serverSupabaseClient, serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
+import { PHOTO_PAR_DEFAUT } from '~/types'
 
 export async function requireUser(event: H3Event) {
   const claims = await serverSupabaseUser(event)
@@ -29,6 +30,8 @@ export const STATUTS_VALIDES = [
   'a_visiter', 'planifie', 'visite', 'elimine', 'coup_de_coeur'
 ] as const
 
+export { PHOTO_PAR_DEFAUT }
+
 /** Nombre maximum de biens actifs par utilisateur. Protège contre les scripts
  *  qui créeraient des milliers de lignes et les coûts de scraping associés. */
 export const MAX_BIENS_ACTIFS = 100
@@ -45,6 +48,9 @@ export async function creerBien(
   const payload: Record<string, unknown> = { user_id: userId }
   for (const champ of CHAMPS_MODIFIABLES) {
     if (champ in body) payload[champ] = body[champ]
+  }
+  if (!Array.isArray(payload.photos) || payload.photos.length === 0) {
+    payload.photos = [PHOTO_PAR_DEFAUT]
   }
   payload.url_source = body.url_source
   payload.site_source = body.site_source ?? null

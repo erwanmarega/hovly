@@ -50,8 +50,11 @@ const { marquerLue } = useAlertes();
         :src="alerte.biens.photos[0]"
         alt=""
         loading="lazy"
-        class="rounded-xl bg-surface object-cover"
-        :class="compact ? 'size-10' : 'size-12'"
+        class="rounded-xl bg-surface"
+        :class="[
+          compact ? 'size-10' : 'size-12',
+          estPhotoParDefaut(alerte.biens.photos[0]) ? 'object-contain' : 'object-cover',
+        ]"
       />
       <div
         v-else

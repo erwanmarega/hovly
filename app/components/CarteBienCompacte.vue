@@ -38,7 +38,8 @@ const emit = defineEmits<{
           v-if="bien.photos?.[0]"
           :src="bien.photos[0]"
           :alt="bien.titre"
-          class="size-14 shrink-0 rounded-lg bg-surface object-cover"
+          class="size-14 shrink-0 rounded-lg bg-surface"
+          :class="estPhotoParDefaut(bien.photos[0]) ? 'object-contain' : 'object-cover'"
           loading="lazy"
         />
         <div v-else class="size-14 shrink-0 rounded-lg bg-surface" />

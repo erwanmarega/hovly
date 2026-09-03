@@ -22,7 +22,8 @@ const emit = defineEmits<{ supprimer: [id: string] }>()
         :src="bien.photos[0]"
         :alt="bien.titre"
         loading="lazy"
-        class="photo size-full object-cover"
+        class="photo size-full"
+        :class="estPhotoParDefaut(bien.photos[0]) ? 'object-contain' : 'object-cover'"
       >
       <span v-else class="grid size-full place-items-center text-sm text-stone">Aucune photo</span>
 

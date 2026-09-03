@@ -153,6 +153,7 @@ const scoreApercu = computed(() => {
     photos: draft.photos,
     description: null,
     statut: draft.statut,
+    type_bien: null,
     note_perso: null,
     visite_le: null,
     compte_rendu: null,
@@ -744,7 +745,8 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     v-if="draft.photos.length"
                     :src="draft.photos[0]"
                     alt=""
-                    class="size-full object-cover"
+                    class="size-full"
+                    :class="estPhotoParDefaut(draft.photos[0]) ? 'object-contain' : 'object-cover'"
                   >
                   <div v-else class="grid size-full place-items-center text-sm text-stone">
                     Aucune photo

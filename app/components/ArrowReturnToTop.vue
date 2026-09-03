@@ -5,11 +5,11 @@ const emit = defineEmits(["scrollToTop"]);
 <template>
   <div class="relative align-right">
     <button
-      class="cursor-pointer relative after:content-['scroll_to_top'] after:text-black after:absolute after:text-nowrap after:scale-0 hover:after:scale-100 after:duration-200 w-16 h-16 rounded-full bg-brand pointer flex items-center justify-center duration-300 hover:rounded-[50px] hover:w-36 group/button overflow-hidden active:scale-90"
+      class="cursor-pointer absolute -top-17.5 right-5 after:content-['scroll_to_top'] after:text-black after:absolute after:text-nowrap after:scale-0 hover:after:scale-100 after:duration-200 w-12 h-12 rounded-full bg-brand pointer flex items-center justify-center duration-300 hover:rounded-[50px] hover:w-36 group/button overflow-hidden active:scale-90"
       @click="emit('scrollToTop')"
     >
       <svg
-        class="w-3 fill-black delay-50 duration-200 group-hover/button:-translate-y-12"
+        class="w-2 fill-black delay-50 duration-200 group-hover/button:-translate-y-12"
         viewBox="0 0 384 512"
       >
         <path

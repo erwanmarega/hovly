@@ -148,7 +148,8 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
               v-if="b.photos?.[0]"
               :src="b.photos[0]"
               :alt="b.titre"
-              class="size-14 shrink-0 rounded-xl bg-surface object-cover"
+              class="size-14 shrink-0 rounded-xl bg-surface"
+              :class="estPhotoParDefaut(b.photos[0]) ? 'object-contain' : 'object-cover'"
               loading="lazy"
             >
             <div v-else class="size-14 shrink-0 rounded-xl bg-surface" />

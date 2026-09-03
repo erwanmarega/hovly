@@ -43,9 +43,13 @@ const { refresh: refreshTrajets } = useTrajets();
 useAsyncData("trajets-bien", () => refreshTrajets(), { server: false });
 
 const { charger: chargerMarche, pour: marchePour } = useMarche();
-watch(bien, (b) => {
-  if (b) void chargerMarche(b);
-}, { immediate: true });
+watch(
+  bien,
+  (b) => {
+    if (b) void chargerMarche(b);
+  },
+  { immediate: true }
+);
 const marche = computed(() => (bien.value ? marchePour(bien.value.id) : null));
 
 const score = computed(() =>
@@ -71,7 +75,7 @@ const prixMensuel = computed(() =>
 const charges = computed(() =>
   bien.value?.charges ? Math.round(bien.value.charges / 100) : 0
 );
-const prixM2 = computed(() => (bien.value ? (prixAuM2(bien.value) ?? 0) : 0));
+const prixM2 = computed(() => (bien.value ? prixAuM2(bien.value) ?? 0 : 0));
 
 const dateAjout = computed(() =>
   bien.value
@@ -179,7 +183,9 @@ async function rafraichir() {
     } else if (!r.changements.length) {
       messageRefresh.value = "Aucun changement : les données étaient à jour.";
     } else {
-      const noms = r.changements.map((c) => LIBELLES_CHAMPS[c.champ] ?? c.champ);
+      const noms = r.changements.map(
+        (c) => LIBELLES_CHAMPS[c.champ] ?? c.champ
+      );
       messageRefresh.value = `Mis à jour : ${noms.join(", ")}.`;
     }
   } catch (e: unknown) {
@@ -355,13 +361,18 @@ async function confirmerSuppression() {
           <div class="flex min-w-0 flex-col lg:col-span-3">
             <div
               v-if="bien.photos.length"
-              class="overflow-hidden rounded-2xl border border-hairline bg-white"
+              class="overflow-hidden rounded-2xl border border-hairline bg-[#FFD02F]"
             >
               <img
                 :src="bien.photos[photoActive]"
                 :alt="bien.titre"
-                class="aspect-[4/3] w-full object-cover"
-              >
+                class="aspect-[4/3] w-full"
+                :class="
+                  estPhotoParDefaut(bien.photos[photoActive])
+                    ? 'object-contain'
+                    : 'object-cover'
+                "
+              />
               <div
                 v-if="bien.photos.length > 1"
                 class="flex gap-2 overflow-x-auto p-3"
@@ -377,7 +388,7 @@ async function confirmerSuppression() {
                   "
                   @click="photoActive = i"
                 >
-                  <img :src="p" alt="" class="size-full object-cover" >
+                  <img :src="p" alt="" class="size-full object-cover" />
                 </button>
               </div>
             </div>
@@ -388,7 +399,9 @@ async function confirmerSuppression() {
               Aucune photo
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
+            <div
+              class="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4"
+            >
               <div class="rounded-2xl border border-hairline-soft bg-white p-4">
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-stone"
@@ -430,7 +443,10 @@ async function confirmerSuppression() {
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-semibold">Situation</h2>
-                <span v-if="bien.geo_precision === 'ville'" class="text-xs text-stone">
+                <span
+                  v-if="bien.geo_precision === 'ville'"
+                  class="text-xs text-stone"
+                >
                   Position approximative
                 </span>
               </div>
@@ -472,15 +488,21 @@ async function confirmerSuppression() {
               <div class="mt-4 space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span class="text-steel">Prix au m²</span>
-                  <span class="font-semibold">{{ formaterNombre(prixM2) }} €</span>
+                  <span class="font-semibold"
+                    >{{ formaterNombre(prixM2) }} €</span
+                  >
                 </div>
                 <div v-if="marche" class="flex justify-between">
                   <span class="text-steel">Marché (DVF)</span>
-                  <span class="font-semibold">{{ formaterNombre(marche.mediane) }} €/m²</span>
+                  <span class="font-semibold"
+                    >{{ formaterNombre(marche.mediane) }} €/m²</span
+                  >
                 </div>
                 <div v-if="charges" class="flex justify-between">
                   <span class="text-steel">Charges</span>
-                  <span class="font-semibold">{{ formaterNombre(charges) }} €</span>
+                  <span class="font-semibold"
+                    >{{ formaterNombre(charges) }} €</span
+                  >
                 </div>
               </div>
             </div>
@@ -497,12 +519,16 @@ async function confirmerSuppression() {
               v-if="doublons.length"
               class="rounded-2xl border border-brand-deep/30 bg-brand-light p-5 sm:p-6"
             >
-              <h2 class="text-sm font-semibold uppercase tracking-wide text-[#8a6d1c]">
+              <h2
+                class="text-sm font-semibold uppercase tracking-wide text-[#8a6d1c]"
+              >
                 Aussi publié ailleurs
               </h2>
               <p class="mt-1 text-xs text-ink/60">
-                Hovly a repéré {{ doublons.length }} autre{{ doublons.length > 1 ? 's' : '' }}
-                annonce{{ doublons.length > 1 ? 's' : '' }} du même bien.
+                Hovly a repéré {{ doublons.length }} autre{{
+                  doublons.length > 1 ? "s" : ""
+                }}
+                annonce{{ doublons.length > 1 ? "s" : "" }} du même bien.
               </p>
               <ul class="mt-4 space-y-2">
                 <li v-for="d in doublons" :key="d.id">
@@ -510,19 +536,26 @@ async function confirmerSuppression() {
                     :to="`/bien/${d.id}`"
                     class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white"
                   >
-                    <LogoSource :source="d.site_source" :avec-nom="false" :taille="20" />
+                    <LogoSource
+                      :source="d.site_source"
+                      :avec-nom="false"
+                      :taille="20"
+                    />
                     <span class="min-w-0 flex-1">
                       <span class="block truncate text-sm font-medium text-ink">
                         {{ sourceLabels[d.site_source] }}
                       </span>
-                      <span class="block truncate text-xs text-stone">{{ d.titre }}</span>
+                      <span class="block truncate text-xs text-stone">{{
+                        d.titre
+                      }}</span>
                     </span>
                     <span class="shrink-0 text-sm font-semibold tabular-nums">
                       {{ formaterNombre(Math.round(d.prix / 100)) }} €
                       <span
                         v-if="d.prix < bien.prix"
                         class="ml-1 rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold text-[#0a4a42]"
-                      >moins cher</span>
+                        >moins cher</span
+                      >
                     </span>
                   </NuxtLink>
                 </li>
@@ -532,7 +565,9 @@ async function confirmerSuppression() {
             <PlanificateurVisite :bien="bien" @maj="appliquerVisite" />
 
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
-              <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
+              <h2
+                class="text-sm font-semibold uppercase tracking-wide text-stone"
+              >
                 Statut
               </h2>
               <div class="relative mt-3">
@@ -560,7 +595,9 @@ async function confirmerSuppression() {
                     :key="s.value"
                     class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface"
                     :class="
-                      bien.statut === s.value ? 'font-semibold text-ink' : 'text-slate'
+                      bien.statut === s.value
+                        ? 'font-semibold text-ink'
+                        : 'text-slate'
                     "
                     @click="setStatut(s.value)"
                   >
@@ -574,7 +611,9 @@ async function confirmerSuppression() {
               class="flex flex-1 flex-col rounded-2xl border border-hairline bg-white p-5 sm:p-6"
             >
               <div class="flex items-center justify-between">
-                <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
+                <h2
+                  class="text-sm font-semibold uppercase tracking-wide text-stone"
+                >
                   Ma note
                 </h2>
                 <span v-if="noteSaved" class="text-xs font-medium text-success">
@@ -595,8 +634,16 @@ async function confirmerSuppression() {
         <PrixHistorique :points="historique" class="mt-4 sm:mt-6" />
 
         <Transition name="bloc">
-          <div v-if="afficherChecklist" ref="blocChecklist" class="scroll-mt-24">
-            <ChecklistVisite :bien="bien" class="mt-4 sm:mt-6" @maj="appliquerVisite" />
+          <div
+            v-if="afficherChecklist"
+            ref="blocChecklist"
+            class="scroll-mt-24"
+          >
+            <ChecklistVisite
+              :bien="bien"
+              class="mt-4 sm:mt-6"
+              @maj="appliquerVisite"
+            />
           </div>
         </Transition>
       </template>
@@ -618,9 +665,7 @@ async function confirmerSuppression() {
 <style scoped>
 .bloc-enter-active,
 .bloc-leave-active {
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .bloc-enter-from,
 .bloc-leave-to {
@@ -630,9 +675,7 @@ async function confirmerSuppression() {
 
 .msg-enter-active,
 .msg-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .msg-enter-from,
 .msg-leave-to {

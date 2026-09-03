@@ -28,7 +28,8 @@ const lignes = computed(() => comparerPublic(props.biens));
                 :src="b.photos[0]"
                 :alt="b.titre ?? ''"
                 loading="lazy"
-                class="aspect-[4/3] w-full rounded-xl bg-surface object-cover"
+                class="aspect-[4/3] w-full rounded-xl bg-surface"
+                :class="estPhotoParDefaut(b.photos[0]) ? 'object-contain' : 'object-cover'"
               >
               <div
                 v-else

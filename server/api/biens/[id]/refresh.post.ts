@@ -3,6 +3,7 @@ import { scrapeUrl } from '../../../utils/scrape'
 import { geocoder } from '../../../utils/geocode'
 import { prixPlausible } from '../../../utils/check'
 import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
+import { PHOTO_PAR_DEFAUT } from '../../../utils/biens'
 
 const CHAMPS_RAFRAICHIS = [
   'titre',
@@ -71,6 +72,14 @@ export default defineEventHandler(async (event) => {
 
     maj[champ] = valeur
     changements.push({ champ, avant: actuel[champ], apres: valeur })
+  }
+
+  // Un bien créé avant l'introduction de la photo de repli, toujours sans
+  // photo après ce re-scrape : on l'applique maintenant plutôt que d'attendre
+  // indéfiniment une image que le scraping ne trouvera peut-être jamais.
+  if (!actuel.photos?.length && !maj.photos) {
+    maj.photos = [PHOTO_PAR_DEFAUT]
+    changements.push({ champ: 'photos', avant: actuel.photos, apres: maj.photos })
   }
 
   // Un re-scrape peut produire un prix aberrant : on le retire de la mise à

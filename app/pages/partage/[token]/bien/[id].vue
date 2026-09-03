@@ -79,7 +79,8 @@ useHead({
             :key="i"
             :src="photo"
             :alt="bien.titre ?? ''"
-            class="aspect-[4/3] w-full rounded-xl object-cover"
+            class="aspect-[4/3] w-full rounded-xl bg-surface"
+            :class="estPhotoParDefaut(photo) ? 'object-contain' : 'object-cover'"
             loading="lazy"
           />
         </div>
