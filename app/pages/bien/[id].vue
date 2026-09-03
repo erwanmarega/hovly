@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Property, Status } from "~/types";
-import { STATUTS } from "~/composables/useBiens";
+import { STATUSES } from "~/composables/useProperties";
+import { pricePerSqm as rawPricePerSqm } from "~/composables/useMarket";
 
 const route = useRoute();
 const id = route.params.id as string;
@@ -35,14 +36,14 @@ const sourceLabels: Record<string, string> = {
   century21: "Century 21",
 };
 
-const { biens, refresh: refreshBiens } = useBiens();
+const { biens, refresh: refreshBiens } = useProperties();
 const { preferences } = usePreferences();
 useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
 
 const { refresh: refreshTrajets } = useTrajets();
 useAsyncData("trajets-bien", () => refreshTrajets(), { server: false });
 
-const { charger: chargerMarche, pour: marchePour } = useMarche();
+const { load: chargerMarche, get: marchePour } = useMarket();
 watch(
   bien,
   (b) => {
@@ -54,7 +55,7 @@ const marche = computed(() => (bien.value ? marchePour(bien.value.id) : null));
 
 const score = computed(() =>
   bien.value
-    ? scoreBien(bien.value, representants(biens.value), preferences.value)
+    ? scoreProperty(bien.value, representants(biens.value), preferences.value)
     : null
 );
 
@@ -105,13 +106,13 @@ watch(
 
 onBeforeUnmount(arreterDefilement);
 
-const prixMensuel = computed(() =>
+const monthlyPrice = computed(() =>
   bien.value ? Math.round(bien.value.prix / 100) : 0
 );
 const charges = computed(() =>
   bien.value?.charges ? Math.round(bien.value.charges / 100) : 0
 );
-const prixM2 = computed(() => (bien.value ? prixAuM2(bien.value) ?? 0 : 0));
+const pricePerSqm = computed(() => (bien.value ? rawPricePerSqm(bien.value) ?? 0 : 0));
 
 const dateAjout = computed(() =>
   bien.value
@@ -516,7 +517,7 @@ async function confirmerSuppression() {
           <div class="flex min-w-0 flex-col gap-4 sm:gap-6 lg:col-span-2">
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <p class="text-3xl font-bold tracking-tight">
-                {{ formatNumber(prixMensuel) }} €<span
+                {{ formatNumber(monthlyPrice) }} €<span
                   v-if="bien.transaction !== 'achat'"
                   class="text-base font-medium text-stone"
                 >
@@ -527,7 +528,7 @@ async function confirmerSuppression() {
                 <div class="flex justify-between">
                   <span class="text-steel">Prix au m²</span>
                   <span class="font-semibold"
-                    >{{ formatNumber(prixM2) }} €</span
+                    >{{ formatNumber(pricePerSqm) }} €</span
                   >
                 </div>
                 <div v-if="marche" class="flex justify-between">
@@ -551,7 +552,7 @@ async function confirmerSuppression() {
 
             <ScoreBreakdown v-if="score" :score="score" />
 
-            <NeighborhoodMarket :marche="marche" :prix-m2="prixM2 || null" />
+            <NeighborhoodMarket :marche="marche" :price-per-sqm="pricePerSqm || null" />
 
             <div
               v-if="doublons.length"
@@ -629,7 +630,7 @@ async function confirmerSuppression() {
                   class="absolute z-10 mt-1 w-full rounded-xl border border-hairline bg-white p-1 shadow-lg"
                 >
                   <button
-                    v-for="s in STATUTS"
+                    v-for="s in STATUSES"
                     :key="s.value"
                     class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface"
                     :class="

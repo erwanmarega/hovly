@@ -5,7 +5,7 @@ useHead({ title: 'Mon profil — Hovly' })
 
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
-const { biens, refresh } = useBiens()
+const { biens, refresh } = useProperties()
 const { announce: annoncerToast } = useToast()
 
 useAsyncData('biens-profil', () => refresh(), { server: false })
@@ -132,7 +132,7 @@ const { preferences, personnalise, enregistrement, enregistrer, reinitialiser } 
 
 const DPE_OPTIONS: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
-const brouillon = reactive<Preferences>({ ...PREFERENCES_DEFAUT })
+const brouillon = reactive<Preferences>({ ...DEFAULT_PREFERENCES })
 watchEffect(() => Object.assign(brouillon, preferences.value))
 
 const repartition = computed(() => {
@@ -146,9 +146,9 @@ const repartition = computed(() => {
 })
 
 const apercu = computed(() => {
-  const actifsAvecScore = actifs.value.map((b) => scoreBien(b, biens.value, brouillon))
+  const actifsAvecScore = actifs.value.map((b) => scoreProperty(b, biens.value, brouillon))
   if (!actifsAvecScore.length) return null
-  const hors = actifsAvecScore.filter((s) => s.criteres.some((c) => !c.ok)).length
+  const hors = actifsAvecScore.filter((s) => s.criteria.some((c) => !c.ok)).length
   return {
     moyenne: Math.round(actifsAvecScore.reduce((s, x) => s + x.total, 0) / actifsAvecScore.length),
     hors
@@ -191,7 +191,7 @@ async function majTrajets() {
 
 async function reinitialiserPrefs() {
   await reinitialiser()
-  Object.assign(brouillon, PREFERENCES_DEFAUT)
+  Object.assign(brouillon, DEFAULT_PREFERENCES)
   annoncerToast('Critères réinitialisés.')
 }
 

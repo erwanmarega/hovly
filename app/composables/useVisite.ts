@@ -150,18 +150,18 @@ export function prochainesVisites(biens: Property[], maintenant = new Date()): P
 }
 
 export function useVisite() {
-  const { mettreAJour } = useBiens()
+  const { update } = useProperties()
 
   async function planifier(id: string, iso: string | null) {
-    await mettreAJour(id, iso ? { visite_le: iso, statut: 'planifie' } : { visite_le: null })
+    await update(id, iso ? { visite_le: iso, statut: 'planifie' } : { visite_le: null })
   }
 
   async function enregistrerChecklist(id: string, checklist: Checklist) {
-    await mettreAJour(id, { checklist })
+    await update(id, { checklist })
   }
 
   async function enregistrerCompteRendu(id: string, texte: string) {
-    await mettreAJour(id, { compte_rendu: texte })
+    await update(id, { compte_rendu: texte })
   }
 
   return { planifier, enregistrerChecklist, enregistrerCompteRendu }

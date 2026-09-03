@@ -3,7 +3,7 @@ import type { NeighborhoodMarket } from '~/types'
 
 const props = defineProps<{
   marche: NeighborhoodMarket | null
-  prixM2: number | null
+  pricePerSqm: number | null
 }>()
 
 const PAD_X = 12
@@ -16,7 +16,7 @@ const fmtMois = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
 
 const ecart = computed(() =>
-  props.marche && props.prixM2 ? ecartPct(props.prixM2, props.marche) : null
+  props.marche && props.pricePerSqm ? gapPercent(props.pricePerSqm, props.marche) : null
 )
 
 const nbBarres = computed(() => props.marche?.barres.length ?? 0)
@@ -28,19 +28,19 @@ function hauteurBarre(count: number): number {
 }
 
 /** Prix au m² → abscisse SVG, bornée à la plage affichée. */
-function abscisse(prixM2: number): number {
+function abscisse(pricePerSqm: number): number {
   const m = props.marche!
-  const t = (prixM2 - m.min) / (m.max - m.min || 1)
+  const t = (pricePerSqm - m.min) / (m.max - m.min || 1)
   return PAD_X + Math.min(1, Math.max(0, t)) * (W - PAD_X * 2)
 }
 
 const xMediane = computed(() => (props.marche ? abscisse(props.marche.mediane) : 0))
-const xBien = computed(() => (props.prixM2 && props.marche ? abscisse(props.prixM2) : null))
+const xBien = computed(() => (props.pricePerSqm && props.marche ? abscisse(props.pricePerSqm) : null))
 
 const barreDuBien = computed(() => {
-  if (!props.prixM2 || !props.marche) return -1
+  if (!props.pricePerSqm || !props.marche) return -1
   const m = props.marche
-  const t = (props.prixM2 - m.min) / (m.max - m.min || 1)
+  const t = (props.pricePerSqm - m.min) / (m.max - m.min || 1)
   if (t < 0 || t > 1) return -1
   return Math.min(nbBarres.value - 1, Math.floor(t * nbBarres.value))
 })
@@ -105,8 +105,8 @@ const barreDuBien = computed(() => {
 
     <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-stone">
       <span class="whitespace-nowrap">{{ formatNumber(marche.min) }} €/m²</span>
-      <span v-if="prixM2" class="whitespace-nowrap font-medium text-slate">
-        ▲ ce bien · {{ formatNumber(prixM2) }} €/m²
+      <span v-if="pricePerSqm" class="whitespace-nowrap font-medium text-slate">
+        ▲ ce bien · {{ formatNumber(pricePerSqm) }} €/m²
       </span>
       <span class="whitespace-nowrap">{{ formatNumber(marche.max) }} €/m²</span>
     </div>

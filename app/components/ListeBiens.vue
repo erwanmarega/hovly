@@ -30,13 +30,13 @@ const emit = defineEmits<{
   statut: [id: string, statut: Status]
 }>()
 
-const { prixMensuel, prixM2 } = useBiens()
+const { monthlyPrice, pricePerSqm } = useProperties()
 const { calculer: coutDe } = useCoutReel()
 const { actif: trajetsActifs, ancreChoisie } = useTrajets()
 
 const couts = computed(() => new Map(props.biens.map((b) => [b.id, coutDe(b)])))
 
-const { complet: selectionComplete, estSelectionne, basculer } = useComparateur()
+const { full: selectionComplete, isSelected: estSelectionne, toggle: basculer } = useComparator()
 
 const TRIS = computed<{ value: Clef, label: string }[]>(() => {
   const tris: { value: Clef, label: string }[] = [
@@ -93,8 +93,8 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
           :key="b.id"
           :bien="b"
           :score="score(b)"
-          :prix-mensuel="prixMensuel(b)"
-          :prix-m2="prixM2(b)"
+          :monthly-price="monthlyPrice(b)"
+          :price-per-sqm="pricePerSqm(b)"
           :doublons="doublons.get(b.id)"
           :selectionne="estSelectionne(b.id)"
           :selection-bloquee="selectionComplete"
@@ -184,7 +184,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="hidden w-28 shrink-0 text-right tabular-nums lg:block">
             <p class="font-semibold">
-              {{ formatNumber(prixMensuel(b)) }} €<span v-if="!estAchat(b)" class="text-xs font-normal text-stone">/mois</span>
+              {{ formatNumber(monthlyPrice(b)) }} €<span v-if="!isPurchase(b)" class="text-xs font-normal text-stone">/mois</span>
             </p>
             <p class="text-xs text-stone">
               réel {{ formatNumber(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
@@ -193,7 +193,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="hidden w-24 shrink-0 text-right tabular-nums xl:block">
             <p class="text-sm text-slate">{{ b.surface }} m²</p>
-            <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ formatNumber(prixM2(b)) }} €/m²</p>
+            <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ formatNumber(pricePerSqm(b)) }} €/m²</p>
           </div>
 
           <div class="hidden w-10 shrink-0 xl:block"><BadgeDPE :dpe="b.dpe" /></div>

@@ -8,7 +8,7 @@ defineProps<{ score: Score }>()
   <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">
-        {{ score.personnalise ? 'Mon score' : 'Score Hovly' }}
+        {{ score.customized ? 'Mon score' : 'Score Hovly' }}
       </h2>
       <ScoreBien :score="score" />
     </div>
@@ -28,11 +28,11 @@ defineProps<{ score: Score }>()
         <p class="mt-1 text-xs text-stone">{{ p.hint }}</p>
       </div>
     </div>
-    <div v-if="score.criteres.length" class="mt-5 border-t border-hairline-soft pt-4">
+    <div v-if="score.criteria.length" class="mt-5 border-t border-hairline-soft pt-4">
       <p class="text-xs font-semibold uppercase tracking-wide text-stone">Mes critères</p>
       <ul class="mt-2.5 space-y-1.5">
         <li
-          v-for="c in score.criteres"
+          v-for="c in score.criteria"
           :key="c.label"
           class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
           :class="c.ok ? 'text-slate' : 'text-[#600000]'"
@@ -45,13 +45,13 @@ defineProps<{ score: Score }>()
           <span class="ml-auto text-xs text-stone">{{ c.detail }}</span>
         </li>
       </ul>
-      <p v-if="score.criteres.some((c) => !c.ok)" class="mt-2.5 text-xs text-stone">
+      <p v-if="score.criteria.some((c) => !c.ok)" class="mt-2.5 text-xs text-stone">
         −12 points par critère non respecté.
       </p>
     </div>
 
     <p class="mt-4 text-xs text-stone">
-      <template v-if="score.personnalise">
+      <template v-if="score.customized">
         Pondéré selon tes critères, réglables depuis ton profil.
       </template>
       <template v-else>

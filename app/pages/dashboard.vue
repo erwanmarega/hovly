@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { Property, Status } from "~/types";
 import type { Score } from "~/composables/useScore";
-import { STATUTS } from "~/composables/useBiens";
+import { STATUSES } from "~/composables/useProperties";
 
 useHead({ title: "Mes biens — Hovly" });
 
-const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } =
-  useBiens();
+const { biens, refresh, monthlyPrice, pricePerSqm, setStatus, remove } =
+  useProperties();
 
 const bienASupprimer = ref<Property | null>(null);
 const suppressionEnCours = ref(false);
@@ -20,7 +20,7 @@ async function confirmerSuppression() {
   const b = bienASupprimer.value;
   if (!b) return;
   suppressionEnCours.value = true;
-  await supprimer(b.id);
+  await remove(b.id);
   suppressionEnCours.value = false;
   bienASupprimer.value = null;
 
@@ -68,7 +68,7 @@ const trajetSec = (b: Property) =>
 
 const contexteScore = computed(() => representants(biens.value));
 const scoreDe = (b: Property) =>
-  scoreBien(b, contexteScore.value, preferences.value);
+  scoreProperty(b, contexteScore.value, preferences.value);
 
 const groupesDoublons = computed(() =>
   grouperDoublons(biens.value.filter((b) => b.actif))
@@ -76,11 +76,11 @@ const groupesDoublons = computed(() =>
 
 const {
   selection: selectionComparaison,
-  nombre: nbCompares,
-  complet: selectionComplete,
+  count: nbCompares,
+  full: selectionComplete,
   comparable,
-  vider: viderComparaison,
-} = useComparateur();
+  clear: viderComparaison,
+} = useComparator();
 
 const { creer: creerPartage } = usePartages();
 const partageOuvert = ref(false);
@@ -174,8 +174,8 @@ const biensAffiches = computed(() => {
         vb = b.surface;
         break;
       case "prix_m2":
-        va = prixM2(a);
-        vb = prixM2(b);
+        va = pricePerSqm(a);
+        vb = pricePerSqm(b);
         break;
       case "score":
         va = scoreDe(a).total;
@@ -213,9 +213,9 @@ const stats = computed(() => {
   const actifs = biens.value.filter((b) => b.actif);
   // La fourchette ne mélange pas loyers et prix de vente : locations en
   // priorité, achats seulement si la liste n'en contient que ça.
-  const locations = actifs.filter((b) => !estAchat(b));
+  const locations = actifs.filter((b) => !isPurchase(b));
   const groupe = locations.length ? locations : actifs;
-  const prix = groupe.map(prixMensuel).filter((p) => p > 0);
+  const prix = groupe.map(monthlyPrice).filter((p) => p > 0);
   const meilleur = actifs.reduce<{ score: Score; bien: Property } | null>(
     (best, b) => {
       const score = scoreDe(b);
@@ -239,7 +239,7 @@ const stats = computed(() => {
 const compteurs = computed(() => {
   const actifs = biens.value.filter((b) => b.actif);
   const parStatut = Object.fromEntries(
-    STATUTS.map((s) => [s.value, 0])
+    STATUSES.map((s) => [s.value, 0])
   ) as Record<Status, number>;
   for (const b of actifs) parStatut[b.statut]++;
   return { tous: actifs.length, ...parStatut };
@@ -333,7 +333,7 @@ function toggleTri(clef: typeof triClef.value) {
               }}</span>
               <span
                 class="text-sm font-medium"
-                :class="stats.meilleur.score.couleur"
+                :class="stats.meilleur.score.color"
                 >{{ stats.meilleur.score.label }}</span
               >
             </dd>
@@ -459,7 +459,7 @@ function toggleTri(clef: typeof triClef.value) {
               >
             </button>
             <button
-              v-for="s in STATUTS"
+              v-for="s in STATUSES"
               :key="s.value"
               class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
               :class="
@@ -600,8 +600,8 @@ function toggleTri(clef: typeof triClef.value) {
           compact
           :biens="biensPage"
           :score="scoreDe"
-          :prix-mensuel="prixMensuel"
-          :prix-m2="prixM2"
+          :monthly-price="monthlyPrice"
+          :price-per-sqm="pricePerSqm"
           :page="page"
           :total="biensAffiches.length"
           :par-page="PAR_PAGE"
@@ -616,8 +616,8 @@ function toggleTri(clef: typeof triClef.value) {
         class="mt-5"
         :biens="biensPage"
         :score="scoreDe"
-        :prix-mensuel="prixMensuel"
-        :prix-m2="prixM2"
+        :monthly-price="monthlyPrice"
+        :price-per-sqm="pricePerSqm"
         :page="page"
         :total="biensAffiches.length"
         :par-page="PAR_PAGE"
@@ -639,7 +639,7 @@ function toggleTri(clef: typeof triClef.value) {
         @tri="toggleTri"
         @update:page="page = $event"
         @supprimer="demanderSuppression"
-        @statut="setStatut"
+        @statut="setStatus"
       />
 
       <Transition name="barre-cmp">

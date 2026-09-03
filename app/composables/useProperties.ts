@@ -1,7 +1,7 @@
 import type { Property, Status, SiteSource } from '~/types'
-import { prixAuM2 } from './useMarche'
+import { pricePerSqm as rawPricePerSqm } from './useMarket'
 
-export const STATUTS: { value: Status; label: string }[] = [
+export const STATUSES: { value: Status; label: string }[] = [
   { value: 'a_visiter', label: 'À visiter' },
   { value: 'planifie', label: 'Visite planifiée' },
   { value: 'visite', label: 'Visité' },
@@ -9,26 +9,26 @@ export const STATUTS: { value: Status; label: string }[] = [
   { value: 'elimine', label: 'Éliminé' }
 ]
 
-export function estAchat(b: Pick<Property, 'transaction'>): boolean {
+export function isPurchase(b: Pick<Property, 'transaction'>): boolean {
   return b.transaction === 'achat'
 }
 
-export function useBiens() {
+export function useProperties() {
   const biens = useState<Property[]>('biens', () => [])
 
-  function prixMensuel(b: Property): number {
+  function monthlyPrice(b: Property): number {
     return Math.round(b.prix / 100)
   }
 
-  function prixM2(b: Property): number {
-    return prixAuM2(b) ?? 0
+  function pricePerSqm(b: Property): number {
+    return rawPricePerSqm(b) ?? 0
   }
 
   async function refresh() {
     biens.value = await $fetch<Property[]>('/api/biens')
   }
 
-  async function ajouter(payload: Partial<Property>): Promise<Property> {
+  async function add(payload: Partial<Property>): Promise<Property> {
     const row = await $fetch<Property>('/api/biens', {
       method: 'POST',
       body: payload
@@ -37,7 +37,7 @@ export function useBiens() {
     return row
   }
 
-  async function setStatut(id: string, statut: Status) {
+  async function setStatus(id: string, statut: Status) {
     const b = biens.value.find((x) => x.id === id)
     const prev = b?.statut
     if (b) b.statut = statut
@@ -48,14 +48,14 @@ export function useBiens() {
     }
   }
 
-  async function mettreAJour(id: string, patch: Partial<Property>) {
+  async function update(id: string, patch: Partial<Property>) {
     const b = biens.value.find((x) => x.id === id)
-    const avant = b ? { ...b } : null
+    const before = b ? { ...b } : null
     if (b) Object.assign(b, patch)
     try {
       await $fetch(`/api/biens/${id}`, { method: 'PATCH', body: patch })
     } catch (e) {
-      if (b && avant) Object.assign(b, avant)
+      if (b && before) Object.assign(b, before)
       throw e
     }
   }
@@ -66,7 +66,7 @@ export function useBiens() {
     await $fetch(`/api/biens/${id}`, { method: 'PATCH', body: { note_perso: note } })
   }
 
-  async function supprimer(id: string) {
+  async function remove(id: string) {
     const snapshot = biens.value
     biens.value = biens.value.filter((x) => x.id !== id)
     try {
@@ -79,17 +79,17 @@ export function useBiens() {
   return {
     biens,
     refresh,
-    prixMensuel,
-    prixM2,
-    setStatut,
+    monthlyPrice,
+    pricePerSqm,
+    setStatus,
     setNote,
-    mettreAJour,
-    supprimer,
-    ajouter
+    update,
+    remove,
+    add
   }
 }
 
-export function detecterSource(url: string): SiteSource | null {
+export function detectSource(url: string): SiteSource | null {
   let host: string
   try {
     host = new URL(url).hostname.replace(/^www\./, '')

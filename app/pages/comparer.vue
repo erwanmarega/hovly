@@ -3,10 +3,10 @@ import type { Property } from '~/types'
 
 useHead({ title: 'Comparer — Hovly' })
 
-const { biens, refresh } = useBiens()
+const { biens, refresh } = useProperties()
 const { pending } = useAsyncData('biens-comparer', () => refresh(), { server: false })
 
-const { selection, retirer, vider } = useComparateur()
+const { selection, remove: retirer, clear: vider } = useComparator()
 const { preferences } = usePreferences()
 
 const { creer: creerPartage } = usePartages()
@@ -40,22 +40,22 @@ const choisis = computed(() =>
 )
 
 const contexte = computed(() => representants(biens.value))
-const scores = computed(() => choisis.value.map((b) => scoreBien(b, contexte.value, preferences.value)))
+const scores = computed(() => choisis.value.map((b) => scoreProperty(b, contexte.value, preferences.value)))
 const { trajets, ancres, refresh: refreshTrajets } = useTrajets()
 useAsyncData('trajets-comparer', () => refreshTrajets(), { server: false })
 
-const { chargerTous: chargerMarches, pour: marchePour } = useMarche()
+const { loadAll: chargerMarches, get: marchePour } = useMarket()
 watch(choisis, (liste) => chargerMarches(liste), { immediate: true })
 const ecartsDvf = computed(() =>
   choisis.value.map((b) => {
     const m = marchePour(b.id)
-    const pm2 = prixAuM2(b)
-    return ressembleVente(b) && m && pm2 ? ecartPct(pm2, m) : null
+    const pm2 = pricePerSqm(b)
+    return looksLikeSale(b) && m && pm2 ? gapPercent(pm2, m) : null
   })
 )
 
 const lignes = computed(() =>
-  comparer(choisis.value, scores.value, optionsDepuisPreferences(preferences.value), {
+  compare(choisis.value, scores.value, optionsDepuisPreferences(preferences.value), {
     ancres: ancres.value,
     index: indexer(trajets.value)
   }, ecartsDvf.value)
@@ -104,7 +104,7 @@ const sourceLabels: Record<string, string> = {
             </p>
             <h1 class="mt-2 text-4xl font-light tracking-tight text-ink md:text-5xl">Comparer</h1>
             <p class="mt-2 max-w-md text-ink/60">
-              Jusqu’à {{ MAX_COMPARAISON }} biens côte à côte. La meilleure valeur de chaque ligne
+              Jusqu’à {{ MAX_COMPARISON }} biens côte à côte. La meilleure valeur de chaque ligne
               est surlignée.
             </p>
           </div>
@@ -187,7 +187,7 @@ const sourceLabels: Record<string, string> = {
           <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-teal text-sm">★</span>
           <p class="text-sm text-ink">
             <span class="font-semibold">{{ gagnant.bien.titre }}</span>
-            mène avec {{ gagnant.score.total }} points{{ gagnant.score.personnalise ? ' selon tes critères' : '' }}.
+            mène avec {{ gagnant.score.total }} points{{ gagnant.score.customized ? ' selon tes critères' : '' }}.
           </p>
         </div>
 
@@ -251,28 +251,28 @@ const sourceLabels: Record<string, string> = {
             <tbody>
               <tr
                 v-for="l in lignes"
-                :key="l.cle"
+                :key="l.key"
                 class="border-t border-hairline-soft transition hover:bg-surface-soft"
               >
                 <th
                   class="sticky left-0 z-10 bg-white p-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-stone"
                 >
                   {{ l.label }}
-                  <span v-if="l.sens" class="ml-1 font-normal normal-case text-stone/70">
-                    {{ l.sens === 'min' ? '↓ mieux' : '↑ mieux' }}
+                  <span v-if="l.direction" class="ml-1 font-normal normal-case text-stone/70">
+                    {{ l.direction === 'min' ? '↓ mieux' : '↑ mieux' }}
                   </span>
                 </th>
                 <td
-                  v-for="(valeur, i) in l.affichage"
+                  v-for="(valeur, i) in l.display"
                   :key="i"
                   class="border-l border-hairline-soft p-4 align-middle tabular-nums"
                   :class="[
                     gagnant?.index === i && 'bg-teal/10',
-                    l.meilleurs.includes(i) ? 'font-semibold text-[#0a4a42]' : 'text-slate'
+                    l.best.includes(i) ? 'font-semibold text-[#0a4a42]' : 'text-slate'
                   ]"
                 >
                   <span
-                    v-if="l.meilleurs.includes(i)"
+                    v-if="l.best.includes(i)"
                     class="mr-1.5 inline-block rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold"
                   >★</span>
                   {{ valeur }}

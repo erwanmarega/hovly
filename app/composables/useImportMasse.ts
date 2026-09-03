@@ -1,5 +1,5 @@
 import type { SiteSource } from '~/types'
-import { detecterSource } from '~/composables/useBiens'
+import { detectSource } from '~/composables/useProperties'
 
 export type StatutImport =
   | 'prete'
@@ -70,7 +70,7 @@ export function parserUrls(texte: string, dejaEnBase: string[] = []): EntreeImpo
   return extraireUrls(texte).map((brut) => {
     const url = nettoyerUrl(brut)
     const cle = cleUrl(url)
-    const source = detecterSource(url)
+    const source = detectSource(url)
 
     let statut: StatutImport = 'prete'
     let message: string | undefined

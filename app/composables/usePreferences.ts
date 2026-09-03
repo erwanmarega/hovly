@@ -47,9 +47,9 @@ function normaliser(brut: unknown): Preferences {
     surfaceMin: nombre(p.surfaceMin),
     piecesMin: nombre(p.piecesMin),
     dpeMin: p.dpeMin ?? null,
-    poidsPrix: p.poidsPrix ?? PREFERENCES_DEFAUT.poidsPrix,
-    poidsDpe: p.poidsDpe ?? PREFERENCES_DEFAUT.poidsDpe,
-    poidsCharges: p.poidsCharges ?? PREFERENCES_DEFAUT.poidsCharges,
+    poidsPrix: p.poidsPrix ?? DEFAULT_PREFERENCES.poidsPrix,
+    poidsDpe: p.poidsDpe ?? DEFAULT_PREFERENCES.poidsDpe,
+    poidsCharges: p.poidsCharges ?? DEFAULT_PREFERENCES.poidsCharges,
     prixKwh: nombre(p.prixKwh),
     chauffageDansCharges: p.chauffageDansCharges === true,
     budgetAchatMax: nombre(p.budgetAchatMax),
@@ -68,7 +68,7 @@ export function usePreferences() {
   const supabase = useSupabaseClient()
   const user = useSupabaseUser()
 
-  const preferences = useState<Preferences>('preferences', () => ({ ...PREFERENCES_DEFAUT }))
+  const preferences = useState<Preferences>('preferences', () => ({ ...DEFAULT_PREFERENCES }))
   const enregistrement = useState('preferences-saving', () => false)
   const attendu = useState('preferences-attendu', () => '')
   const hydratees = useState('preferences-hydratees', () => false)
@@ -96,7 +96,7 @@ export function usePreferences() {
 
   if (import.meta.client && user.value) hydrater()
 
-  const personnalise = computed(() => estPersonnalise(preferences.value))
+  const personnalise = computed(() => isCustomized(preferences.value))
 
   async function enregistrer(valeurs: Preferences): Promise<boolean> {
     enregistrement.value = true
@@ -113,7 +113,7 @@ export function usePreferences() {
   }
 
   async function reinitialiser(): Promise<boolean> {
-    return enregistrer({ ...PREFERENCES_DEFAUT })
+    return enregistrer({ ...DEFAULT_PREFERENCES })
   }
 
   return { preferences, personnalise, enregistrement, enregistrer, reinitialiser }

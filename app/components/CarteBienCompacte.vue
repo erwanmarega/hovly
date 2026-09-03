@@ -5,8 +5,8 @@ import type { Score } from "~/composables/useScore";
 defineProps<{
   bien: Property;
   score: Score;
-  prixMensuel: number;
-  prixM2: number;
+  monthlyPrice: number;
+  pricePerSqm: number;
   doublons?: number;
   selectionne?: boolean;
   selectionBloquee?: boolean;
@@ -62,8 +62,8 @@ const emit = defineEmits<{
             >
           </p>
           <p class="mt-1 text-base font-semibold tabular-nums">
-            {{ formatNumber(prixMensuel) }} €<span
-              v-if="!estAchat(bien)"
+            {{ formatNumber(monthlyPrice) }} €<span
+              v-if="!isPurchase(bien)"
               class="text-xs font-normal text-stone"
               >/mois</span
             >
@@ -78,7 +78,7 @@ const emit = defineEmits<{
           :surface="bien.surface"
           :nb-pieces="bien.nb_pieces"
           pieces-label="p"
-          :prix-m2="prixM2"
+          :price-per-sqm="pricePerSqm"
           :dpe="bien.dpe"
         >
           <BadgeVisite :visite-le="bien.visite_le" compact />

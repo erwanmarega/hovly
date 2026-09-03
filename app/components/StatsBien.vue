@@ -7,7 +7,7 @@ const props = withDefaults(
     nbPieces?: number | null
     piecesLabel?: string
     etage?: number | null
-    prixM2?: number | null
+    pricePerSqm?: number | null
     dpe?: DPE | null
     taille?: 'sm' | 'md'
   }>(),
@@ -26,7 +26,7 @@ const classePastille = computed(() =>
   <span v-if="surface" :class="classePastille">{{ surface }} m²</span>
   <span v-if="nbPieces" :class="classePastille">{{ nbPieces }} {{ piecesLabel }}</span>
   <span v-if="etage != null" :class="classePastille">Étage {{ etage }}</span>
-  <span v-if="prixM2 != null" :class="classePastille">{{ formatNumber(prixM2) }} €/m²</span>
+  <span v-if="pricePerSqm != null" :class="classePastille">{{ formatNumber(pricePerSqm) }} €/m²</span>
   <BadgeDPE v-if="dpe !== undefined" :dpe="dpe" />
   <slot />
 </template>

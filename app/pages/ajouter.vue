@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Property, DPE, SiteSource, Status, Transaction } from '~/types'
 import type { EntreeImport } from '~/composables/useImportMasse'
-import { detecterSource, STATUTS } from '~/composables/useBiens'
+import { detectSource, STATUSES } from '~/composables/useProperties'
 
 useHead({ title: 'Ajouter un bien — Hovly' })
 
-const { biens, refresh, ajouter } = useBiens()
+const { biens, refresh, add } = useProperties()
 const { preferences } = usePreferences()
 useAsyncData('biens-ajout', () => refresh(), { server: false })
 
@@ -70,7 +70,7 @@ async function lancerImport() {
       })
       if (!b.titre && !b.prix) throw new Error('Aucune donnée extraite')
 
-      await ajouter({
+      await add({
         url_source: entree.url,
         site_source: entree.source!,
         titre: b.titre ?? 'Sans titre',
@@ -106,7 +106,7 @@ const etapeExtraction = ref(0)
 const collage = ref(false)
 let minuteur: ReturnType<typeof setInterval> | undefined
 
-const sourceDetectee = computed(() => (url.value.trim() ? detecterSource(url.value.trim()) : null))
+const sourceDetectee = computed(() => (url.value.trim() ? detectSource(url.value.trim()) : null))
 const urlInvalide = computed(() => url.value.trim().length > 8 && !sourceDetectee.value)
 
 const draft = reactive({
@@ -126,7 +126,7 @@ const draft = reactive({
   note_perso: ''
 })
 
-const prixM2 = computed(() => (draft.surface ? Math.round(draft.prix / draft.surface) : 0))
+const pricePerSqm = computed(() => (draft.surface ? Math.round(draft.prix / draft.surface) : 0))
 
 const scoreApercu = computed(() => {
   if (!draft.prix || !draft.surface) return null
@@ -162,7 +162,7 @@ const scoreApercu = computed(() => {
     actif: true,
     created_at: new Date().toISOString()
   } satisfies Property
-  return scoreBien(provisoire, representants(biens.value), preferences.value)
+  return scoreProperty(provisoire, representants(biens.value), preferences.value)
 })
 
 async function collerDepuisPressePapier() {
@@ -181,7 +181,7 @@ async function collerDepuisPressePapier() {
 async function analyser() {
   error.value = ''
   urlEstRecherche.value = false
-  const source = detecterSource(url.value)
+  const source = detectSource(url.value)
   if (!source) {
     error.value =
       'URL non reconnue. Sources : SeLoger, Leboncoin, PAP, Logic-Immo, Bien’ici, Century 21.'
@@ -232,7 +232,7 @@ onMounted(() => {
   const depuisLanding = useRoute().query.url
   if (typeof depuisLanding !== 'string' || !depuisLanding) return
   url.value = depuisLanding
-  if (detecterSource(depuisLanding)) analyser()
+  if (detectSource(depuisLanding)) analyser()
 })
 
 onBeforeUnmount(() => clearInterval(minuteur))
@@ -251,10 +251,10 @@ async function enregistrer() {
     error.value = `Champs requis : ${manquants.value.join(', ')}.`
     return
   }
-  const source = detecterSource(url.value)!
+  const source = detectSource(url.value)!
   saving.value = true
   try {
-    await ajouter({
+    await add({
       url_source: url.value,
       site_source: source,
       titre: draft.titre,
@@ -654,7 +654,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     <div
                       class="grid h-11 place-items-center rounded-xl bg-surface text-sm font-semibold text-slate"
                     >
-                      {{ formatNumber(prixM2) }} €
+                      {{ formatNumber(pricePerSqm) }} €
                     </div>
                   </div>
                 </div>
@@ -712,7 +712,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                   <label :class="labelCls">Statut</label>
                   <div class="flex flex-wrap gap-2">
                     <button
-                      v-for="s in STATUTS"
+                      v-for="s in STATUSES"
                       :key="s.value"
                       type="button"
                       class="rounded-full px-3.5 py-1.5 text-sm font-medium transition"
@@ -787,7 +787,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     </div>
                     <div class="rounded-xl bg-surface py-2.5">
                       <p class="text-xs text-stone">€/m²</p>
-                      <p class="mt-0.5 font-semibold">{{ formatNumber(prixM2) }}</p>
+                      <p class="mt-0.5 font-semibold">{{ formatNumber(pricePerSqm) }}</p>
                     </div>
                   </div>
 

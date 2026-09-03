@@ -6,7 +6,7 @@ const props = defineProps<{ bien: Property }>()
 const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
 const { planifier } = useVisite()
-const { setStatut } = useBiens()
+const { setStatus } = useProperties()
 const now = useNow()
 
 const brouillon = ref(versInputLocal(props.bien.visite_le))
@@ -53,7 +53,7 @@ function valider() {
 async function marquerVisite() {
   occupe.value = true
   try {
-    await setStatut(props.bien.id, 'visite')
+    await setStatus(props.bien.id, 'visite')
     emit('maj', { statut: 'visite' })
   } finally {
     occupe.value = false

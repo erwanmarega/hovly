@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scoreBien, PREFERENCES_DEFAUT } from '../app/composables/useScore'
+import { scoreProperty, DEFAULT_PREFERENCES } from '../app/composables/useScore'
 import type { Property, DPE } from '../app/types'
 
 function bien(over: Partial<Property> = {}): Property {
@@ -30,13 +30,13 @@ function bien(over: Partial<Property> = {}): Property {
 }
 
 const partPrix = (b: Property, ctx: Property[]) =>
-  scoreBien(b, ctx).parts.find((p) => p.label === 'Prix au m²')!
+  scoreProperty(b, ctx).parts.find((p) => p.label === 'Prix au m²')!
 const partDpe = (b: Property, ctx: Property[]) =>
-  scoreBien(b, ctx).parts.find((p) => p.label === 'Performance énergétique')!
+  scoreProperty(b, ctx).parts.find((p) => p.label === 'Performance énergétique')!
 const partCharges = (b: Property, ctx: Property[]) =>
-  scoreBien(b, ctx).parts.find((p) => p.label === 'Charges')!
+  scoreProperty(b, ctx).parts.find((p) => p.label === 'Charges')!
 
-describe('scoreBien — prix au m²', () => {
+describe('scoreProperty — prix au m²', () => {
   it('donne 25 pts neutres sans comparable', () => {
     const p = partPrix(bien(), [])
     expect(p.points).toBe(25)
@@ -114,7 +114,7 @@ describe('scoreBien — prix au m²', () => {
   })
 })
 
-describe('scoreBien — DPE', () => {
+describe('scoreProperty — DPE', () => {
   const bareme: [DPE, number][] = [
     ['A', 30],
     ['B', 26],
@@ -138,7 +138,7 @@ describe('scoreBien — DPE', () => {
   })
 })
 
-describe('scoreBien — charges', () => {
+describe('scoreProperty — charges', () => {
   it('donne 10 pts neutres si les charges sont absentes', () => {
     const p = partCharges(bien({ charges: null }), [])
     expect(p.points).toBe(10)
@@ -168,81 +168,81 @@ describe('scoreBien — charges', () => {
   })
 })
 
-describe('scoreBien — total et libellé', () => {
+describe('scoreProperty — total et libellé', () => {
   const ctxMedian = [
     bien({ id: 'a', prix: 200000, surface: 50 }),
     bien({ id: 'b', prix: 200000, surface: 50 })
   ]
 
   it('somme les trois critères', () => {
-    const s = scoreBien(bien({ prix: 200000, surface: 50, dpe: 'D', charges: 60000 }), ctxMedian)
+    const s = scoreProperty(bien({ prix: 200000, surface: 50, dpe: 'D', charges: 60000 }), ctxMedian)
     expect(s.parts.map((p) => p.points)).toEqual([25, 15, 0])
     expect(s.total).toBe(40)
     expect(s.parts.reduce((acc, p) => acc + p.max, 0)).toBe(100)
   })
 
   it('note un bien idéal "Excellent"', () => {
-    const s = scoreBien(bien({ prix: 100000, surface: 50, dpe: 'A', charges: 5000 }), ctxMedian)
+    const s = scoreProperty(bien({ prix: 100000, surface: 50, dpe: 'A', charges: 5000 }), ctxMedian)
     expect(s.total).toBe(100)
     expect(s.label).toBe('Excellent')
     expect(s.tint).toBe('bg-teal')
   })
 
   it('note un bien médian "Correct"', () => {
-    const s = scoreBien(bien({ prix: 200000, surface: 50, dpe: 'D', charges: null }), ctxMedian)
+    const s = scoreProperty(bien({ prix: 200000, surface: 50, dpe: 'D', charges: null }), ctxMedian)
     expect(s.total).toBe(50)
     expect(s.label).toBe('Correct')
     expect(s.tint).toBe('bg-brand')
   })
 
   it('note un bien cher, passoire et chargé "Faible"', () => {
-    const s = scoreBien(bien({ prix: 400000, surface: 50, dpe: 'G', charges: 200000 }), ctxMedian)
+    const s = scoreProperty(bien({ prix: 400000, surface: 50, dpe: 'G', charges: 200000 }), ctxMedian)
     expect(s.total).toBe(0)
     expect(s.label).toBe('Faible')
     expect(s.tint).toBe('bg-coral')
   })
 
   it('classe "Bon" entre 65 et 79', () => {
-    const s = scoreBien(bien({ prix: 100000, surface: 50, dpe: 'D', charges: null }), ctxMedian)
+    const s = scoreProperty(bien({ prix: 100000, surface: 50, dpe: 'D', charges: null }), ctxMedian)
     expect(s.total).toBe(75)
     expect(s.label).toBe('Bon')
   })
 
   it('classe "Moyen" entre 35 et 49', () => {
-    const s = scoreBien(bien({ prix: 300000, surface: 50, dpe: 'D', charges: null }), ctxMedian)
+    const s = scoreProperty(bien({ prix: 300000, surface: 50, dpe: 'D', charges: null }), ctxMedian)
     expect(s.total).toBe(25)
     expect(s.label).toBe('Faible')
-    const s2 = scoreBien(bien({ prix: 220000, surface: 50, dpe: 'C', charges: null }), ctxMedian)
+    const s2 = scoreProperty(bien({ prix: 220000, surface: 50, dpe: 'C', charges: null }), ctxMedian)
     expect(s2.total).toBe(46)
     expect(s2.label).toBe('Moyen')
   })
 })
 
-describe('scoreBien — biens en achat', () => {
+describe('scoreProperty — biens en achat', () => {
   const prefsAchat = {
-    ...PREFERENCES_DEFAUT,
+    ...DEFAULT_PREFERENCES,
     budgetAchatMax: 200000
   }
 
   it('vérifie le budget d’achat contre le prix total, pas le budget location', () => {
     const b = bien({ transaction: 'achat', prix: 25000000 }) // 250 000 €
-    const critere = scoreBien(b, [], prefsAchat).criteres.find((c) => c.label === 'Budget')!
+    const critere = scoreProperty(b, [], prefsAchat).criteria.find((c) => c.label === 'Budget')!
     expect(critere.ok).toBe(false)
     expect(critere.detail).toContain((250000).toLocaleString('fr-FR'))
     expect(critere.detail).toContain((200000).toLocaleString('fr-FR'))
 
-    const ok = scoreBien(b, [], { ...prefsAchat, budgetAchatMax: 300000 }).criteres[0]!
+    const ok = scoreProperty(b, [], { ...prefsAchat, budgetAchatMax: 300000 }).criteria[0]!
     expect(ok.ok).toBe(true)
   })
 
   it('ignore le budget location pour un achat, et réciproquement', () => {
     const location = bien({ prix: 150000 }) // 1 500 €/mois
-    const avecAchat = scoreBien(location, [], prefsAchat)
-    expect(avecAchat.criteres.find((c) => c.label === 'Budget')).toBeUndefined()
+    const avecAchat = scoreProperty(location, [], prefsAchat)
+    expect(avecAchat.criteria.find((c) => c.label === 'Budget')).toBeUndefined()
 
     const achat = bien({ transaction: 'achat', prix: 25000000 })
-    const avecLocation = scoreBien(achat, [], { ...PREFERENCES_DEFAUT, budgetMax: 1000 })
-    expect(avecLocation.criteres.find((c) => c.label === 'Budget')).toBeUndefined()
+    const avecLocation = scoreProperty(achat, [], { ...DEFAULT_PREFERENCES, budgetMax: 1000 })
+    expect(avecLocation.criteria.find((c) => c.label === 'Budget')).toBeUndefined()
   })
 
   it('ne compare les €/m² qu’entre biens de même nature', () => {

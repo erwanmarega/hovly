@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Status } from "~/types";
-import { STATUTS } from "~/composables/useBiens";
+import { STATUSES } from "~/composables/useProperties";
 
 const props = defineProps<{
   statut: Status;
@@ -90,7 +90,7 @@ onBeforeUnmount(() => ecouter(false));
           }"
         >
           <button
-            v-for="s in STATUTS"
+            v-for="s in STATUSES"
             :key="s.value"
             class="block w-full rounded-lg px-3 py-1.5 text-left text-sm hover:bg-surface"
             :class="

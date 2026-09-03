@@ -28,7 +28,7 @@ const emit = defineEmits<{
 }>();
 
 const conteneur = ref<HTMLElement | null>(null);
-const { biens: contexte } = useBiens();
+const { biens: contexte } = useProperties();
 
 let carte: LeafletMap | null = null;
 let observateur: ResizeObserver | null = null;
@@ -85,9 +85,9 @@ function echapper(s: string): string {
 
 function popup(b: Property): string {
   const prix = b.prix
-    ? `${formatNumber(Math.round(b.prix / 100))} €${estAchat(b) ? "" : "/mois"}`
+    ? `${formatNumber(Math.round(b.prix / 100))} €${isPurchase(b) ? "" : "/mois"}`
     : "Prix inconnu";
-  const m2 = prixAuM2(b) ? ` · ${formatNumber(prixAuM2(b)!)} €/m²` : "";
+  const m2 = pricePerSqm(b) ? ` · ${formatNumber(pricePerSqm(b)!)} €/m²` : "";
   const approx =
     b.geo_precision === "ville"
       ? '<div class="mt-1 text-stone">Position approximative</div>'
@@ -116,8 +116,8 @@ async function dessiner() {
   marqueurs.clear();
 
   for (const b of localises.value) {
-    const total = scoreBien(b, contexte.value).total;
-    const couleur = couleurScore(total);
+    const total = scoreProperty(b, contexte.value).total;
+    const couleur = scoreColor(total);
 
     if (b.geo_precision === "ville") {
       couche.push(

@@ -3,7 +3,7 @@ import type { SharedProperty } from "~/types";
 
 const props = defineProps<{ bien: SharedProperty; token: string }>();
 
-const estAchatPartage = computed(() => estAchat(props.bien));
+const estAchatPartage = computed(() => isPurchase(props.bien));
 </script>
 
 <template>

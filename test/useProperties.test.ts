@@ -7,7 +7,7 @@ vi.stubGlobal('useState', (cle: string, init: () => any) => {
   return etats.get(cle)!
 })
 
-const { STATUTS, useBiens, detecterSource } = await import('../app/composables/useBiens')
+const { STATUSES, useProperties, detectSource } = await import('../app/composables/useProperties')
 
 function bien(over: Partial<Property> = {}): Property {
   return {
@@ -37,73 +37,73 @@ function bien(over: Partial<Property> = {}): Property {
 
 beforeEach(() => etats.clear())
 
-describe('STATUTS', () => {
+describe('STATUSES', () => {
   it('expose les 5 statuts avec un libellé', () => {
-    expect(STATUTS.map((s) => s.value)).toEqual([
+    expect(STATUSES.map((s) => s.value)).toEqual([
       'a_visiter',
       'planifie',
       'visite',
       'coup_de_coeur',
       'elimine'
     ])
-    expect(STATUTS.every((s) => s.label.length > 0)).toBe(true)
+    expect(STATUSES.every((s) => s.label.length > 0)).toBe(true)
   })
 })
 
-describe('prixMensuel', () => {
+describe('monthlyPrice', () => {
   it('convertit les centimes en euros', () => {
-    const { prixMensuel } = useBiens()
-    expect(prixMensuel(bien({ prix: 157000 }))).toBe(1570)
+    const { monthlyPrice } = useProperties()
+    expect(monthlyPrice(bien({ prix: 157000 }))).toBe(1570)
   })
 
   it('arrondit à l’euro', () => {
-    const { prixMensuel } = useBiens()
-    expect(prixMensuel(bien({ prix: 157049 }))).toBe(1570)
-    expect(prixMensuel(bien({ prix: 157050 }))).toBe(1571)
+    const { monthlyPrice } = useProperties()
+    expect(monthlyPrice(bien({ prix: 157049 }))).toBe(1570)
+    expect(monthlyPrice(bien({ prix: 157050 }))).toBe(1571)
   })
 })
 
-describe('prixM2', () => {
+describe('pricePerSqm', () => {
   it('divise le loyer en euros par la surface', () => {
-    const { prixM2 } = useBiens()
-    expect(prixM2(bien({ prix: 100000, surface: 50 }))).toBe(20)
+    const { pricePerSqm } = useProperties()
+    expect(pricePerSqm(bien({ prix: 100000, surface: 50 }))).toBe(20)
   })
 
   it('arrondit le résultat', () => {
-    const { prixM2 } = useBiens()
-    expect(prixM2(bien({ prix: 157000, surface: 42 }))).toBe(37)
+    const { pricePerSqm } = useProperties()
+    expect(pricePerSqm(bien({ prix: 157000, surface: 42 }))).toBe(37)
   })
 
   it('retourne 0 sans surface', () => {
-    const { prixM2 } = useBiens()
-    expect(prixM2(bien({ surface: 0 }))).toBe(0)
+    const { pricePerSqm } = useProperties()
+    expect(pricePerSqm(bien({ surface: 0 }))).toBe(0)
   })
 })
 
-describe('detecterSource (client)', () => {
+describe('detectSource (client)', () => {
   it('reconnaît chaque source supportée', () => {
-    expect(detecterSource('https://www.seloger.com/annonces/1.htm')).toBe('seloger')
-    expect(detecterSource('https://www.leboncoin.fr/ventes/2')).toBe('leboncoin')
-    expect(detecterSource('https://www.pap.fr/annonce/3')).toBe('pap')
-    expect(detecterSource('https://www.logic-immo.com/detail/4')).toBe('logic-immo')
-    expect(detecterSource('https://www.bienici.com/annonce/5')).toBe('bienici')
-    expect(detecterSource('https://www.orpi.com/annonce-vente-appartement-6/')).toBe('orpi')
+    expect(detectSource('https://www.seloger.com/annonces/1.htm')).toBe('seloger')
+    expect(detectSource('https://www.leboncoin.fr/ventes/2')).toBe('leboncoin')
+    expect(detectSource('https://www.pap.fr/annonce/3')).toBe('pap')
+    expect(detectSource('https://www.logic-immo.com/detail/4')).toBe('logic-immo')
+    expect(detectSource('https://www.bienici.com/annonce/5')).toBe('bienici')
+    expect(detectSource('https://www.orpi.com/annonce-vente-appartement-6/')).toBe('orpi')
   })
 
   it('retourne null pour une source non supportée', () => {
-    expect(detecterSource('https://www.example.com/x')).toBeNull()
+    expect(detectSource('https://www.example.com/x')).toBeNull()
   })
 
   it('retourne null pour une URL invalide', () => {
-    expect(detecterSource('pas-une-url')).toBeNull()
-    expect(detecterSource('')).toBeNull()
+    expect(detectSource('pas-une-url')).toBeNull()
+    expect(detectSource('')).toBeNull()
   })
 })
 
 describe('état partagé', () => {
   it('partage la liste des biens entre deux appels', () => {
-    const a = useBiens()
-    const b = useBiens()
+    const a = useProperties()
+    const b = useProperties()
     a.biens.value = [bien()]
     expect(b.biens.value).toHaveLength(1)
   })

@@ -8,7 +8,7 @@ import {
   statistiquesMarche,
   cleCache
 } from '../server/utils/dvf'
-import { ressembleVente, prixAuM2, ecartPct } from '~/composables/useMarche'
+import { looksLikeSale, pricePerSqm, gapPercent } from '~/composables/useMarket'
 import type { NeighborhoodMarket } from '~/types'
 
 let fetchMock: MockInstance<typeof fetch>
@@ -223,22 +223,22 @@ describe('cleCache', () => {
   })
 })
 
-describe('ressembleVente / prixAuM2 / ecartPct', () => {
+describe('looksLikeSale / pricePerSqm / gapPercent', () => {
   it('distingue un loyer d’un prix de vente', () => {
-    expect(ressembleVente({ prix: 120000 })).toBe(false) // 1 200 €/mois
-    expect(ressembleVente({ prix: 25000000 })).toBe(true) // 250 000 €
-    expect(ressembleVente({ prix: 0 })).toBe(false)
+    expect(looksLikeSale({ prix: 120000 })).toBe(false) // 1 200 €/mois
+    expect(looksLikeSale({ prix: 25000000 })).toBe(true) // 250 000 €
+    expect(looksLikeSale({ prix: 0 })).toBe(false)
   })
 
   it('calcule le prix au m² en euros', () => {
-    expect(prixAuM2({ prix: 25000000, surface: 50 })).toBe(5000)
-    expect(prixAuM2({ prix: 25000000, surface: 0 })).toBeNull()
+    expect(pricePerSqm({ prix: 25000000, surface: 50 })).toBe(5000)
+    expect(pricePerSqm({ prix: 25000000, surface: 0 })).toBeNull()
   })
 
   it('mesure l’écart à la médiane en %, négatif sous le marché', () => {
     const marche = { mediane: 5000 } as NeighborhoodMarket
-    expect(ecartPct(4500, marche)).toBe(-10)
-    expect(ecartPct(5600, marche)).toBe(12)
-    expect(ecartPct(5000, marche)).toBe(0)
+    expect(gapPercent(4500, marche)).toBe(-10)
+    expect(gapPercent(5600, marche)).toBe(12)
+    expect(gapPercent(5000, marche)).toBe(0)
   })
 })

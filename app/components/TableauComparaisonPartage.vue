@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { SharedProperty } from "~/types";
-import { comparerPublic } from "~/composables/useComparateur";
+import { comparePublic } from "~/composables/useComparator";
 
 const props = defineProps<{ biens: SharedProperty[]; token: string }>();
 
-const lignes = computed(() => comparerPublic(props.biens));
+const lignes = computed(() => comparePublic(props.biens));
 </script>
 
 <template>
@@ -53,25 +53,25 @@ const lignes = computed(() => comparerPublic(props.biens));
       <tbody>
         <tr
           v-for="l in lignes"
-          :key="l.cle"
+          :key="l.key"
           class="border-t border-hairline-soft transition hover:bg-surface-soft"
         >
           <th
             class="sticky left-0 z-10 bg-white p-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-stone"
           >
             {{ l.label }}
-            <span v-if="l.sens" class="ml-1 font-normal normal-case text-stone/70">
-              {{ l.sens === "min" ? "↓ mieux" : "↑ mieux" }}
+            <span v-if="l.direction" class="ml-1 font-normal normal-case text-stone/70">
+              {{ l.direction === "min" ? "↓ mieux" : "↑ mieux" }}
             </span>
           </th>
           <td
-            v-for="(valeur, i) in l.affichage"
+            v-for="(valeur, i) in l.display"
             :key="i"
             class="border-l border-hairline-soft p-4 align-middle tabular-nums"
-            :class="l.meilleurs.includes(i) ? 'font-semibold text-[#0a4a42]' : 'text-slate'"
+            :class="l.best.includes(i) ? 'font-semibold text-[#0a4a42]' : 'text-slate'"
           >
             <span
-              v-if="l.meilleurs.includes(i)"
+              v-if="l.best.includes(i)"
               class="mr-1.5 inline-block rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold"
             >★</span>
             {{ valeur }}

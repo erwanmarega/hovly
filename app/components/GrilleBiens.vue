@@ -6,8 +6,8 @@ const props = withDefaults(
   defineProps<{
     biens: Property[];
     score: (b: Property) => Score;
-    prixMensuel: (b: Property) => number;
-    prixM2: (b: Property) => number;
+    monthlyPrice: (b: Property) => number;
+    pricePerSqm: (b: Property) => number;
     page: number;
     total: number;
     parPage: number;
@@ -34,8 +34,8 @@ const emit = defineEmits<{
         :key="b.id"
         :bien="b"
         :score="props.score(b)"
-        :prix-mensuel="props.prixMensuel(b)"
-        :prix-m2="props.prixM2(b)"
+        :monthly-price="props.monthlyPrice(b)"
+        :price-per-sqm="props.pricePerSqm(b)"
         :style="{ '--i': i }"
         @supprimer="emit('supprimer', $event)"
         @mouseenter="emit('survole', b.id)"

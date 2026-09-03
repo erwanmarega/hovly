@@ -15,7 +15,7 @@ import {
   mensualiteCredit,
   optionsDepuisPreferences
 } from '../app/composables/useCoutReel'
-import { PREFERENCES_DEFAUT } from '../app/composables/useScore'
+import { DEFAULT_PREFERENCES } from '../app/composables/useScore'
 
 function bien(over: Partial<Property> = {}): Property {
   return {
@@ -141,7 +141,7 @@ describe('coutReel', () => {
 
 describe('optionsDepuisPreferences', () => {
   it('retombe sur les valeurs par défaut', () => {
-    expect(optionsDepuisPreferences(PREFERENCES_DEFAUT)).toEqual({
+    expect(optionsDepuisPreferences(DEFAULT_PREFERENCES)).toEqual({
       prixKwh: PRIX_KWH_DEFAUT,
       chauffageDansCharges: false
     })
@@ -150,7 +150,7 @@ describe('optionsDepuisPreferences', () => {
   it('reprend les réglages de l’utilisateur', () => {
     expect(
       optionsDepuisPreferences({
-        ...PREFERENCES_DEFAUT,
+        ...DEFAULT_PREFERENCES,
         prixKwh: 22,
         chauffageDansCharges: true
       })

@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 const source = computed(() => detecterSource(props.resultat.url))
 
-const prixM2 = computed(() => {
+const pricePerSqm = computed(() => {
   const { prix, surface } = props.resultat
   if (!prix || !surface) return null
   return Math.round(prix / 100 / surface)
@@ -69,7 +69,7 @@ const quand = computed(() =>
           :surface="resultat.surface"
           :nb-pieces="resultat.nb_pieces"
           pieces-label="p"
-          :prix-m2="prixM2"
+          :price-per-sqm="pricePerSqm"
         >
           <template #avant>
             <span

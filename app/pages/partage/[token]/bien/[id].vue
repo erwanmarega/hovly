@@ -21,7 +21,7 @@ const bien = computed(
   () => partage.value?.biens.find((b) => b.id === id) ?? null
 );
 
-const achat = computed(() => bien.value != null && estAchat(bien.value));
+const achat = computed(() => bien.value != null && isPurchase(bien.value));
 
 useHead({
   title: () =>
