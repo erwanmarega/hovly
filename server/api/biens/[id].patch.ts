@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
-  if (body?.statut && !STATUTS_VALIDES.includes(body.statut)) {
+  if (body?.statut && !VALID_STATUSES.includes(body.statut)) {
     throw createError({ statusCode: 400, statusMessage: 'Statut invalide' })
   }
 
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const patch: Record<string, unknown> = {}
-  for (const champ of CHAMPS_MODIFIABLES) {
+  for (const champ of EDITABLE_FIELDS) {
     if (champ in body) patch[champ] = body[champ]
   }
 

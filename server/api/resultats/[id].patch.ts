@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
     if (e?.statusCode === 422) throw e
   }
 
-  const bien = await creerBien(client, user.id, payload)
+  const bien = await createProperty(client, user.id, payload)
 
   const { data, error: errMaj } = await client
     .from('recherche_resultats')

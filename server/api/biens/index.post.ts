@@ -1,4 +1,4 @@
-import { MAX_BIENS_ACTIFS } from '../../utils/biens'
+import { MAX_ACTIVE_PROPERTIES } from '../../utils/properties'
 import { assertTailleCorps, validerUrlSource } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
@@ -19,13 +19,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: errCount.message })
   }
 
-  if ((count ?? 0) >= MAX_BIENS_ACTIFS) {
+  if ((count ?? 0) >= MAX_ACTIVE_PROPERTIES) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Trop de biens',
-      message: `Maximum ${MAX_BIENS_ACTIFS} biens actifs. Supprime ou archive un bien pour en ajouter un nouveau.`
+      message: `Maximum ${MAX_ACTIVE_PROPERTIES} biens actifs. Supprime ou archive un bien pour en ajouter un nouveau.`
     })
   }
 
-  return creerBien(client, user.id, body)
+  return createProperty(client, user.id, body)
 })

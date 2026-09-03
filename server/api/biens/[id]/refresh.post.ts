@@ -3,7 +3,7 @@ import { scrapeUrl } from '../../../utils/scrape'
 import { geocoder } from '../../../utils/geocode'
 import { isPricePlausible } from '../../../utils/check'
 import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
-import { DEFAULT_PHOTO } from '../../../utils/biens'
+import { DEFAULT_PHOTO } from '../../../utils/properties'
 
 const CHAMPS_RAFRAICHIS = [
   'titre',

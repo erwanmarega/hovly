@@ -19,14 +19,14 @@ export function serviceDb(event: H3Event) {
   return serverSupabaseServiceRole(event)
 }
 
-export const CHAMPS_MODIFIABLES = [
+export const EDITABLE_FIELDS = [
   'titre', 'prix', 'surface', 'nb_pieces', 'etage', 'charges',
   'dpe', 'adresse', 'ville', 'code_postal', 'photos', 'description',
   'statut', 'transaction', 'type_bien', 'note_perso', 'actif',
   'visite_le', 'compte_rendu', 'checklist'
 ] as const
 
-export const STATUTS_VALIDES = [
+export const VALID_STATUSES = [
   'a_visiter', 'planifie', 'visite', 'elimine', 'coup_de_coeur'
 ] as const
 
@@ -34,20 +34,20 @@ export { DEFAULT_PHOTO }
 
 /** Nombre maximum de biens actifs par utilisateur. Protège contre les scripts
  *  qui créeraient des milliers de lignes et les coûts de scraping associés. */
-export const MAX_BIENS_ACTIFS = 100
+export const MAX_ACTIVE_PROPERTIES = 100
 
 /**
  * Insère un bien, amorce son historique de prix et le géocode.
  * Partagé par l'ajout manuel et la conversion d'un résultat de veille.
  */
-export async function creerBien(
+export async function createProperty(
   client: any,
   userId: string,
   body: Record<string, any>
 ) {
   const payload: Record<string, unknown> = { user_id: userId }
-  for (const champ of CHAMPS_MODIFIABLES) {
-    if (champ in body) payload[champ] = body[champ]
+  for (const field of EDITABLE_FIELDS) {
+    if (field in body) payload[field] = body[field]
   }
   if (!Array.isArray(payload.photos) || payload.photos.length === 0) {
     payload.photos = [DEFAULT_PHOTO]
