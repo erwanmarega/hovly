@@ -1,13 +1,13 @@
 import { MAX_ACTIVE_PROPERTIES } from '../../utils/properties'
-import { assertTailleCorps, validerUrlSource } from '../../utils/validation'
+import { assertBodySize, validateSourceUrl } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const body = await readBody(event)
 
-  body.url_source = validerUrlSource(body?.url_source)
+  body.url_source = validateSourceUrl(body?.url_source)
 
   const { count, error: errCount } = await client
     .from('biens')

@@ -13,7 +13,7 @@ import { detecterTransaction } from './transaction'
 import { detecterTypeBien } from './type-bien'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
-import { assertHostnamePublique } from '../validation'
+import { assertPublicHostname } from '../validation'
 
 export interface ScrapeResult {
   source: SiteSource
@@ -218,7 +218,7 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   if (!source) {
     throw createError({ statusCode: 422, statusMessage: 'Source non supportée' })
   }
-  await assertHostnamePublique(new URL(url).hostname)
+  await assertPublicHostname(new URL(url).hostname)
 
   if (SITES_PROTEGES.includes(source)) {
     return scrapeViaApiExtract(url, source)

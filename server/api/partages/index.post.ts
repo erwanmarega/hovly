@@ -1,11 +1,11 @@
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
-import { assertTailleCorps, nettoyerTexte } from '../../utils/validation'
+import { assertBodySize, cleanText } from '../../utils/validation'
 import { generateShareToken, MAX_SHARED_PROPERTIES } from '../../utils/partages'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   assertRateLimitForUser(event, user.id, QUOTAS.partage, QUOTAS.partageHeure)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const body = await readBody(event)
 
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const titre = nettoyerTexte(body?.titre, 80)
+  const titre = cleanText(body?.titre, 80)
   const token = generateShareToken()
 
   const { data: partage, error } = await client

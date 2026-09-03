@@ -1,4 +1,4 @@
-import { assertTailleCorps } from '../../utils/validation'
+import { assertBodySize } from '../../utils/validation'
 
 interface CorpsAbonnement {
   endpoint?: string
@@ -7,7 +7,7 @@ interface CorpsAbonnement {
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const body = await readBody<CorpsAbonnement>(event)
 
   const endpoint = body?.endpoint

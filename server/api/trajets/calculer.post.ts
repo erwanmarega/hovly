@@ -1,7 +1,7 @@
 import type { Anchor, Property, TravelMode, Commute } from '~/types'
 import { durationsToAnchor, batches, routingAvailable } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
-import { assertTailleCorps } from '../../utils/validation'
+import { assertBodySize } from '../../utils/validation'
 import { MAX_ANCHORS } from '~/composables/usePreferences'
 
 const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
@@ -23,7 +23,7 @@ const memePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   assertRateLimitForUser(event, user.id, QUOTAS.trajets, QUOTAS.trajetsHeure)
-  assertTailleCorps(event)
+  assertBodySize(event)
 
   const body = await readBody<{ ancres?: unknown }>(event)
   const ancres = ancresValides(body?.ancres)

@@ -2,7 +2,7 @@ import type { WatchResult } from '~/types'
 import { scrapeUrl } from '../../utils/scrape'
 import { detecterSource } from '../../utils/scrape/source'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
-import { assertTailleCorps } from '../../utils/validation'
+import { assertBodySize } from '../../utils/validation'
 
 /** Ce que la carte de résultat nous a déjà appris, si la fiche est illisible. */
 function depuisResultat(r: WatchResult) {
@@ -22,7 +22,7 @@ function depuisResultat(r: WatchResult) {
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapeHeure)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)

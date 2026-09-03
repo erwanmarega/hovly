@@ -1,16 +1,16 @@
 import { MOTIF_FICHE } from '../../utils/scrape/liste'
 import { detecterSource } from '../../utils/scrape/source'
-import { assertTailleCorps, validerUrlSource } from '../../utils/validation'
+import { assertBodySize, validateSourceUrl } from '../../utils/validation'
 
 export const MAX_RECHERCHES = 10
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const body = await readBody(event)
 
-  const url = validerUrlSource(body?.url)
+  const url = validateSourceUrl(body?.url)
 
   const source = detecterSource(url)
   if (!source) {

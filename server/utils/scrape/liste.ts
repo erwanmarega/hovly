@@ -14,7 +14,7 @@ import { detecterSource } from './source'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
 import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
-import { assertHostnamePublique } from '../validation'
+import { assertPublicHostname } from '../validation'
 
 export interface AnnonceListe {
   url: string
@@ -458,7 +458,7 @@ export async function scrapeListe(url: string): Promise<ListeResult> {
   if (!source) {
     throw createError({ statusCode: 422, statusMessage: 'Source non supportée' })
   }
-  await assertHostnamePublique(new URL(url).hostname)
+  await assertPublicHostname(new URL(url).hostname)
 
   let data: PageData
   if (SITES_PROTEGES.includes(source)) {

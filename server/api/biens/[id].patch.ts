@@ -1,8 +1,8 @@
-import { assertTailleCorps } from '../../utils/validation'
+import { assertBodySize } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
