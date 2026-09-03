@@ -7,7 +7,7 @@
  * sanitisera. On ne lit jamais `err.message` d'une erreur de fetch : il vaut
  * « [POST] "/api/scrape": 423 Anti-bot », inutilisable en interface.
  */
-interface ErreurFetch {
+interface FetchError {
   statusCode?: number
   statusMessage?: string
   data?: {
@@ -18,17 +18,17 @@ interface ErreurFetch {
   }
 }
 
-export function messageErreur(e: unknown, defaut: string): string {
-  const err = e as ErreurFetch
-  return err?.data?.message || err?.data?.statusMessage || err?.statusMessage || defaut
+export function errorMessage(e: unknown, fallback: string): string {
+  const err = e as FetchError
+  return err?.data?.message || err?.data?.statusMessage || err?.statusMessage || fallback
 }
 
-export function codeErreur(e: unknown): number | null {
-  const err = e as ErreurFetch
+export function errorCode(e: unknown): number | null {
+  const err = e as FetchError
   return err?.statusCode ?? err?.data?.statusCode ?? null
 }
 
 /** Charge utile posée par le serveur via `createError({ data })`. */
-export function donneesErreur(e: unknown): Record<string, unknown> | null {
-  return (e as ErreurFetch)?.data?.data ?? null
+export function errorData(e: unknown): Record<string, unknown> | null {
+  return (e as FetchError)?.data?.data ?? null
 }

@@ -1,15 +1,15 @@
-export type TypeToast = 'succes' | 'erreur'
+export type ToastType = 'succes' | 'erreur'
 
 export function useToast() {
-  const toast = useState<{ texte: string; type: TypeToast } | null>('toast-global', () => null)
+  const toast = useState<{ message: string; type: ToastType } | null>('toast-global', () => null)
 
-  function annoncer(texte: string, type: TypeToast = 'succes') {
-    toast.value = { texte, type }
+  function announce(message: string, type: ToastType = 'succes') {
+    toast.value = { message, type }
   }
 
-  function fermer() {
+  function close() {
     toast.value = null
   }
 
-  return { toast, annoncer, fermer }
+  return { toast, announce, close }
 }

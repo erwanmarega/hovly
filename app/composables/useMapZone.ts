@@ -1,12 +1,12 @@
 import type { Property } from "~/types";
 
-export interface ZoneCarte {
+export interface MapZone {
   lat: number;
   lon: number;
-  rayonM: number;
+  radiusM: number;
 }
 
-const RAYON_TERRE_M = 6_371_000;
+const EARTH_RADIUS_M = 6_371_000;
 
 /** Distance à vol d'oiseau entre deux points, en mètres. */
 export function distanceM(
@@ -19,20 +19,20 @@ export function distanceM(
   const h =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
-  return 2 * RAYON_TERRE_M * Math.asin(Math.sqrt(h));
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
 
-export function useZoneCarte() {
-  const zone = useState<ZoneCarte | null>("zone-carte", () => null);
+export function useMapZone() {
+  const zone = useState<MapZone | null>("map-zone", () => null);
 
-  function dansZone(bien: Property): boolean {
+  function inZone(bien: Property): boolean {
     if (!zone.value || bien.lat == null || bien.lon == null) return !zone.value;
-    return distanceM(zone.value, { lat: bien.lat, lon: bien.lon }) <= zone.value.rayonM;
+    return distanceM(zone.value, { lat: bien.lat, lon: bien.lon }) <= zone.value.radiusM;
   }
 
-  function effacer() {
+  function clear() {
     zone.value = null;
   }
 
-  return { zone, dansZone, effacer };
+  return { zone, inZone, clear };
 }

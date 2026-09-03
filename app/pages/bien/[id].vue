@@ -226,7 +226,7 @@ async function rafraichir() {
     }
   } catch (e: unknown) {
     refreshErreur.value = true;
-    messageRefresh.value = messageErreur(e, "Rafraîchissement impossible.");
+    messageRefresh.value = errorMessage(e, "Rafraîchissement impossible.");
   } finally {
     rafraichissement.value = false;
   }
@@ -234,7 +234,7 @@ async function rafraichir() {
 
 const confirmationSuppression = ref(false);
 const deleting = ref(false);
-const { annoncer: annoncerToast } = useToast();
+const { announce: annoncerToast } = useToast();
 async function confirmerSuppression() {
   deleting.value = true;
   try {

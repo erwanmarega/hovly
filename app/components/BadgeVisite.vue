@@ -7,21 +7,21 @@ const props = withDefaults(
   { compact: false }
 )
 
-const maintenant = useMaintenant()
+const now = useNow()
 
 const passee = computed(
-  () => !!props.visiteLe && new Date(props.visiteLe).getTime() < maintenant.value.getTime()
+  () => !!props.visiteLe && new Date(props.visiteLe).getTime() < now.value.getTime()
 )
 
 const aujourdhui = computed(
   () =>
     !!props.visiteLe &&
     !passee.value &&
-    joursAvant(props.visiteLe, maintenant.value) === 0
+    joursAvant(props.visiteLe, now.value) === 0
 )
 
 const libelle = computed(() =>
-  props.visiteLe ? libelleVisite(props.visiteLe, maintenant.value) : ''
+  props.visiteLe ? libelleVisite(props.visiteLe, now.value) : ''
 )
 
 const teinte = computed(() => {

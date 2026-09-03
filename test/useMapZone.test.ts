@@ -7,7 +7,7 @@ vi.stubGlobal('useState', (cle: string, init: () => any) => {
   return etats.get(cle)!
 })
 
-const { distanceM, useZoneCarte } = await import('../app/composables/useZoneCarte')
+const { distanceM, useMapZone } = await import('../app/composables/useMapZone')
 
 function bien(over: Partial<Property> = {}): Property {
   return {
@@ -59,33 +59,33 @@ describe('distanceM', () => {
   })
 })
 
-describe('useZoneCarte', () => {
+describe('useMapZone', () => {
   it('sans zone active, tous les biens passent', () => {
-    const { zone, dansZone } = useZoneCarte()
+    const { zone, inZone } = useMapZone()
     zone.value = null
-    expect(dansZone(bien())).toBe(true)
-    expect(dansZone(bien({ lat: null, lon: null }))).toBe(true)
+    expect(inZone(bien())).toBe(true)
+    expect(inZone(bien({ lat: null, lon: null }))).toBe(true)
   })
 
   it('avec une zone active, ne garde que les biens à l’intérieur du rayon', () => {
-    const { zone, dansZone } = useZoneCarte()
-    zone.value = { lat: 48.8566, lon: 2.3522, rayonM: 1000 }
+    const { zone, inZone } = useMapZone()
+    zone.value = { lat: 48.8566, lon: 2.3522, radiusM: 1000 }
 
-    expect(dansZone(bien({ lat: 48.8566, lon: 2.3522 }))).toBe(true) // centre
-    expect(dansZone(bien({ lat: 48.8616, lon: 2.3522 }))).toBe(true) // ~556 m, dans le rayon
-    expect(dansZone(bien({ lat: 48.8746, lon: 2.3522 }))).toBe(false) // ~2 km, hors zone
+    expect(inZone(bien({ lat: 48.8566, lon: 2.3522 }))).toBe(true) // centre
+    expect(inZone(bien({ lat: 48.8616, lon: 2.3522 }))).toBe(true) // ~556 m, dans le rayon
+    expect(inZone(bien({ lat: 48.8746, lon: 2.3522 }))).toBe(false) // ~2 km, hors zone
   })
 
   it('exclut un bien sans coordonnées quand une zone est active', () => {
-    const { zone, dansZone } = useZoneCarte()
-    zone.value = { lat: 48.8566, lon: 2.3522, rayonM: 1000 }
-    expect(dansZone(bien({ lat: null, lon: null }))).toBe(false)
+    const { zone, inZone } = useMapZone()
+    zone.value = { lat: 48.8566, lon: 2.3522, radiusM: 1000 }
+    expect(inZone(bien({ lat: null, lon: null }))).toBe(false)
   })
 
-  it('effacer() vide la zone', () => {
-    const { zone, effacer } = useZoneCarte()
-    zone.value = { lat: 48.8566, lon: 2.3522, rayonM: 1000 }
-    effacer()
+  it('clear() vide la zone', () => {
+    const { zone, clear } = useMapZone()
+    zone.value = { lat: 48.8566, lon: 2.3522, radiusM: 1000 }
+    clear()
     expect(zone.value).toBeNull()
   })
 })

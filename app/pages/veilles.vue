@@ -38,7 +38,7 @@ function annoncer(texte: string, erreur = false) {
   messageEstErreur.value = erreur
 }
 
-const erreurLisible = (e: unknown) => messageErreur(e, 'Une erreur est survenue.')
+const erreurLisible = (e: unknown) => errorMessage(e, 'Une erreur est survenue.')
 
 async function basculer(id: string) {
   if (ouverte.value === id) {

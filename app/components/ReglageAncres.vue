@@ -53,7 +53,7 @@ async function ajouter() {
     adresse.value = ''
     maxMinutes.value = null
   } catch (e: unknown) {
-    erreur.value = messageErreur(e, 'Adresse introuvable.')
+    erreur.value = errorMessage(e, 'Adresse introuvable.')
   } finally {
     recherche.value = false
   }

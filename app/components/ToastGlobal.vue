@@ -1,11 +1,11 @@
 <script setup lang="ts">
-const { toast, fermer } = useToast()
+const { toast, close } = useToast()
 
 let minuteur: ReturnType<typeof setTimeout> | undefined
 
 watch(toast, (t) => {
   clearTimeout(minuteur)
-  if (t) minuteur = setTimeout(fermer, 4000)
+  if (t) minuteur = setTimeout(close, 4000)
 })
 onBeforeUnmount(() => clearTimeout(minuteur))
 </script>
@@ -46,7 +46,7 @@ onBeforeUnmount(() => clearTimeout(minuteur))
             <path d="m5 13 4 4L19 7" />
           </svg>
         </span>
-          <p class="text-sm font-medium text-ink">{{ toast.texte }}</p>
+          <p class="text-sm font-medium text-ink">{{ toast.message }}</p>
         </div>
       </div>
     </Transition>

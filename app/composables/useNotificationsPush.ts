@@ -122,7 +122,7 @@ export function useNotificationsPush() {
       if (!r.ok) erreur.value = r.raisons.join(', ') || 'Aucun appareil abonné'
       return r.ok
     } catch (e: unknown) {
-      erreur.value = messageErreur(e, 'Envoi impossible')
+      erreur.value = errorMessage(e, 'Envoi impossible')
       return false
     } finally {
       occupe.value = false

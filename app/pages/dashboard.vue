@@ -10,7 +10,7 @@ const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } =
 
 const bienASupprimer = ref<Property | null>(null);
 const suppressionEnCours = ref(false);
-const { annoncer: annoncerToast } = useToast();
+const { announce: annoncerToast } = useToast();
 
 function demanderSuppression(id: string) {
   bienASupprimer.value = biens.value.find((b) => b.id === id) ?? null;
@@ -118,7 +118,7 @@ const doublonsParId = computed(() => {
   return map;
 });
 
-const { zone, dansZone, effacer: effacerZone } = useZoneCarte();
+const { zone, inZone, clear: effacerZone } = useMapZone();
 
 const biensAffiches = computed(() => {
   let list = biens.value.filter((b) => b.actif);
@@ -128,7 +128,7 @@ const biensAffiches = computed(() => {
   }
 
   if (zone.value) {
-    list = list.filter(dansZone);
+    list = list.filter(inZone);
   }
 
   const q = recherche.value.trim().toLowerCase();

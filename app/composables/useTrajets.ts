@@ -139,7 +139,7 @@ export function useTrajets() {
       await refresh()
       return true
     } catch (e: unknown) {
-      erreur.value = messageErreur(e, 'Calcul impossible')
+      erreur.value = errorMessage(e, 'Calcul impossible')
       return false
     } finally {
       calcul.value = false

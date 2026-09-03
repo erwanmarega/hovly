@@ -91,7 +91,7 @@ async function lancerImport() {
       entree.titre = b.titre ?? undefined
     } catch (e: unknown) {
       entree.statut = 'echec'
-      entree.message = messageErreur(e, 'Extraction impossible')
+      entree.message = errorMessage(e, 'Extraction impossible')
     }
   }
 
@@ -215,12 +215,12 @@ async function analyser() {
   } catch (e: unknown) {
     // Une page de résultats n'est pas un bien : c'est une veille qui s'ouvre.
     // Marqueur posé par le serveur, plutôt qu'une tournure française à reconnaître.
-    if (donneesErreur(e)?.code === 'page_recherche') {
+    if (errorData(e)?.code === 'page_recherche') {
       urlEstRecherche.value = true
       return
     }
 
-    error.value = messageErreur(e, 'Extraction impossible. Complète à la main.')
+    error.value = errorMessage(e, 'Extraction impossible. Complète à la main.')
     etape.value = 'edition'
   } finally {
     clearInterval(minuteur)

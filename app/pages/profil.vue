@@ -6,7 +6,7 @@ useHead({ title: 'Mon profil — Hovly' })
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const { biens, refresh } = useBiens()
-const { annoncer: annoncerToast } = useToast()
+const { announce: annoncerToast } = useToast()
 
 useAsyncData('biens-profil', () => refresh(), { server: false })
 

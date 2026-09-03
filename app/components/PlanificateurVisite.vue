@@ -7,7 +7,7 @@ const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
 const { planifier } = useVisite()
 const { setStatut } = useBiens()
-const maintenant = useMaintenant()
+const now = useNow()
 
 const brouillon = ref(versInputLocal(props.bien.visite_le))
 const edition = ref(!props.bien.visite_le)
@@ -22,10 +22,10 @@ watch(
   }
 )
 
-const etat = computed(() => etatVisite(props.bien, maintenant.value))
-const creneaux = computed(() => creneauxRapides(maintenant.value))
+const etat = computed(() => etatVisite(props.bien, now.value))
+const creneaux = computed(() => creneauxRapides(now.value))
 
-const minimum = computed(() => versInputLocal(maintenant.value.toISOString()))
+const minimum = computed(() => versInputLocal(now.value.toISOString()))
 
 async function enregistrer(iso: string | null) {
   occupe.value = true

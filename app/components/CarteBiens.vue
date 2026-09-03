@@ -8,7 +8,7 @@ import type {
   Map as LeafletMap,
 } from "leaflet";
 import type { Property } from "~/types";
-import type { ZoneCarte } from "~/composables/useZoneCarte";
+import type { MapZone } from "~/composables/useMapZone";
 
 const props = withDefaults(
   defineProps<{
@@ -17,14 +17,14 @@ const props = withDefaults(
     survole?: string | null;
     hauteur?: string;
     zoomBien?: number;
-    zone?: ZoneCarte | null;
+    zone?: MapZone | null;
   }>(),
   { selection: null, survole: null, hauteur: "32rem", zoomBien: 15, zone: null }
 );
 
 const emit = defineEmits<{
   select: [id: string];
-  "zone-changee": [zone: ZoneCarte | null];
+  "zone-changee": [zone: MapZone | null];
 }>();
 
 const conteneur = ref<HTMLElement | null>(null);
@@ -171,7 +171,7 @@ async function dessinerZone() {
   if (!props.zone) return;
 
   cercleZone = L.circle([props.zone.lat, props.zone.lon], {
-    radius: props.zone.rayonM,
+    radius: props.zone.radiusM,
     color: "#2563eb",
     weight: 2,
     fillColor: "#2563eb",
@@ -220,9 +220,9 @@ function surDeplacement(e: LeafletMouseEvent) {
 function surRelache(e: LeafletMouseEvent) {
   if (!debutDessin || !carte || !cercleZone) return;
   const rayon = carte.distance(debutDessin, e.latlng);
-  const zoneFinale: ZoneCarte | null =
+  const zoneFinale: MapZone | null =
     rayon >= RAYON_MIN_M
-      ? { lat: debutDessin.lat, lon: debutDessin.lng, rayonM: Math.round(rayon) }
+      ? { lat: debutDessin.lat, lon: debutDessin.lng, radiusM: Math.round(rayon) }
       : null;
 
   if (!zoneFinale) {

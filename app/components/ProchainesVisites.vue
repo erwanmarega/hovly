@@ -3,14 +3,14 @@ import type { Property } from '~/types'
 
 const props = withDefaults(defineProps<{ biens: Property[]; max?: number }>(), { max: 3 })
 
-const maintenant = useMaintenant()
+const now = useNow()
 
 const visites = computed(() =>
-  prochainesVisites(props.biens, maintenant.value).slice(0, props.max)
+  prochainesVisites(props.biens, now.value).slice(0, props.max)
 )
 
 const restantes = computed(
-  () => Math.max(0, prochainesVisites(props.biens, maintenant.value).length - props.max)
+  () => Math.max(0, prochainesVisites(props.biens, now.value).length - props.max)
 )
 </script>
 
