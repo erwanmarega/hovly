@@ -22,9 +22,9 @@ export const DEFAULT_DURATION_YEARS = 20
 export const NOTARY_FEES = 0.075
 
 export interface CostItem {
-  cle: 'loyer' | 'credit' | 'charges' | 'energie' | 'assurance'
+  key: 'loyer' | 'credit' | 'charges' | 'energie' | 'assurance'
   label: string
-  montant: number | null
+  amount: number | null
   detail: string
 }
 
@@ -37,7 +37,7 @@ export interface ActualCost {
   assumptions: string[]
 }
 
-export interface OptionsCout {
+export interface CostOptions {
   prixKwh?: number
   chauffageDansCharges?: boolean
   apport?: number // €
@@ -56,107 +56,107 @@ export function monthlyLoanPayment(principalCents: number, ratePct: number, year
 
 export function monthlyEnergyCost(
   bien: Property,
-  prixKwh = DEFAULT_KWH_PRICE
+  kwhPrice = DEFAULT_KWH_PRICE
 ): number | null {
   if (!bien.dpe || !bien.surface) return null
-  const kwhFinalParM2 = KWH_EP_BY_DPE[bien.dpe] * FINAL_ENERGY_COEF
-  return Math.round((kwhFinalParM2 * bien.surface * prixKwh) / 12)
+  const finalKwhPerSqm = KWH_EP_BY_DPE[bien.dpe] * FINAL_ENERGY_COEF
+  return Math.round((finalKwhPerSqm * bien.surface * kwhPrice) / 12)
 }
 
 export function monthlyInsuranceCost(bien: Property): number {
   return Math.round((FIXED_INSURANCE_YEAR + INSURANCE_PER_SQM_YEAR * (bien.surface || 0)) / 12)
 }
 
-export function actualCost(bien: Property, options: OptionsCout = {}): ActualCost {
-  const prixKwh = options.prixKwh && options.prixKwh > 0 ? options.prixKwh : DEFAULT_KWH_PRICE
-  const chauffageDansCharges = options.chauffageDansCharges ?? false
+export function actualCost(bien: Property, options: CostOptions = {}): ActualCost {
+  const kwhPrice = options.prixKwh && options.prixKwh > 0 ? options.prixKwh : DEFAULT_KWH_PRICE
+  const heatingIncluded = options.chauffageDansCharges ?? false
 
   const charges = bien.charges ?? 0
-  const assurance = monthlyInsuranceCost(bien)
-  const energieBrute = monthlyEnergyCost(bien, prixKwh)
-  const energie = chauffageDansCharges ? 0 : energieBrute
+  const insurance = monthlyInsuranceCost(bien)
+  const rawEnergyCost = monthlyEnergyCost(bien, kwhPrice)
+  const energy = heatingIncluded ? 0 : rawEnergyCost
 
-  const detailCharges =
+  const feesDetail =
     bien.charges == null ? 'Non renseignées dans l’annonce' : 'Provision mensuelle'
-  const detailEnergie = chauffageDansCharges
+  const energyDetail = heatingIncluded
     ? 'Comptée dans les charges'
     : bien.dpe
       ? `Estimée depuis le DPE ${bien.dpe} et ${bien.surface} m²`
       : 'DPE absent — non estimable'
 
   const commonAssumptions = [
-    `Énergie : ${prixKwh / 100} €/kWh, conversion énergie primaire ×${FINAL_ENERGY_COEF}`,
+    `Énergie : ${kwhPrice / 100} €/kWh, conversion énergie primaire ×${FINAL_ENERGY_COEF}`,
     `Assurance : ${FIXED_INSURANCE_YEAR / 100} € par an + ${INSURANCE_PER_SQM_YEAR / 100} € par m² et par an`
   ]
 
   if (bien.transaction === 'achat') {
-    const taux =
+    const rate =
       options.tauxEmprunt != null && options.tauxEmprunt >= 0 ? options.tauxEmprunt : DEFAULT_RATE
-    const duree =
+    const duration =
       options.dureeEmpruntAns && options.dureeEmpruntAns > 0
         ? options.dureeEmpruntAns
         : DEFAULT_DURATION_YEARS
-    const apport = options.apport && options.apport > 0 ? options.apport : 0
+    const downPayment = options.apport && options.apport > 0 ? options.apport : 0
 
-    const emprunte = Math.round(bien.prix * (1 + NOTARY_FEES)) - Math.round(apport * 100)
-    const mensualite = monthlyLoanPayment(emprunte, taux, duree)
+    const borrowed = Math.round(bien.prix * (1 + NOTARY_FEES)) - Math.round(downPayment * 100)
+    const monthlyPayment = monthlyLoanPayment(borrowed, rate, duration)
 
     const items: CostItem[] = [
       {
-        cle: 'credit',
+        key: 'credit',
         label: 'Mensualité estimée',
-        montant: mensualite,
-        detail: `${taux} % sur ${duree} ans, frais de notaire inclus`
+        amount: monthlyPayment,
+        detail: `${rate} % sur ${duration} ans, frais de notaire inclus`
       },
-      { cle: 'charges', label: 'Charges de copropriété', montant: charges, detail: detailCharges },
-      { cle: 'energie', label: 'Énergie', montant: energie, detail: detailEnergie },
+      { key: 'charges', label: 'Charges de copropriété', amount: charges, detail: feesDetail },
+      { key: 'energie', label: 'Énergie', amount: energy, detail: energyDetail },
       {
-        cle: 'assurance',
+        key: 'assurance',
         label: 'Assurance habitation',
-        montant: assurance,
+        amount: insurance,
         detail: 'Estimation multirisque habitation'
       }
     ]
 
-    const total = items.reduce((s, p) => s + (p.montant ?? 0), 0)
+    const total = items.reduce((s, p) => s + (p.amount ?? 0), 0)
     const assumptions = [
-      `Emprunt : ${taux} % sur ${duree} ans, frais de notaire ${NOTARY_FEES * 100} %` +
-        (apport ? `, apport ${apport.toLocaleString('fr-FR')} €` : ', sans apport'),
+      `Emprunt : ${rate} % sur ${duration} ans, frais de notaire ${NOTARY_FEES * 100} %` +
+        (downPayment ? `, apport ${downPayment.toLocaleString('fr-FR')} €` : ', sans apport'),
       ...commonAssumptions
     ]
 
     return {
       items,
       total,
-      displayed: mensualite,
-      overagePercent: mensualite ? Math.round(((total - mensualite) / mensualite) * 100) : 0,
-      incomplete: bien.charges == null || (!chauffageDansCharges && energieBrute == null),
+      displayed: monthlyPayment,
+      overagePercent: monthlyPayment ? Math.round(((total - monthlyPayment) / monthlyPayment) * 100) : 0,
+      incomplete: bien.charges == null || (!heatingIncluded && rawEnergyCost == null),
       assumptions
     }
   }
 
-  const loyer = bien.prix ?? 0
+  const rent = bien.prix ?? 0
 
   const items: CostItem[] = [
     {
-      cle: 'loyer',
+      key: 'loyer',
       label: 'Loyer hors charges',
-      montant: loyer,
+      amount: rent,
       detail: 'Montant affiché dans l’annonce'
     },
-    { cle: 'charges', label: 'Charges', montant: charges, detail: detailCharges },
-    { cle: 'energie', label: 'Énergie', montant: energie, detail: detailEnergie },
+    { key: 'charges', label: 'Charges', amount: charges, detail: feesDetail },
+    { key: 'energie', label: 'Énergie', amount: energy, detail: energyDetail },
     {
-      cle: 'assurance',
+      key: 'assurance',
       label: 'Assurance habitation',
-      montant: assurance,
+      amount: insurance,
       detail: 'Estimation multirisque habitation'
     }
   ]
 
-  const total = items.reduce((s, p) => s + (p.montant ?? 0), 0)
-  const displayed = loyer + charges
-  const incomplete = bien.charges == null || (!chauffageDansCharges && energieBrute == null)
+  const total = items.reduce((s, p) => s + (p.amount ?? 0), 0)
+  const displayed = rent + charges
+  const incomplete = bien.charges == null || (!heatingIncluded && rawEnergyCost == null)
 
   return {
     items,
@@ -168,7 +168,7 @@ export function actualCost(bien: Property, options: OptionsCout = {}): ActualCos
   }
 }
 
-export function optionsFromPreferences(p: Preferences): OptionsCout {
+export function optionsFromPreferences(p: Preferences): CostOptions {
   return {
     prixKwh: p.prixKwh ?? DEFAULT_KWH_PRICE,
     chauffageDansCharges: p.chauffageDansCharges ?? false,

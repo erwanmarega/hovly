@@ -5,68 +5,68 @@ const props = defineProps<{ bien: Property }>()
 
 const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
-const { saveChecklist: enregistrerChecklist, saveReport: enregistrerCompteRendu } = useVisit()
+const { saveChecklist, saveReport } = useVisit()
 
 const checklist = ref(normalizeChecklist(props.bien.checklist))
-const compteRendu = ref(props.bien.compte_rendu ?? '')
-const enregistre = ref(false)
-const erreur = ref('')
+const report = ref(props.bien.compte_rendu ?? '')
+const saved = ref(false)
+const error = ref('')
 
 watch(
   () => props.bien.id,
   () => {
     checklist.value = normalizeChecklist(props.bien.checklist)
-    compteRendu.value = props.bien.compte_rendu ?? ''
+    report.value = props.bien.compte_rendu ?? ''
   }
 )
 
-const bilan = computed(() => visitSummary(checklist.value))
+const summary = computed(() => visitSummary(checklist.value))
 
 function flash() {
-  enregistre.value = true
-  setTimeout(() => (enregistre.value = false), 1500)
+  saved.value = true
+  setTimeout(() => (saved.value = false), 1500)
 }
 
-async function sauver() {
-  erreur.value = ''
-  const valeur = { ...checklist.value }
+async function save() {
+  error.value = ''
+  const value = { ...checklist.value }
   try {
-    await enregistrerChecklist(props.bien.id, valeur)
-    emit('maj', { checklist: valeur })
+    await saveChecklist(props.bien.id, value)
+    emit('maj', { checklist: value })
     flash()
   } catch {
-    erreur.value = 'Enregistrement impossible.'
+    error.value = 'Enregistrement impossible.'
   }
 }
 
-function noter(critere: string, avis: VisitRating) {
-  const efface = checklist.value.notes[critere] === avis
+function rate(criterion: string, rating: VisitRating) {
+  const cleared = checklist.value.notes[criterion] === rating
   const notes = Object.fromEntries(
-    Object.entries(checklist.value.notes).filter(([id]) => id !== critere)
+    Object.entries(checklist.value.notes).filter(([id]) => id !== criterion)
   ) as Record<string, VisitRating>
-  if (!efface) notes[critere] = avis
+  if (!cleared) notes[criterion] = rating
 
   checklist.value = { ...checklist.value, notes }
-  sauver()
+  save()
 }
 
-function basculerQuestion(id: string) {
+function toggleQuestion(id: string) {
   const questions = checklist.value.questions.includes(id)
     ? checklist.value.questions.filter((q) => q !== id)
     : [...checklist.value.questions, id]
   checklist.value = { ...checklist.value, questions }
-  sauver()
+  save()
 }
 
-async function sauverCompteRendu() {
-  if (compteRendu.value === (props.bien.compte_rendu ?? '')) return
-  erreur.value = ''
+async function saveReportText() {
+  if (report.value === (props.bien.compte_rendu ?? '')) return
+  error.value = ''
   try {
-    await enregistrerCompteRendu(props.bien.id, compteRendu.value)
-    emit('maj', { compte_rendu: compteRendu.value })
+    await saveReport(props.bien.id, report.value)
+    emit('maj', { compte_rendu: report.value })
     flash()
   } catch {
-    erreur.value = 'Enregistrement impossible.'
+    error.value = 'Enregistrement impossible.'
   }
 }
 </script>
@@ -79,27 +79,27 @@ async function sauverCompteRendu() {
           Checklist de visite
         </h2>
         <p class="mt-1 text-xs text-stone">
-          {{ bilan.remplis }}/{{ bilan.total }} critères jugés
-          <span v-if="bilan.mauvais.length" class="text-[#600000]">
-            · points noirs : {{ bilan.mauvais.join(', ') }}
+          {{ summary.filled }}/{{ summary.total }} critères jugés
+          <span v-if="summary.failing.length" class="text-[#600000]">
+            · points noirs : {{ summary.failing.join(', ') }}
           </span>
         </p>
       </div>
 
       <div class="flex items-center gap-2">
-        <span v-if="enregistre" class="text-xs font-medium text-success">Enregistré</span>
+        <span v-if="saved" class="text-xs font-medium text-success">Enregistré</span>
         <span
-          v-if="bilan.note !== null"
+          v-if="summary.score !== null"
           class="rounded-full px-2.5 py-1 text-xs font-bold tabular-nums"
           :class="
-            bilan.note >= 70
+            summary.score >= 70
               ? 'bg-teal text-[#0a4a42]'
-              : bilan.note >= 40
+              : summary.score >= 40
                 ? 'bg-brand-light text-[#8a6d1c]'
                 : 'bg-coral text-[#600000]'
           "
         >
-          {{ bilan.note }}/100
+          {{ summary.score }}/100
         </span>
       </div>
     </div>
@@ -112,7 +112,7 @@ async function sauverCompteRendu() {
       >
         <div class="min-w-[9rem] flex-1">
           <p class="text-sm font-medium text-ink">{{ c.label }}</p>
-          <p class="text-xs text-stone">{{ c.aide }}</p>
+          <p class="text-xs text-stone">{{ c.help }}</p>
         </div>
 
         <!-- Sur mobile les trois avis passent sous le libellé : côte à côte ils
@@ -124,11 +124,11 @@ async function sauverCompteRendu() {
             class="flex-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition sm:flex-none sm:py-1"
             :class="
               checklist.notes[c.id] === a.value
-                ? a.classe
+                ? a.className
                 : 'border border-hairline text-steel hover:bg-surface'
             "
             :aria-pressed="checklist.notes[c.id] === a.value"
-            @click="noter(c.id, a.value)"
+            @click="rate(c.id, a.value)"
           >
             {{ a.label }}
           </button>
@@ -149,7 +149,7 @@ async function sauverCompteRendu() {
             type="checkbox"
             class="mt-0.5 size-4 shrink-0 cursor-pointer accent-ink"
             :checked="checklist.questions.includes(q.id)"
-            @change="basculerQuestion(q.id)"
+            @change="toggleQuestion(q.id)"
           >
           {{ q.label }}
         </label>
@@ -160,13 +160,13 @@ async function sauverCompteRendu() {
       Compte-rendu
     </h3>
     <textarea
-      v-model="compteRendu"
+      v-model="report"
       rows="4"
       placeholder="Ce que tu as vu, ce que l’agent a répondu, ce qui te fait hésiter…"
       class="mt-2 w-full resize-none rounded-lg border border-hairline-strong bg-white px-4 py-2.5 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20"
-      @blur="sauverCompteRendu"
+      @blur="saveReportText"
     />
 
-    <p v-if="erreur" class="mt-2 text-xs text-[#600000]">{{ erreur }}</p>
+    <p v-if="error" class="mt-2 text-xs text-[#600000]">{{ error }}</p>
   </section>
 </template>

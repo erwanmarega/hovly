@@ -74,39 +74,39 @@ describe('normalizeChecklist', () => {
 describe('visitSummary', () => {
   it('ne note que les critères renseignés', () => {
     const b = visitSummary({ notes: { bruit: 'bon', humidite: 'mauvais' }, questions: [] })
-    expect(b.remplis).toBe(2)
+    expect(b.filled).toBe(2)
     expect(b.total).toBe(VISIT_CRITERIA.length)
-    expect(b.note).toBe(50)
+    expect(b.score).toBe(50)
   })
 
   it('compte un « moyen » pour une demi-note', () => {
-    expect(visitSummary({ notes: { bruit: 'moyen' } }).note).toBe(50)
+    expect(visitSummary({ notes: { bruit: 'moyen' } }).score).toBe(50)
   })
 
   it('renvoie une note nulle quand rien n’est jugé', () => {
-    expect(visitSummary(null).note).toBeNull()
+    expect(visitSummary(null).score).toBeNull()
   })
 
   it('liste les points noirs', () => {
     const b = visitSummary({ notes: { humidite: 'mauvais', bruit: 'mauvais' } })
-    expect(b.mauvais).toEqual(['Bruit', 'Humidité'])
+    expect(b.failing).toEqual(['Bruit', 'Humidité'])
   })
 
   it('ignore un critère inconnu resté en base', () => {
-    expect(visitSummary({ notes: { ascenseur: 'bon' } as never }).remplis).toBe(0)
+    expect(visitSummary({ notes: { ascenseur: 'bon' } as never }).filled).toBe(0)
   })
 })
 
 describe('visitState', () => {
   it('distingue à venir, aujourd’hui et passée', () => {
-    expect(visitState(bien(), MAINTENANT)).toBe('aucune')
-    expect(visitState(bien({ visite_le: '2026-07-28T18:00:00' }), MAINTENANT)).toBe('a_venir')
-    expect(visitState(bien({ visite_le: '2026-07-25T18:00:00' }), MAINTENANT)).toBe('aujourdhui')
-    expect(visitState(bien({ visite_le: '2026-07-24T18:00:00' }), MAINTENANT)).toBe('passee')
+    expect(visitState(bien(), MAINTENANT)).toBe('none')
+    expect(visitState(bien({ visite_le: '2026-07-28T18:00:00' }), MAINTENANT)).toBe('upcoming')
+    expect(visitState(bien({ visite_le: '2026-07-25T18:00:00' }), MAINTENANT)).toBe('today')
+    expect(visitState(bien({ visite_le: '2026-07-24T18:00:00' }), MAINTENANT)).toBe('past')
   })
 
   it('traite une date illisible comme absente', () => {
-    expect(visitState(bien({ visite_le: 'bientôt' }), MAINTENANT)).toBe('aucune')
+    expect(visitState(bien({ visite_le: 'bientôt' }), MAINTENANT)).toBe('none')
   })
 })
 

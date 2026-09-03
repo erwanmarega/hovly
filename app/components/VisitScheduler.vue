@@ -5,58 +5,58 @@ const props = defineProps<{ bien: Property }>()
 
 const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
-const { schedule: planifier } = useVisit()
+const { schedule } = useVisit()
 const { setStatus } = useProperties()
 const now = useNow()
 
-const brouillon = ref(toLocalInput(props.bien.visite_le))
-const edition = ref(!props.bien.visite_le)
-const occupe = ref(false)
-const erreur = ref('')
+const draft = ref(toLocalInput(props.bien.visite_le))
+const editing = ref(!props.bien.visite_le)
+const busy = ref(false)
+const error = ref('')
 
 watch(
   () => props.bien.visite_le,
   (v) => {
-    brouillon.value = toLocalInput(v)
-    edition.value = !v
+    draft.value = toLocalInput(v)
+    editing.value = !v
   }
 )
 
-const etat = computed(() => visitState(props.bien, now.value))
-const creneaux = computed(() => quickSlots(now.value))
+const state = computed(() => visitState(props.bien, now.value))
+const slots = computed(() => quickSlots(now.value))
 
 const minimum = computed(() => toLocalInput(now.value.toISOString()))
 
-async function enregistrer(iso: string | null) {
-  occupe.value = true
-  erreur.value = ''
+async function save(iso: string | null) {
+  busy.value = true
+  error.value = ''
   try {
-    await planifier(props.bien.id, iso)
+    await schedule(props.bien.id, iso)
     emit('maj', iso ? { visite_le: iso, statut: 'planifie' } : { visite_le: null })
-    edition.value = !iso
+    editing.value = !iso
   } catch {
-    erreur.value = 'Enregistrement impossible.'
+    error.value = 'Enregistrement impossible.'
   } finally {
-    occupe.value = false
+    busy.value = false
   }
 }
 
-function valider() {
-  const iso = fromLocalInput(brouillon.value)
+function submit() {
+  const iso = fromLocalInput(draft.value)
   if (!iso) {
-    erreur.value = 'Choisis une date et une heure.'
+    error.value = 'Choisis une date et une heure.'
     return
   }
-  enregistrer(iso)
+  save(iso)
 }
 
-async function marquerVisite() {
-  occupe.value = true
+async function markVisited() {
+  busy.value = true
   try {
     await setStatus(props.bien.id, 'visite')
     emit('maj', { statut: 'visite' })
   } finally {
-    occupe.value = false
+    busy.value = false
   }
 }
 </script>
@@ -68,11 +68,11 @@ async function marquerVisite() {
       <VisitBadge :visite-le="bien.visite_le" />
     </div>
 
-    <template v-if="bien.visite_le && !edition">
+    <template v-if="bien.visite_le && !editing">
       <p class="mt-3 text-sm text-ink">
         {{ longVisitDate(bien.visite_le) }}
       </p>
-      <p v-if="etat === 'passee'" class="mt-1 text-xs text-stone">
+      <p v-if="state === 'past'" class="mt-1 text-xs text-stone">
         Visite passée — remplis la checklist tant que c’est frais.
       </p>
       <p v-else class="mt-1 text-xs text-stone">
@@ -81,24 +81,24 @@ async function marquerVisite() {
 
       <div class="mt-4 flex flex-wrap gap-2">
         <button
-          v-if="etat === 'passee' && bien.statut !== 'visite'"
-          :disabled="occupe"
+          v-if="state === 'past' && bien.statut !== 'visite'"
+          :disabled="busy"
           class="rounded-full bg-ink px-4 py-2 text-xs font-medium text-white transition hover:bg-black disabled:opacity-50"
-          @click="marquerVisite"
+          @click="markVisited"
         >
           Marquer comme visité
         </button>
         <button
-          :disabled="occupe"
+          :disabled="busy"
           class="rounded-full border border-hairline px-4 py-2 text-xs font-medium text-steel transition hover:bg-surface disabled:opacity-50"
-          @click="edition = true"
+          @click="editing = true"
         >
           Replanifier
         </button>
         <button
-          :disabled="occupe"
+          :disabled="busy"
           class="rounded-full px-3 py-2 text-xs font-medium text-stone transition hover:text-[#600000] disabled:opacity-50"
-          @click="enregistrer(null)"
+          @click="save(null)"
         >
           Annuler la visite
         </button>
@@ -108,11 +108,11 @@ async function marquerVisite() {
     <template v-else>
       <div class="mt-3 flex flex-wrap gap-2">
         <button
-          v-for="c in creneaux"
+          v-for="c in slots"
           :key="c.iso"
-          :disabled="occupe"
+          :disabled="busy"
           class="rounded-full border border-hairline px-3 py-1.5 text-xs font-medium text-steel transition hover:bg-surface disabled:opacity-50"
-          @click="enregistrer(c.iso)"
+          @click="save(c.iso)"
         >
           {{ c.label }}
         </button>
@@ -120,28 +120,28 @@ async function marquerVisite() {
 
       <div class="mt-3 flex flex-wrap items-center gap-2">
         <input
-          v-model="brouillon"
+          v-model="draft"
           type="datetime-local"
           :min="minimum"
           class="min-w-[13rem] flex-1 rounded-lg border border-hairline-strong bg-white px-3 py-2 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20"
         >
         <button
-          :disabled="occupe"
+          :disabled="busy"
           class="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black disabled:opacity-50"
-          @click="valider"
+          @click="submit"
         >
-          {{ occupe ? '…' : 'Planifier' }}
+          {{ busy ? '…' : 'Planifier' }}
         </button>
         <button
           v-if="bien.visite_le"
           class="rounded-full px-3 py-2 text-xs font-medium text-stone transition hover:text-ink"
-          @click="edition = false"
+          @click="editing = false"
         >
           Annuler
         </button>
       </div>
 
-      <p v-if="erreur" class="mt-2 text-xs text-[#600000]">{{ erreur }}</p>
+      <p v-if="error" class="mt-2 text-xs text-[#600000]">{{ error }}</p>
     </template>
   </section>
 </template>

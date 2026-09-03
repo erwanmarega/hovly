@@ -31,10 +31,10 @@ const emit = defineEmits<{
 }>()
 
 const { monthlyPrice, pricePerSqm } = useProperties()
-const { calculate: coutDe } = useActualCost()
+const { calculate: costOf } = useActualCost()
 const { active: trajetsActifs, selectedAnchor: ancreChoisie } = useCommutes()
 
-const couts = computed(() => new Map(props.biens.map((b) => [b.id, coutDe(b)])))
+const costs = computed(() => new Map(props.biens.map((b) => [b.id, costOf(b)])))
 
 const { full: selectionComplete, isSelected: estSelectionne, toggle: basculer } = useComparator()
 
@@ -187,7 +187,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
               {{ formatNumber(monthlyPrice(b)) }} €<span v-if="!isPurchase(b)" class="text-xs font-normal text-stone">/mois</span>
             </p>
             <p class="text-xs text-stone">
-              réel {{ formatNumber(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
+              réel {{ formatNumber(Math.round((costs.get(b.id)?.total ?? 0) / 100)) }} €
             </p>
           </div>
 

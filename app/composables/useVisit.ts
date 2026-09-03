@@ -3,18 +3,18 @@ import type { VisitRating, Property, Checklist } from '~/types'
 export interface VisitCriterion {
   id: string
   label: string
-  aide: string
+  help: string
 }
 
 export const VISIT_CRITERIA: VisitCriterion[] = [
-  { id: 'luminosite', label: 'Luminosité', aide: 'Orientation, pièces sombres en journée' },
-  { id: 'bruit', label: 'Bruit', aide: 'Rue, voisins, fenêtres ouvertes' },
-  { id: 'humidite', label: 'Humidité', aide: 'Odeur, traces sur les murs, salle de bain' },
-  { id: 'vis_a_vis', label: 'Vis-à-vis', aide: 'Fenêtres en face, rez-de-chaussée' },
-  { id: 'etat', label: 'État général', aide: 'Sols, murs, fenêtres, électricité' },
-  { id: 'chauffage', label: 'Chauffage', aide: 'Type, âge, radiateurs dans chaque pièce' },
-  { id: 'rangements', label: 'Rangements', aide: 'Placards, cave, local vélo' },
-  { id: 'quartier', label: 'Quartier', aide: 'Commerces, transports, ambiance du soir' }
+  { id: 'luminosite', label: 'Luminosité', help: 'Orientation, pièces sombres en journée' },
+  { id: 'bruit', label: 'Bruit', help: 'Rue, voisins, fenêtres ouvertes' },
+  { id: 'humidite', label: 'Humidité', help: 'Odeur, traces sur les murs, salle de bain' },
+  { id: 'vis_a_vis', label: 'Vis-à-vis', help: 'Fenêtres en face, rez-de-chaussée' },
+  { id: 'etat', label: 'État général', help: 'Sols, murs, fenêtres, électricité' },
+  { id: 'chauffage', label: 'Chauffage', help: 'Type, âge, radiateurs dans chaque pièce' },
+  { id: 'rangements', label: 'Rangements', help: 'Placards, cave, local vélo' },
+  { id: 'quartier', label: 'Quartier', help: 'Commerces, transports, ambiance du soir' }
 ]
 
 export interface AgentQuestion {
@@ -33,71 +33,71 @@ export const AGENT_QUESTIONS: AgentQuestion[] = [
   { id: 'internet', label: 'Fibre installée dans l’immeuble ?' }
 ]
 
-export const RATINGS: { value: VisitRating; label: string; classe: string }[] = [
-  { value: 'bon', label: 'Bon', classe: 'bg-teal text-[#0a4a42]' },
-  { value: 'moyen', label: 'Moyen', classe: 'bg-brand-light text-[#8a6d1c]' },
-  { value: 'mauvais', label: 'Mauvais', classe: 'bg-coral text-[#600000]' }
+export const RATINGS: { value: VisitRating; label: string; className: string }[] = [
+  { value: 'bon', label: 'Bon', className: 'bg-teal text-[#0a4a42]' },
+  { value: 'moyen', label: 'Moyen', className: 'bg-brand-light text-[#8a6d1c]' },
+  { value: 'mauvais', label: 'Mauvais', className: 'bg-coral text-[#600000]' }
 ]
 
 const WEIGHTS: Record<VisitRating, number> = { bon: 1, moyen: 0.5, mauvais: 0 }
 
-export function normalizeChecklist(brut: Partial<Checklist> | null | undefined): Checklist {
+export function normalizeChecklist(raw: Partial<Checklist> | null | undefined): Checklist {
   return {
-    notes: brut?.notes && typeof brut.notes === 'object' ? { ...brut.notes } : {},
-    questions: Array.isArray(brut?.questions) ? [...brut.questions] : []
+    notes: raw?.notes && typeof raw.notes === 'object' ? { ...raw.notes } : {},
+    questions: Array.isArray(raw?.questions) ? [...raw.questions] : []
   }
 }
 
 export interface VisitSummary {
-  remplis: number
+  filled: number
   total: number
-  note: number | null
-  mauvais: string[]
+  score: number | null
+  failing: string[]
 }
 
-export function visitSummary(brut: Partial<Checklist> | null | undefined): VisitSummary {
-  const { notes } = normalizeChecklist(brut)
-  const remplis = VISIT_CRITERIA.filter((c) => notes[c.id])
-  const somme = remplis.reduce((s, c) => s + WEIGHTS[notes[c.id]!], 0)
+export function visitSummary(raw: Partial<Checklist> | null | undefined): VisitSummary {
+  const { notes } = normalizeChecklist(raw)
+  const filled = VISIT_CRITERIA.filter((c) => notes[c.id])
+  const sum = filled.reduce((s, c) => s + WEIGHTS[notes[c.id]!], 0)
 
   return {
-    remplis: remplis.length,
+    filled: filled.length,
     total: VISIT_CRITERIA.length,
-    note: remplis.length ? Math.round((somme / remplis.length) * 100) : null,
-    mauvais: remplis.filter((c) => notes[c.id] === 'mauvais').map((c) => c.label)
+    score: filled.length ? Math.round((sum / filled.length) * 100) : null,
+    failing: filled.filter((c) => notes[c.id] === 'mauvais').map((c) => c.label)
   }
 }
 
-export type VisitState = 'aucune' | 'a_venir' | 'aujourdhui' | 'passee'
+export type VisitState = 'none' | 'upcoming' | 'today' | 'past'
 
-export function visitState(bien: Property, maintenant = new Date()): VisitState {
-  if (!bien.visite_le) return 'aucune'
+export function visitState(bien: Property, now = new Date()): VisitState {
+  if (!bien.visite_le) return 'none'
   const d = new Date(bien.visite_le)
-  if (Number.isNaN(d.getTime())) return 'aucune'
-  if (d.getTime() < maintenant.getTime()) return 'passee'
-  return d.toDateString() === maintenant.toDateString() ? 'aujourdhui' : 'a_venir'
+  if (Number.isNaN(d.getTime())) return 'none'
+  if (d.getTime() < now.getTime()) return 'past'
+  return d.toDateString() === now.toDateString() ? 'today' : 'upcoming'
 }
 
-export function daysUntil(iso: string, maintenant = new Date()): number {
-  const jour = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-  return Math.round((jour(new Date(iso)) - jour(maintenant)) / 86_400_000)
+export function daysUntil(iso: string, now = new Date()): number {
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  return Math.round((day(new Date(iso)) - day(now)) / 86_400_000)
 }
 
 const time = (d: Date) =>
   d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
-export function visitLabel(iso: string, maintenant = new Date()): string {
+export function visitLabel(iso: string, now = new Date()): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
 
-  const jours = daysUntil(iso, maintenant)
-  if (jours === 0) return `Aujourd’hui ${time(d)}`
-  if (jours === 1) return `Demain ${time(d)}`
-  if (jours === -1) return `Hier ${time(d)}`
-  if (jours > 1 && jours <= 7) {
+  const days = daysUntil(iso, now)
+  if (days === 0) return `Aujourd’hui ${time(d)}`
+  if (days === 1) return `Demain ${time(d)}`
+  if (days === -1) return `Hier ${time(d)}`
+  if (days > 1 && days <= 7) {
     return `${d.toLocaleDateString('fr-FR', { weekday: 'long' })} ${time(d)}`
   }
-  if (jours < 0) return `Le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+  if (days < 0) return `Le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
   return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${time(d)}`
 }
 
@@ -121,31 +121,31 @@ export function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-export function fromLocalInput(valeur: string): string | null {
-  if (!valeur) return null
-  const d = new Date(valeur)
+export function fromLocalInput(value: string): string | null {
+  if (!value) return null
+  const d = new Date(value)
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
-export function quickSlots(maintenant = new Date()): { label: string; iso: string }[] {
-  const a = (jours: number, h: number) => {
-    const d = new Date(maintenant)
-    d.setDate(d.getDate() + jours)
+export function quickSlots(now = new Date()): { label: string; iso: string }[] {
+  const at = (days: number, h: number) => {
+    const d = new Date(now)
+    d.setDate(d.getDate() + days)
     d.setHours(h, 0, 0, 0)
     return d
   }
 
-  const versSamedi = (6 - maintenant.getDay() + 7) % 7 || 7
+  const toSaturday = (6 - now.getDay() + 7) % 7 || 7
   return [
-    { label: 'Ce soir 18 h', iso: a(0, 18).toISOString() },
-    { label: 'Demain 18 h', iso: a(1, 18).toISOString() },
-    { label: 'Samedi 10 h', iso: a(versSamedi, 10).toISOString() }
-  ].filter((c) => new Date(c.iso).getTime() > maintenant.getTime())
+    { label: 'Ce soir 18 h', iso: at(0, 18).toISOString() },
+    { label: 'Demain 18 h', iso: at(1, 18).toISOString() },
+    { label: 'Samedi 10 h', iso: at(toSaturday, 10).toISOString() }
+  ].filter((c) => new Date(c.iso).getTime() > now.getTime())
 }
 
-export function upcomingVisits(biens: Property[], maintenant = new Date()): Property[] {
+export function upcomingVisits(biens: Property[], now = new Date()): Property[] {
   return biens
-    .filter((b) => b.actif && b.visite_le && new Date(b.visite_le).getTime() >= maintenant.getTime())
+    .filter((b) => b.actif && b.visite_le && new Date(b.visite_le).getTime() >= now.getTime())
     .sort((a, b) => new Date(a.visite_le!).getTime() - new Date(b.visite_le!).getTime())
 }
 
@@ -160,8 +160,8 @@ export function useVisit() {
     await update(id, { checklist })
   }
 
-  async function saveReport(id: string, texte: string) {
-    await update(id, { compte_rendu: texte })
+  async function saveReport(id: string, text: string) {
+    await update(id, { compte_rendu: text })
   }
 
   return { schedule, saveChecklist, saveReport }

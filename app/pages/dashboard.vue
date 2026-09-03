@@ -59,7 +59,7 @@ const triAsc = ref(false);
 
 const { preferences } = usePreferences();
 
-const { calculate: coutDe } = useActualCost();
+const { calculate: costOf } = useActualCost();
 const { selected: trajetDe, refresh: refreshTrajets } = useCommutes();
 useAsyncData("trajets-dashboard", () => refreshTrajets(), { server: false });
 
@@ -182,8 +182,8 @@ const biensAffiches = computed(() => {
         vb = scoreDe(b).total;
         break;
       case "cout_reel":
-        va = coutDe(a).total;
-        vb = coutDe(b).total;
+        va = costOf(a).total;
+        vb = costOf(b).total;
         break;
       default:
         va = new Date(a.created_at).getTime();

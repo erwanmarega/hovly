@@ -52,8 +52,8 @@ function bien(over: Partial<Property> = {}): Property {
   }
 }
 
-const poste = (c: ReturnType<typeof actualCost>, cle: string) =>
-  c.items.find((p) => p.cle === cle)!
+const poste = (c: ReturnType<typeof actualCost>, key: string) =>
+  c.items.find((p) => p.key === key)!
 
 describe('monthlyEnergyCost', () => {
   it('suit la formule DPE × surface × prix du kWh', () => {
@@ -105,14 +105,14 @@ describe('actualCost', () => {
 
   it('ne compte pas l’énergie deux fois quand elle est dans les charges', () => {
     const avec = actualCost(bien(), { chauffageDansCharges: true })
-    expect(poste(avec, 'energie').montant).toBe(0)
+    expect(poste(avec, 'energie').amount).toBe(0)
     expect(poste(avec, 'energie').detail).toContain('charges')
     expect(avec.total).toBe(actualCost(bien()).total - monthlyEnergyCost(bien())!)
   })
 
   it('signale une estimation basse quand le DPE manque', () => {
     const c = actualCost(bien({ dpe: null }))
-    expect(poste(c, 'energie').montant).toBeNull()
+    expect(poste(c, 'energie').amount).toBeNull()
     expect(c.incomplete).toBe(true)
     expect(c.total).toBe(95000 + 8000 + monthlyInsuranceCost(bien()))
   })
@@ -184,7 +184,7 @@ describe('actualCost — bien en achat', () => {
     const attendu = Math.round(Math.round(20000000 * (1 + NOTARY_FEES)) / 240)
     const credit = poste(c, 'credit')
     expect(credit.label).toBe('Mensualité estimée')
-    expect(credit.montant).toBe(attendu)
+    expect(credit.amount).toBe(attendu)
     expect(c.displayed).toBe(attendu)
     expect(poste(c, 'loyer')).toBeUndefined()
   })
@@ -192,7 +192,7 @@ describe('actualCost — bien en achat', () => {
   it('déduit l’apport du capital emprunté', () => {
     const sansApport = actualCost(achat(), { tauxEmprunt: 0 })
     const avec = actualCost(achat(), { tauxEmprunt: 0, apport: 20000 })
-    expect(poste(sansApport, 'credit').montant! - poste(avec, 'credit').montant!).toBe(
+    expect(poste(sansApport, 'credit').amount! - poste(avec, 'credit').amount!).toBe(
       Math.round(2000000 / 240)
     )
   })
@@ -206,9 +206,9 @@ describe('actualCost — bien en achat', () => {
 
   it('garde énergie et assurance, et mesure l’écart avec la mensualité', () => {
     const c = actualCost(achat())
-    expect(poste(c, 'energie').montant).toBe(monthlyEnergyCost(achat()))
-    expect(poste(c, 'assurance').montant).toBe(monthlyInsuranceCost(achat()))
-    const credit = poste(c, 'credit').montant!
+    expect(poste(c, 'energie').amount).toBe(monthlyEnergyCost(achat()))
+    expect(poste(c, 'assurance').amount).toBe(monthlyInsuranceCost(achat()))
+    const credit = poste(c, 'credit').amount!
     expect(c.total).toBe(credit + 15000 + monthlyEnergyCost(achat())! + monthlyInsuranceCost(achat()))
     expect(c.overagePercent).toBe(Math.round(((c.total - credit) / credit) * 100))
   })
