@@ -119,7 +119,7 @@ async function savePassword() {
   if (!error) newPassword.value = ''
 }
 
-const { couvrir } = useRideau()
+const { cover: couvrir } = useCurtain()
 
 async function logout() {
   await couvrir(async () => {
@@ -128,7 +128,7 @@ async function logout() {
   })
 }
 
-const { preferences, personnalise, enregistrement, enregistrer, reinitialiser } = usePreferences()
+const { preferences, customized: personnalise, saving: enregistrement, save: enregistrer, reset: reinitialiser } = usePreferences()
 
 const DPE_OPTIONS: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 

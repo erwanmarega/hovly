@@ -1,19 +1,19 @@
-export const DUREE_RIDEAU_ENTREE = 220
+export const CURTAIN_ENTER_DURATION = 220
 
-export function useRideau() {
+export function useCurtain() {
   const visible = useState('rideau-visible', () => false)
 
-  const animationReduite = () =>
+  const reducedMotion = () =>
     import.meta.client && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  async function couvrir(action: () => Promise<void> | void) {
-    if (animationReduite()) {
+  async function cover(action: () => Promise<void> | void) {
+    if (reducedMotion()) {
       await action()
       return
     }
 
     visible.value = true
-    await new Promise((r) => setTimeout(r, DUREE_RIDEAU_ENTREE))
+    await new Promise((r) => setTimeout(r, CURTAIN_ENTER_DURATION))
 
     try {
       await action()
@@ -22,5 +22,5 @@ export function useRideau() {
     }
   }
 
-  return { visible, couvrir }
+  return { visible, cover }
 }

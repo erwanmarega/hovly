@@ -1,3 +1,3 @@
 export default defineNuxtPlugin(() => {
-  useInactivite()
+  useInactivity()
 })

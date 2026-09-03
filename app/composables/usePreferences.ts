@@ -2,19 +2,19 @@ import type { Anchor, TravelMode, Preferences } from '~/types'
 
 const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
 
-export const MAX_ANCRES = 5
+export const MAX_ANCHORS = 5
 
-const idPropre = (v: unknown) =>
+const cleanId = (v: unknown) =>
   typeof v === 'string' ? v.replace(/[^a-z0-9-]/gi, '').slice(0, 32) : ''
 
-function ancresValides(brut: unknown): Anchor[] {
+function validAnchors(brut: unknown): Anchor[] {
   if (!Array.isArray(brut)) return []
 
   const vues = new Set<string>()
   const out: Anchor[] = []
 
   for (const a of brut) {
-    const id = idPropre(a?.id)
+    const id = cleanId(a?.id)
     if (!id || vues.has(id)) continue
     if (typeof a.lat !== 'number' || typeof a.lon !== 'number') continue
     if (!Number.isFinite(a.lat) || !Number.isFinite(a.lon)) continue
@@ -32,13 +32,13 @@ function ancresValides(brut: unknown): Anchor[] {
           ? Math.round(a.maxMinutes)
           : null
     })
-    if (out.length >= MAX_ANCRES) break
+    if (out.length >= MAX_ANCHORS) break
   }
 
   return out
 }
 
-function normaliser(brut: unknown): Preferences {
+function normalize(brut: unknown): Preferences {
   const p = (brut ?? {}) as Partial<Preferences>
   const nombre = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null)
 
@@ -56,11 +56,11 @@ function normaliser(brut: unknown): Preferences {
     apport: nombre(p.apport),
     tauxEmprunt: nombre(p.tauxEmprunt),
     dureeEmpruntAns: nombre(p.dureeEmpruntAns),
-    ancres: ancresValides(p.ancres)
+    ancres: validAnchors(p.ancres)
   }
 }
 
-export function doitSynchroniser(distant: Preferences, attendu: string): boolean {
+export function shouldSync(distant: Preferences, attendu: string): boolean {
   return !attendu || JSON.stringify(distant) === attendu
 }
 
@@ -69,40 +69,40 @@ export function usePreferences() {
   const user = useSupabaseUser()
 
   const preferences = useState<Preferences>('preferences', () => ({ ...DEFAULT_PREFERENCES }))
-  const enregistrement = useState('preferences-saving', () => false)
+  const saving = useState('preferences-saving', () => false)
   const attendu = useState('preferences-attendu', () => '')
-  const hydratees = useState('preferences-hydratees', () => false)
+  const hydrated = useState('preferences-hydratees', () => false)
 
   watchEffect(() => {
-    const distant = normaliser(user.value?.user_metadata?.preferences)
-    if (!doitSynchroniser(distant, attendu.value)) return
+    const distant = normalize(user.value?.user_metadata?.preferences)
+    if (!shouldSync(distant, attendu.value)) return
     attendu.value = ''
     preferences.value = distant
   })
 
-  async function hydrater() {
-    if (hydratees.value) return
-    hydratees.value = true
+  async function hydrate() {
+    if (hydrated.value) return
+    hydrated.value = true
 
     const { data, error } = await supabase.auth.getUser()
     if (error || !data.user) return
 
-    const distant = normaliser(data.user.user_metadata?.preferences)
-    if (!doitSynchroniser(distant, attendu.value)) return
+    const distant = normalize(data.user.user_metadata?.preferences)
+    if (!shouldSync(distant, attendu.value)) return
 
     attendu.value = JSON.stringify(distant)
     preferences.value = distant
   }
 
-  if (import.meta.client && user.value) hydrater()
+  if (import.meta.client && user.value) hydrate()
 
-  const personnalise = computed(() => isCustomized(preferences.value))
+  const customized = computed(() => isCustomized(preferences.value))
 
-  async function enregistrer(valeurs: Preferences): Promise<boolean> {
-    enregistrement.value = true
-    const propres = normaliser(valeurs)
+  async function save(valeurs: Preferences): Promise<boolean> {
+    saving.value = true
+    const propres = normalize(valeurs)
     const { error } = await supabase.auth.updateUser({ data: { preferences: propres } })
-    enregistrement.value = false
+    saving.value = false
     if (error) return false
 
     attendu.value = JSON.stringify(propres)
@@ -112,9 +112,9 @@ export function usePreferences() {
     return true
   }
 
-  async function reinitialiser(): Promise<boolean> {
-    return enregistrer({ ...DEFAULT_PREFERENCES })
+  async function reset(): Promise<boolean> {
+    return save({ ...DEFAULT_PREFERENCES })
   }
 
-  return { preferences, personnalise, enregistrement, enregistrer, reinitialiser }
+  return { preferences, customized, saving, save, reset }
 }

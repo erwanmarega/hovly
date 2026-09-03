@@ -18,7 +18,7 @@ const maxMinutes = ref<number | null>(null)
 const recherche = ref(false)
 const erreur = ref('')
 
-const complet = computed(() => props.ancres.length >= MAX_ANCRES)
+const complet = computed(() => props.ancres.length >= MAX_ANCHORS)
 
 const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone mb-1.5'
 const inputCls =
@@ -175,7 +175,7 @@ function changerMode(id: string, m: TravelMode) {
     </div>
 
     <p v-else class="mt-3 text-xs text-stone">
-      Maximum {{ MAX_ANCRES }} points d’ancrage.
+      Maximum {{ MAX_ANCHORS }} points d’ancrage.
     </p>
 
     <p v-if="erreur" class="mt-2 text-xs text-[#600000]">{{ erreur }}</p>

@@ -2,7 +2,7 @@ import type { Anchor, Property, TravelMode, Commute } from '~/types'
 import { dureesVersAncre, paquets, routageDisponible } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 import { assertTailleCorps } from '../../utils/validation'
-import { MAX_ANCRES } from '~/composables/usePreferences'
+import { MAX_ANCHORS } from '~/composables/usePreferences'
 
 const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
 
@@ -28,11 +28,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ ancres?: unknown }>(event)
   const ancres = ancresValides(body?.ancres)
 
-  if (ancres.length > MAX_ANCRES) {
+  if (ancres.length > MAX_ANCHORS) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Trop de points d’ancrage',
-      message: `Maximum ${MAX_ANCRES} points d'ancrage par calcul.`
+      message: `Maximum ${MAX_ANCHORS} points d'ancrage par calcul.`
     })
   }
 

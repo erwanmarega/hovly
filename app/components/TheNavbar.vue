@@ -35,7 +35,7 @@ useHead({
   bodyAttrs: { class: computed(() => (user.value ? "a-nav-mobile" : "")) },
 });
 
-const { couvrir } = useRideau();
+const { cover: couvrir } = useCurtain();
 
 async function logout() {
   await couvrir(async () => {

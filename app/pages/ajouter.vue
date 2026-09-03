@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Property, DPE, SiteSource, Status, Transaction } from '~/types'
-import type { EntreeImport } from '~/composables/useImportMasse'
+import type { ImportEntry } from '~/composables/useImportMasse'
 import { detectSource, STATUSES } from '~/composables/useProperties'
 
 useHead({ title: 'Ajouter un bien — Hovly' })
@@ -40,17 +40,17 @@ const mode = ref<'simple' | 'masse'>('simple')
 const etape = ref<'url' | 'edition'>('url')
 
 const collageMasse = ref('')
-const entrees = ref<EntreeImport[]>([])
+const entrees = ref<ImportEntry[]>([])
 const importEnCours = ref(false)
 const indexCourant = ref(0)
 
-const resume = computed(() => resumeImport(entrees.value))
+const resume = computed(() => importSummary(entrees.value))
 
 const masseAvecLeboncoin = computed(() => entrees.value.some((e) => e.source === 'leboncoin'))
 
 watch(collageMasse, (texte) => {
   if (importEnCours.value) return
-  entrees.value = parserUrls(
+  entrees.value = parseUrls(
     texte,
     biens.value.map((b) => b.url_source)
   )

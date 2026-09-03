@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { visible } = useRideau();
+const { visible } = useCurtain();
 </script>
 
 <template>

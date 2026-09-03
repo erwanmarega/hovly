@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { scoreProperty, isCustomized, DEFAULT_PREFERENCES } from '../app/composables/useScore'
-import { doitSynchroniser } from '../app/composables/usePreferences'
+import { shouldSync } from '../app/composables/usePreferences'
 import type { Property, Preferences } from '../app/types'
 
 function bien(over: Partial<Property> = {}): Property {
@@ -167,19 +167,19 @@ describe('critères minimums', () => {
   })
 })
 
-describe('doitSynchroniser', () => {
+describe('shouldSync', () => {
   const distant = { ...DEFAULT_PREFERENCES, budgetMax: 1200 }
 
   it('synchronise quand aucune écriture locale n’est en attente', () => {
-    expect(doitSynchroniser(distant, '')).toBe(true)
+    expect(shouldSync(distant, '')).toBe(true)
   })
 
   it('refuse d’écraser une écriture locale que le user n’a pas encore reprise', () => {
     const local = JSON.stringify({ ...DEFAULT_PREFERENCES, budgetMax: 900 })
-    expect(doitSynchroniser(distant, local)).toBe(false)
+    expect(shouldSync(distant, local)).toBe(false)
   })
 
   it('reprend la synchronisation dès que le user a rattrapé', () => {
-    expect(doitSynchroniser(distant, JSON.stringify(distant))).toBe(true)
+    expect(shouldSync(distant, JSON.stringify(distant))).toBe(true)
   })
 })
