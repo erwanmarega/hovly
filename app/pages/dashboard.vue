@@ -579,13 +579,13 @@ function toggleTri(clef: typeof triClef.value) {
           <ClientOnly>
             <PropertyMap
               class="h-[70vh]"
-              hauteur="100%"
+              height="100%"
               :biens="biensAffiches"
               :selection="selection"
               :survole="bienSurvole"
               :zone="zone"
               @select="selection = $event"
-              @zone-changee="zone = $event"
+              @zone-changed="zone = $event"
             />
             <template #fallback>
               <div

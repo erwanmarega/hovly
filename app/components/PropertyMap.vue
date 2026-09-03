@@ -15,65 +15,65 @@ const props = withDefaults(
     biens: Property[];
     selection?: string | null;
     survole?: string | null;
-    hauteur?: string;
-    zoomBien?: number;
+    height?: string;
+    zoomLevel?: number;
     zone?: MapZone | null;
   }>(),
-  { selection: null, survole: null, hauteur: "32rem", zoomBien: 15, zone: null }
+  { selection: null, survole: null, height: "32rem", zoomLevel: 15, zone: null }
 );
 
 const emit = defineEmits<{
   select: [id: string];
-  "zone-changee": [zone: MapZone | null];
+  "zone-changed": [zone: MapZone | null];
 }>();
 
-const conteneur = ref<HTMLElement | null>(null);
-const { biens: contexte } = useProperties();
+const container = ref<HTMLElement | null>(null);
+const { biens: context } = useProperties();
 
-let carte: LeafletMap | null = null;
-let observateur: ResizeObserver | null = null;
-let couche: (CircleMarker | Circle)[] = [];
-const marqueurs = new Map<string, CircleMarker>();
+let map: LeafletMap | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let layers: (CircleMarker | Circle)[] = [];
+const markers = new Map<string, CircleMarker>();
 
-const RAYON_BASE = 9;
-const RAYON_SURVOLE = 14;
+const BASE_RADIUS = 9;
+const HOVER_RADIUS = 14;
 
-const modeDessin = ref(false);
-let cercleZone: Circle | null = null;
-let debutDessin: LatLng | null = null;
+const drawMode = ref(false);
+let zoneCircle: Circle | null = null;
+let drawStart: LatLng | null = null;
 /** En dessous, le rayon est trop petit pour être une zone voulue — on l'ignore. */
-const RAYON_MIN_M = 50;
+const MIN_RADIUS_M = 50;
 
-const localises = computed(() =>
+const located = computed(() =>
   props.biens.filter((b) => b.lat != null && b.lon != null)
 );
-const sansPosition = computed(
-  () => props.biens.length - localises.value.length
+const unlocated = computed(
+  () => props.biens.length - located.value.length
 );
 
-const SENSIBILITE_ZOOM = 0.2;
-const ZOOM_MAX_PAR_EVENEMENT = 1.2;
-const PIXELS_PAR_LIGNE = 16;
+const ZOOM_SENSITIVITY = 0.2;
+const MAX_ZOOM_PER_EVENT = 1.2;
+const PIXELS_PER_LINE = 16;
 
-function zoomerAuPincement(e: WheelEvent) {
-  if (!carte || !e.ctrlKey) return;
+function zoomOnPinch(e: WheelEvent) {
+  if (!map || !e.ctrlKey) return;
 
   e.preventDefault();
 
-  const pixels = e.deltaMode === 1 ? e.deltaY * PIXELS_PAR_LIGNE : e.deltaY;
-  const variation = Math.max(
-    -ZOOM_MAX_PAR_EVENEMENT,
-    Math.min(ZOOM_MAX_PAR_EVENEMENT, pixels * SENSIBILITE_ZOOM)
+  const pixels = e.deltaMode === 1 ? e.deltaY * PIXELS_PER_LINE : e.deltaY;
+  const delta = Math.max(
+    -MAX_ZOOM_PER_EVENT,
+    Math.min(MAX_ZOOM_PER_EVENT, pixels * ZOOM_SENSITIVITY)
   );
-  const point = carte.mouseEventToContainerPoint(e);
+  const point = map.mouseEventToContainerPoint(e);
 
-  carte.setZoomAround(
-    carte.containerPointToLatLng(point),
-    carte.getZoom() - variation
+  map.setZoomAround(
+    map.containerPointToLatLng(point),
+    map.getZoom() - delta
   );
 }
 
-function echapper(s: string): string {
+function escapeHtml(s: string): string {
   return s.replace(
     /[&<>"']/g,
     (c) =>
@@ -84,10 +84,10 @@ function echapper(s: string): string {
 }
 
 function popup(b: Property): string {
-  const prix = b.prix
+  const price = b.prix
     ? `${formatNumber(Math.round(b.prix / 100))} €${isPurchase(b) ? "" : "/mois"}`
     : "Prix inconnu";
-  const m2 = pricePerSqm(b) ? ` · ${formatNumber(pricePerSqm(b)!)} €/m²` : "";
+  const pricePerSqmText = pricePerSqm(b) ? ` · ${formatNumber(pricePerSqm(b)!)} €/m²` : "";
   const approx =
     b.geo_precision === "ville"
       ? '<div class="mt-1 text-stone">Position approximative</div>'
@@ -96,155 +96,155 @@ function popup(b: Property): string {
     <div class="text-sm">
       <a href="/bien/${
         b.id
-      }" class="font-semibold text-ink hover:underline">${echapper(
+      }" class="font-semibold text-ink hover:underline">${escapeHtml(
     b.titre ?? "Sans titre"
   )}</a>
-      <div class="mt-1 text-slate">${prix}${m2}</div>
-      <div class="text-stone">${echapper(
+      <div class="mt-1 text-slate">${price}${pricePerSqmText}</div>
+      <div class="text-stone">${escapeHtml(
         [b.ville, b.code_postal].filter(Boolean).join(" ")
       )}</div>
       ${approx}
     </div>`;
 }
 
-async function dessiner() {
-  if (!carte) return;
+async function draw() {
+  if (!map) return;
   const L = await import("leaflet");
 
-  couche.forEach((c) => c.remove());
-  couche = [];
-  marqueurs.clear();
+  layers.forEach((c) => c.remove());
+  layers = [];
+  markers.clear();
 
-  for (const b of localises.value) {
-    const total = scoreProperty(b, contexte.value).total;
-    const couleur = scoreColor(total);
+  for (const b of located.value) {
+    const total = scoreProperty(b, context.value).total;
+    const color = scoreColor(total);
 
     if (b.geo_precision === "ville") {
-      couche.push(
+      layers.push(
         L.circle([b.lat!, b.lon!], {
           radius: 700,
-          color: couleur,
+          color: color,
           weight: 1,
           dashArray: "4 4",
-          fillColor: couleur,
+          fillColor: color,
           fillOpacity: 0.08,
-        }).addTo(carte)
+        }).addTo(map)
       );
     }
 
     const m = L.circleMarker([b.lat!, b.lon!], {
-      radius: RAYON_BASE,
+      radius: BASE_RADIUS,
       color: "#ffffff",
       weight: 2,
-      fillColor: couleur,
+      fillColor: color,
       fillOpacity: 0.95,
     })
       .bindPopup(popup(b))
-      .addTo(carte);
+      .addTo(map);
 
     m.on("click", () => emit("select", b.id));
-    marqueurs.set(b.id, m);
-    couche.push(m);
+    markers.set(b.id, m);
+    layers.push(m);
   }
 
-  if (props.survole) marqueurs.get(props.survole)?.setRadius(RAYON_SURVOLE);
+  if (props.survole) markers.get(props.survole)?.setRadius(HOVER_RADIUS);
 
-  if (localises.value.length === 1) {
-    const seul = localises.value[0]!;
-    carte.setView([seul.lat!, seul.lon!], props.zoomBien);
-  } else if (localises.value.length > 1) {
-    carte.fitBounds(
+  if (located.value.length === 1) {
+    const only = located.value[0]!;
+    map.setView([only.lat!, only.lon!], props.zoomLevel);
+  } else if (located.value.length > 1) {
+    map.fitBounds(
       L.latLngBounds(
-        localises.value.map((b) => [b.lat!, b.lon!] as [number, number])
+        located.value.map((b) => [b.lat!, b.lon!] as [number, number])
       ),
       { padding: [40, 40], maxZoom: 14 }
     );
   }
 }
 
-async function dessinerZone() {
-  if (!carte) return;
+async function drawZone() {
+  if (!map) return;
   const L = await import("leaflet");
 
-  cercleZone?.remove();
-  cercleZone = null;
+  zoneCircle?.remove();
+  zoneCircle = null;
   if (!props.zone) return;
 
-  cercleZone = L.circle([props.zone.lat, props.zone.lon], {
+  zoneCircle = L.circle([props.zone.lat, props.zone.lon], {
     radius: props.zone.radiusM,
     color: "#2563eb",
     weight: 2,
     fillColor: "#2563eb",
     fillOpacity: 0.08,
-  }).addTo(carte);
+  }).addTo(map);
 }
 
-function annulerDessin() {
-  window.removeEventListener("mouseup", surRelacheGlobale);
-  carte?.dragging.enable();
-  debutDessin = null;
+function cancelDraw() {
+  window.removeEventListener("mouseup", onGlobalMouseUp);
+  map?.dragging.enable();
+  drawStart = null;
 }
 
-async function surRelacheGlobale() {
+async function onGlobalMouseUp() {
   // Le relâchement a eu lieu hors de la carte : le mouseup de Leaflet ne
   // s'est jamais déclenché. On annule le tracé et on réaffiche la zone active
   // (ou son absence) telle qu'elle était avant ce geste avorté.
-  if (!debutDessin) return;
-  modeDessin.value = false;
-  annulerDessin();
-  await dessinerZone();
+  if (!drawStart) return;
+  drawMode.value = false;
+  cancelDraw();
+  await drawZone();
 }
 
-async function surAppui(e: LeafletMouseEvent) {
-  if (!modeDessin.value || !carte) return;
+async function onMouseDown(e: LeafletMouseEvent) {
+  if (!drawMode.value || !map) return;
   const L = await import("leaflet");
 
-  debutDessin = e.latlng;
-  cercleZone?.remove();
-  cercleZone = L.circle(e.latlng, {
+  drawStart = e.latlng;
+  zoneCircle?.remove();
+  zoneCircle = L.circle(e.latlng, {
     radius: 0,
     color: "#2563eb",
     weight: 2,
     fillColor: "#2563eb",
     fillOpacity: 0.08,
-  }).addTo(carte);
-  carte.dragging.disable();
-  window.addEventListener("mouseup", surRelacheGlobale);
+  }).addTo(map);
+  map.dragging.disable();
+  window.addEventListener("mouseup", onGlobalMouseUp);
 }
 
-function surDeplacement(e: LeafletMouseEvent) {
-  if (!debutDessin || !carte || !cercleZone) return;
-  cercleZone.setRadius(carte.distance(debutDessin, e.latlng));
+function onMouseMove(e: LeafletMouseEvent) {
+  if (!drawStart || !map || !zoneCircle) return;
+  zoneCircle.setRadius(map.distance(drawStart, e.latlng));
 }
 
-function surRelache(e: LeafletMouseEvent) {
-  if (!debutDessin || !carte || !cercleZone) return;
-  const rayon = carte.distance(debutDessin, e.latlng);
-  const zoneFinale: MapZone | null =
-    rayon >= RAYON_MIN_M
-      ? { lat: debutDessin.lat, lon: debutDessin.lng, radiusM: Math.round(rayon) }
+function onMouseUp(e: LeafletMouseEvent) {
+  if (!drawStart || !map || !zoneCircle) return;
+  const radius = map.distance(drawStart, e.latlng);
+  const finalZone: MapZone | null =
+    radius >= MIN_RADIUS_M
+      ? { lat: drawStart.lat, lon: drawStart.lng, radiusM: Math.round(radius) }
       : null;
 
-  if (!zoneFinale) {
-    cercleZone.remove();
-    cercleZone = null;
+  if (!finalZone) {
+    zoneCircle.remove();
+    zoneCircle = null;
   }
-  modeDessin.value = false;
-  annulerDessin();
-  emit("zone-changee", zoneFinale);
+  drawMode.value = false;
+  cancelDraw();
+  emit("zone-changed", finalZone);
 }
 
 onMounted(async () => {
-  if (!conteneur.value) return;
+  if (!container.value) return;
   const L = await import("leaflet");
 
-  carte = L.map(conteneur.value, {
+  map = L.map(container.value, {
     scrollWheelZoom: false,
     zoomSnap: 0,
     attributionControl: true,
   }).setView([46.6, 2.4], 5);
 
-  conteneur.value.addEventListener("wheel", zoomerAuPincement, {
+  container.value.addEventListener("wheel", zoomOnPinch, {
     passive: false,
   });
 
@@ -255,47 +255,47 @@ onMounted(async () => {
     maxZoom: 19,
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(carte);
+  }).addTo(map);
 
-  observateur = new ResizeObserver(() => carte?.invalidateSize());
-  observateur.observe(conteneur.value);
+  resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+  resizeObserver.observe(container.value);
 
-  carte.on("mousedown", surAppui);
-  carte.on("mousemove", surDeplacement);
-  carte.on("mouseup", surRelache);
+  map.on("mousedown", onMouseDown);
+  map.on("mousemove", onMouseMove);
+  map.on("mouseup", onMouseUp);
 
-  await dessiner();
-  await dessinerZone();
+  await draw();
+  await drawZone();
 });
 
 onBeforeUnmount(() => {
-  conteneur.value?.removeEventListener("wheel", zoomerAuPincement);
-  window.removeEventListener("mouseup", surRelacheGlobale);
-  observateur?.disconnect();
-  observateur = null;
-  carte?.remove();
-  carte = null;
+  container.value?.removeEventListener("wheel", zoomOnPinch);
+  window.removeEventListener("mouseup", onGlobalMouseUp);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  map?.remove();
+  map = null;
 });
 
-watch(() => props.biens, dessiner, { deep: true });
-watch(() => props.zone, dessinerZone);
+watch(() => props.biens, draw, { deep: true });
+watch(() => props.zone, drawZone);
 
 watch(
   () => props.selection,
   (id) => {
-    if (!id || !carte) return;
-    const m = marqueurs.get(id);
+    if (!id || !map) return;
+    const m = markers.get(id);
     if (!m) return;
-    carte.panTo(m.getLatLng());
+    map.panTo(m.getLatLng());
     m.openPopup();
   }
 );
 
 watch(
   () => props.survole,
-  (id, ancien) => {
-    if (ancien) marqueurs.get(ancien)?.setRadius(RAYON_BASE);
-    if (id) marqueurs.get(id)?.setRadius(RAYON_SURVOLE);
+  (id, previous) => {
+    if (previous) markers.get(previous)?.setRadius(BASE_RADIUS);
+    if (id) markers.get(id)?.setRadius(HOVER_RADIUS);
   }
 );
 </script>
@@ -304,19 +304,19 @@ watch(
   <div class="flex min-h-0 flex-col">
     <div
       class="relative isolate z-0 w-full overflow-hidden rounded-2xl border border-hairline bg-white"
-      :class="hauteur === '100%' && 'min-h-0 flex-1'"
-      :style="hauteur === '100%' ? undefined : { height: hauteur }"
+      :class="height === '100%' && 'min-h-0 flex-1'"
+      :style="height === '100%' ? undefined : { height: height }"
     >
-      <div ref="conteneur" class="size-full" />
+      <div ref="container" class="size-full" />
 
       <button
         type="button"
         class="absolute right-3 top-3 z-[1000] rounded-full border border-hairline bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-surface"
-        :class="modeDessin && 'bg-blue text-white hover:bg-blue'"
-        @click="modeDessin = !modeDessin"
+        :class="drawMode && 'bg-blue text-white hover:bg-blue'"
+        @click="drawMode = !drawMode"
       >
         {{
-          modeDessin
+          drawMode
             ? "Clique-glisse pour dessiner…"
             : zone
               ? "Redessiner la zone"
@@ -328,14 +328,14 @@ watch(
         v-if="zone"
         type="button"
         class="absolute right-3 top-11 z-[1000] rounded-full border border-hairline bg-white px-3 py-1.5 text-xs font-medium text-slate shadow-sm transition hover:bg-surface"
-        @click="emit('zone-changee', null)"
+        @click="emit('zone-changed', null)"
       >
         Effacer la zone
       </button>
     </div>
 
-    <p v-if="sansPosition > 0" class="mt-2 text-xs text-stone">
-      {{ sansPosition }} bien{{ sansPosition > 1 ? "s" : "" }} sans localisation
+    <p v-if="unlocated > 0" class="mt-2 text-xs text-stone">
+      {{ unlocated }} bien{{ unlocated > 1 ? "s" : "" }} sans localisation
       — adresse trop imprécise dans l’annonce.
     </p>
   </div>

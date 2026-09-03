@@ -491,7 +491,7 @@ async function confirmerSuppression() {
               </div>
               <ClientOnly>
                 <div class="mt-3 min-h-64 flex-1">
-                  <PropertyMap class="h-full" :biens="[bien]" hauteur="100%" />
+                  <PropertyMap class="h-full" :biens="[bien]" height="100%" />
                 </div>
                 <template #fallback>
                   <div
