@@ -20,8 +20,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const patch: Record<string, unknown> = {}
-  for (const champ of EDITABLE_FIELDS) {
-    if (champ in body) patch[champ] = body[champ]
+  for (const field of EDITABLE_FIELDS) {
+    if (field in body) patch[field] = body[field]
   }
 
   if ('visite_le' in patch) patch.rappel_envoye_le = null

@@ -5,7 +5,7 @@ import { isPricePlausible } from '../../../utils/check'
 import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
 import { DEFAULT_PHOTO } from '../../../utils/properties'
 
-const CHAMPS_RAFRAICHIS = [
+const REFRESHED_FIELDS = [
   'titre',
   'prix',
   'surface',
@@ -21,19 +21,19 @@ const CHAMPS_RAFRAICHIS = [
   'type_bien'
 ] as const
 
-type ChampRafraichi = (typeof CHAMPS_RAFRAICHIS)[number]
+type RefreshedField = (typeof REFRESHED_FIELDS)[number]
 
-export interface Changement {
-  champ: ChampRafraichi
-  avant: unknown
-  apres: unknown
+export interface Change {
+  field: RefreshedField
+  before: unknown
+  after: unknown
 }
 
-function aChange(avant: unknown, apres: unknown): boolean {
-  if (Array.isArray(avant) && Array.isArray(apres)) {
-    return avant.length !== apres.length || avant.some((v, i) => v !== apres[i])
+function hasChanged(before: unknown, after: unknown): boolean {
+  if (Array.isArray(before) && Array.isArray(after)) {
+    return before.length !== after.length || before.some((v, i) => v !== after[i])
   }
-  return avant !== apres
+  return before !== after
 }
 
 export default defineEventHandler(async (event) => {
@@ -46,95 +46,95 @@ export default defineEventHandler(async (event) => {
   if (error || !bien) {
     throw createError({ statusCode: 404, statusMessage: 'Bien introuvable' })
   }
-  const actuel = bien as Property
+  const current = bien as Property
 
-  const { data: extrait, indisponible } = await scrapeUrl(actuel.url_source)
+  const { data: extracted, indisponible } = await scrapeUrl(current.url_source)
 
   if (indisponible) {
     await client.from('biens').update({ actif: false }).eq('id', id)
     await client.from('alertes').insert({
       bien_id: id,
       type: 'annonce_supprimee',
-      ancien_prix: actuel.prix,
+      ancien_prix: current.prix,
       nouveau_prix: null
     })
-    return { indisponible: true, changements: [], bien: { ...actuel, actif: false } }
+    return { indisponible: true, changements: [], bien: { ...current, actif: false } }
   }
 
-  const maj: Record<string, unknown> = {}
-  const changements: Changement[] = []
+  const update: Record<string, unknown> = {}
+  const changes: Change[] = []
 
-  for (const champ of CHAMPS_RAFRAICHIS) {
-    const valeur = extrait[champ]
-    if (valeur == null || valeur === '') continue
-    if (Array.isArray(valeur) && valeur.length === 0) continue
-    if (!aChange(actuel[champ], valeur)) continue
+  for (const field of REFRESHED_FIELDS) {
+    const value = extracted[field]
+    if (value == null || value === '') continue
+    if (Array.isArray(value) && value.length === 0) continue
+    if (!hasChanged(current[field], value)) continue
 
-    maj[champ] = valeur
-    changements.push({ champ, avant: actuel[champ], apres: valeur })
+    update[field] = value
+    changes.push({ field, before: current[field], after: value })
   }
 
   // Un bien créé avant l'introduction de la photo de repli, toujours sans
   // photo après ce re-scrape : on l'applique maintenant plutôt que d'attendre
   // indéfiniment une image que le scraping ne trouvera peut-être jamais.
-  if (!actuel.photos?.length && !maj.photos) {
-    maj.photos = [DEFAULT_PHOTO]
-    changements.push({ champ: 'photos', avant: actuel.photos, apres: maj.photos })
+  if (!current.photos?.length && !update.photos) {
+    update.photos = [DEFAULT_PHOTO]
+    changes.push({ field: 'photos', before: current.photos, after: update.photos })
   }
 
   // Un re-scrape peut produire un prix aberrant : on le retire de la mise à
   // jour plutôt que d'écraser un prix correct (même garde-fou que le cron).
-  if (typeof maj.prix === 'number' && !isPricePlausible(actuel.prix, maj.prix as number)) {
-    console.warn('[refresh] prix aberrant ignoré', { id, ancien: actuel.prix, nouveau: maj.prix })
-    delete maj.prix
-    const i = changements.findIndex((c) => c.champ === 'prix')
-    if (i >= 0) changements.splice(i, 1)
+  if (typeof update.prix === 'number' && !isPricePlausible(current.prix, update.prix as number)) {
+    console.warn('[refresh] prix aberrant ignoré', { id, ancien: current.prix, nouveau: update.prix })
+    delete update.prix
+    const i = changes.findIndex((c) => c.field === 'prix')
+    if (i >= 0) changes.splice(i, 1)
   }
 
-  const nouveauPrix = typeof maj.prix === 'number' ? maj.prix : null
-  if (nouveauPrix != null) {
-    await client.from('prix_historique').insert({ bien_id: id, prix: nouveauPrix })
-    if (nouveauPrix < actuel.prix) {
+  const newPrice = typeof update.prix === 'number' ? update.prix : null
+  if (newPrice != null) {
+    await client.from('prix_historique').insert({ bien_id: id, prix: newPrice })
+    if (newPrice < current.prix) {
       await client.from('alertes').insert({
         bien_id: id,
         type: 'baisse_prix',
-        ancien_prix: actuel.prix,
-        nouveau_prix: nouveauPrix
+        ancien_prix: current.prix,
+        nouveau_prix: newPrice
       })
     }
   }
 
-  const adresseChangee = changements.some((c) =>
-    ['adresse', 'ville', 'code_postal'].includes(c.champ)
+  const addressChanged = changes.some((c) =>
+    ['adresse', 'ville', 'code_postal'].includes(c.field)
   )
-  if (adresseChangee || actuel.lat == null) {
+  if (addressChanged || current.lat == null) {
     const loc = await geocoder({
-      adresse: (maj.adresse as string) ?? actuel.adresse,
-      ville: (maj.ville as string) ?? actuel.ville,
-      code_postal: (maj.code_postal as string) ?? actuel.code_postal
+      adresse: (update.adresse as string) ?? current.adresse,
+      ville: (update.ville as string) ?? current.ville,
+      code_postal: (update.code_postal as string) ?? current.code_postal
     })
     if (loc) {
-      maj.lat = loc.lat
-      maj.lon = loc.lon
-      maj.geo_precision = loc.precision
-      maj.geocode_le = new Date().toISOString()
+      update.lat = loc.lat
+      update.lon = loc.lon
+      update.geo_precision = loc.precision
+      update.geocode_le = new Date().toISOString()
     }
   }
 
-  if (!Object.keys(maj).length) {
-    return { indisponible: false, changements: [], bien: actuel }
+  if (!Object.keys(update).length) {
+    return { indisponible: false, changements: [], bien: current }
   }
 
-  const { data: apres, error: errMaj } = await client
+  const { data: after, error: errUpdate } = await client
     .from('biens')
-    .update(maj)
+    .update(update)
     .eq('id', id)
     .select()
     .single()
 
-  if (errMaj) {
-    throw createError({ statusCode: 500, statusMessage: errMaj.message })
+  if (errUpdate) {
+    throw createError({ statusCode: 500, statusMessage: errUpdate.message })
   }
 
-  return { indisponible: false, changements, bien: apres }
+  return { indisponible: false, changements: changes, bien: after }
 })

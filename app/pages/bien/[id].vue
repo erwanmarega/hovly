@@ -209,7 +209,7 @@ async function rafraichir() {
   try {
     const r = await $fetch<{
       indisponible: boolean;
-      changements: { champ: string; avant: unknown; apres: unknown }[];
+      changements: { field: string; before: unknown; after: unknown }[];
       bien: Property;
     }>(`/api/biens/${id}/refresh`, { method: "POST" });
 
@@ -221,7 +221,7 @@ async function rafraichir() {
       messageRefresh.value = "Aucun changement : les données étaient à jour.";
     } else {
       const noms = r.changements.map(
-        (c) => LIBELLES_CHAMPS[c.champ] ?? c.champ
+        (c) => LIBELLES_CHAMPS[c.field] ?? c.field
       );
       messageRefresh.value = `Mis à jour : ${noms.join(", ")}.`;
     }
