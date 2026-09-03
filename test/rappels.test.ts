@@ -13,7 +13,7 @@ vi.mock('../server/utils/push', () => ({
   pushAvailable: () => pushAvailable()
 }))
 
-const { aRappeler, envoyerRappels } = await import('../server/utils/rappels')
+const { needsReminder, sendReminders } = await import('../server/utils/rappels')
 
 const MAINTENANT = new Date('2026-07-25T09:00:00.000Z')
 const dans = (heures: number) =>
@@ -81,33 +81,33 @@ beforeEach(() => {
   pushAvailable.mockReturnValue(true)
 })
 
-describe('aRappeler', () => {
+describe('needsReminder', () => {
   it('retient une visite dans les 24 h', () => {
-    expect(aRappeler(bien({ visite_le: dans(20) }), MAINTENANT)).toBe(true)
-    expect(aRappeler(bien({ visite_le: dans(1) }), MAINTENANT)).toBe(true)
+    expect(needsReminder(bien({ visite_le: dans(20) }), MAINTENANT)).toBe(true)
+    expect(needsReminder(bien({ visite_le: dans(1) }), MAINTENANT)).toBe(true)
   })
 
   it('écarte une visite trop lointaine ou déjà passée', () => {
-    expect(aRappeler(bien({ visite_le: dans(30) }), MAINTENANT)).toBe(false)
-    expect(aRappeler(bien({ visite_le: dans(-1) }), MAINTENANT)).toBe(false)
+    expect(needsReminder(bien({ visite_le: dans(30) }), MAINTENANT)).toBe(false)
+    expect(needsReminder(bien({ visite_le: dans(-1) }), MAINTENANT)).toBe(false)
   })
 
   it('n’envoie qu’une fois', () => {
-    expect(aRappeler(bien({ rappel_envoye_le: dans(-2) }), MAINTENANT)).toBe(false)
+    expect(needsReminder(bien({ rappel_envoye_le: dans(-2) }), MAINTENANT)).toBe(false)
   })
 
   it('ignore un bien archivé, sans date ou avec date illisible', () => {
-    expect(aRappeler(bien({ actif: false }), MAINTENANT)).toBe(false)
-    expect(aRappeler(bien({ visite_le: null }), MAINTENANT)).toBe(false)
-    expect(aRappeler(bien({ visite_le: 'demain' }), MAINTENANT)).toBe(false)
+    expect(needsReminder(bien({ actif: false }), MAINTENANT)).toBe(false)
+    expect(needsReminder(bien({ visite_le: null }), MAINTENANT)).toBe(false)
+    expect(needsReminder(bien({ visite_le: 'demain' }), MAINTENANT)).toBe(false)
   })
 })
 
-describe('envoyerRappels', () => {
+describe('sendReminders', () => {
   it('notifie et marque le bien comme rappelé', async () => {
     const { client, majs } = fakeClient()
 
-    const resume = await envoyerRappels(client, [bien()], 'moi@example.com', MAINTENANT)
+    const resume = await sendReminders(client, [bien()], 'moi@example.com', MAINTENANT)
 
     expect(resume).toMatchObject({ candidats: 1, envoyes: 1, echecs: 0 })
     expect(sendReminderEmail).toHaveBeenCalledOnce()
@@ -122,7 +122,7 @@ describe('envoyerRappels', () => {
   it('ne touche pas aux biens hors fenêtre', async () => {
     const { client, majs } = fakeClient()
 
-    const resume = await envoyerRappels(
+    const resume = await sendReminders(
       client,
       [bien({ id: 'loin', visite_le: dans(48) })],
       'moi@example.com',
@@ -138,7 +138,7 @@ describe('envoyerRappels', () => {
     const { client, majs } = fakeClient()
     sendReminderEmail.mockResolvedValue({ envoye: false, raison: 'RESEND_API_KEY absente' })
 
-    const resume = await envoyerRappels(client, [bien()], null, MAINTENANT)
+    const resume = await sendReminders(client, [bien()], null, MAINTENANT)
 
     expect(resume.envoyes).toBe(1)
     expect(resume.raisons).toContain('RESEND_API_KEY absente')
@@ -150,7 +150,7 @@ describe('envoyerRappels', () => {
     sendReminderEmail.mockResolvedValue({ envoye: false, raison: 'aucune adresse email' })
     sendPush.mockResolvedValue({ sent: 0, failed: 1, reasons: ['410 gone'] })
 
-    const resume = await envoyerRappels(client, [bien()], null, MAINTENANT)
+    const resume = await sendReminders(client, [bien()], null, MAINTENANT)
 
     expect(resume).toMatchObject({ candidats: 1, envoyes: 0, echecs: 1 })
     expect(majs).toEqual([])
@@ -160,7 +160,7 @@ describe('envoyerRappels', () => {
     const { client } = fakeClient()
     pushAvailable.mockReturnValue(false)
 
-    const resume = await envoyerRappels(client, [bien()], 'moi@example.com', MAINTENANT)
+    const resume = await sendReminders(client, [bien()], 'moi@example.com', MAINTENANT)
 
     expect(sendPush).not.toHaveBeenCalled()
     expect(resume.envoyes).toBe(1)

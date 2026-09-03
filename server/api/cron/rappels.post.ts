@@ -1,6 +1,6 @@
 import type { Property } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
-import { envoyerRappels } from '../../utils/rappels'
+import { sendReminders } from '../../utils/rappels'
 
 export default defineEventHandler(async (event) => {
   const secret = process.env.CRON_SECRET
@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
 
   for (const [userId, liste] of parUser) {
     const { data: compte } = await service.auth.admin.getUserById(userId)
-    const resume = await envoyerRappels(
+    const resume = await sendReminders(
       service,
       liste,
       compte?.user?.email ?? null,
