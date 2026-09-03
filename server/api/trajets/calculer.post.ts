@@ -1,5 +1,5 @@
 import type { Anchor, Property, TravelMode, Commute } from '~/types'
-import { dureesVersAncre, paquets, routageDisponible } from '../../utils/routage'
+import { durationsToAnchor, batches, routingAvailable } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 import { assertTailleCorps } from '../../utils/validation'
 import { MAX_ANCHORS } from '~/composables/usePreferences'
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
   const maintenant = new Date().toISOString()
 
   for (const ancre of ancres) {
-    if (!routageDisponible(ancre.mode)) {
+    if (!routingAvailable(ancre.mode)) {
       resume.indisponibles.push(ancre.id)
       continue
     }
@@ -88,10 +88,10 @@ export default defineEventHandler(async (event) => {
     resume.ignores += biens.length - aFaire.length
     if (!aFaire.length) continue
 
-    for (const lot of paquets(aFaire)) {
+    for (const lot of batches(aFaire)) {
       let durees
       try {
-        durees = await dureesVersAncre(
+        durees = await durationsToAnchor(
           lot.map((b) => ({ lat: b.lat!, lon: b.lon! })),
           { lat: ancre.lat, lon: ancre.lon },
           ancre.mode

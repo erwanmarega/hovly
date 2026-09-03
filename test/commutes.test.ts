@@ -12,9 +12,9 @@ import {
   propertyCommutes
 } from '../app/composables/useCommutes'
 import {
-  dureeDepuisItineraires,
-  paquets,
-  prochainMardi8h30
+  durationFromItineraries,
+  batches,
+  nextTuesday830
 } from '../server/utils/routage'
 
 function ancre(over: Partial<Anchor> = {}): Anchor {
@@ -188,22 +188,22 @@ describe('commuteKey', () => {
   })
 })
 
-describe('paquets', () => {
+describe('batches', () => {
   it('découpe pour ne pas dépasser la limite de l’API', () => {
-    expect(paquets([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+    expect(batches([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
   })
 
   it('rend une liste vide telle quelle', () => {
-    expect(paquets([], 40)).toEqual([])
+    expect(batches([], 40)).toEqual([])
   })
 })
 
-describe('dureeDepuisItineraires', () => {
+describe('durationFromItineraries', () => {
   const metro = [{ mode: 'WALK' }, { mode: 'SUBWAY' }, { mode: 'WALK' }]
 
   it('retient le trajet le plus court', () => {
     expect(
-      dureeDepuisItineraires({
+      durationFromItineraries({
         itineraries: [
           { duration: 2400, legs: metro },
           { duration: 1800, legs: metro }
@@ -214,7 +214,7 @@ describe('dureeDepuisItineraires', () => {
 
   it('écarte un itinéraire sans aucun transport en commun', () => {
     expect(
-      dureeDepuisItineraires({
+      durationFromItineraries({
         itineraries: [
           { duration: 5400, legs: [{ mode: 'WALK' }] },
           { duration: 1500, legs: metro }
@@ -224,33 +224,33 @@ describe('dureeDepuisItineraires', () => {
   })
 
   it('accepte une durée sans détail des tronçons', () => {
-    expect(dureeDepuisItineraires({ itineraries: [{ duration: 1200 }] })).toBe(1200)
+    expect(durationFromItineraries({ itineraries: [{ duration: 1200 }] })).toBe(1200)
   })
 
   it('rend null quand aucune solution n’est exploitable', () => {
-    expect(dureeDepuisItineraires({})).toBeNull()
-    expect(dureeDepuisItineraires({ itineraries: [] })).toBeNull()
-    expect(dureeDepuisItineraires({ itineraries: [{ duration: 0, legs: metro }] })).toBeNull()
+    expect(durationFromItineraries({})).toBeNull()
+    expect(durationFromItineraries({ itineraries: [] })).toBeNull()
+    expect(durationFromItineraries({ itineraries: [{ duration: 0, legs: metro }] })).toBeNull()
     expect(
-      dureeDepuisItineraires({ itineraries: [{ duration: 900, legs: [{ mode: 'BIKE' }] }] })
+      durationFromItineraries({ itineraries: [{ duration: 900, legs: [{ mode: 'BIKE' }] }] })
     ).toBeNull()
   })
 })
 
-describe('prochainMardi8h30', () => {
+describe('nextTuesday830', () => {
   it('vise toujours un mardi 8 h 30 à venir, heure de Paris', () => {
-    expect(prochainMardi8h30(new Date('2026-07-25T09:00:00Z'))).toBe('2026-07-28T08:30:00+02:00')
+    expect(nextTuesday830(new Date('2026-07-25T09:00:00Z'))).toBe('2026-07-28T08:30:00+02:00')
   })
 
   it('saute au mardi suivant si on est déjà mardi', () => {
-    expect(prochainMardi8h30(new Date('2026-07-28T07:00:00Z'))).toBe('2026-08-04T08:30:00+02:00')
+    expect(nextTuesday830(new Date('2026-07-28T07:00:00Z'))).toBe('2026-08-04T08:30:00+02:00')
   })
 
   it('suit l’heure d’hiver', () => {
-    expect(prochainMardi8h30(new Date('2026-01-15T09:00:00Z'))).toBe('2026-01-20T08:30:00+01:00')
+    expect(nextTuesday830(new Date('2026-01-15T09:00:00Z'))).toBe('2026-01-20T08:30:00+01:00')
   })
 
   it('lit la date à Paris, pas en UTC', () => {
-    expect(prochainMardi8h30(new Date('2026-07-27T23:30:00Z'))).toBe('2026-08-04T08:30:00+02:00')
+    expect(nextTuesday830(new Date('2026-07-27T23:30:00Z'))).toBe('2026-08-04T08:30:00+02:00')
   })
 })
