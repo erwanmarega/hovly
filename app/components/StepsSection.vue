@@ -3,37 +3,37 @@ import type { SiteSource } from "~/types";
 
 const SOURCES: SiteSource[] = ["seloger", "leboncoin", "pap"];
 
-const etapes = [
+const steps = [
   {
     n: "1",
-    visuel: "sources",
+    visual: "sources",
     titre: "Trouve une annonce",
     texte: "Sur SeLoger, Leboncoin, PAP… n’importe quelle source.",
   },
   {
     n: "2",
-    visuel: "url",
+    visual: "url",
     titre: "Colle l’URL",
     texte: "Hovly extrait toutes les infos en quelques secondes.",
   },
   {
     n: "3",
-    visuel: "tableau",
+    visual: "tableau",
     titre: "Compare et décide",
     texte: "Tout dans un tableau. Note, filtre, suis les prix.",
   },
 ] as const;
 
-const champs = [
+const fields = [
   { label: "62 m²", tint: "bg-teal" },
   { label: "3 pièces", tint: "bg-brand-light" },
   { label: "DPE C", tint: "bg-rose" },
 ];
 
-const lignes = [
-  { largeur: "w-full", score: 82, tint: "bg-teal" },
-  { largeur: "w-4/5", score: 61, tint: "bg-brand" },
-  { largeur: "w-3/5", score: 34, tint: "bg-coral" },
+const rows = [
+  { width: "w-full", score: 82, tint: "bg-teal" },
+  { width: "w-4/5", score: 61, tint: "bg-brand" },
+  { width: "w-3/5", score: 34, tint: "bg-coral" },
 ];
 </script>
 
@@ -68,7 +68,7 @@ const lignes = [
         />
 
         <li
-          v-for="(e, i) in etapes"
+          v-for="(e, i) in steps"
           :key="e.n"
           class="etape relative"
           :style="{ '--retard': `${i * 0.14}s` }"
@@ -86,7 +86,7 @@ const lignes = [
 
             <div class="visuel mt-7 grid h-24 place-items-center">
               <div
-                v-if="e.visuel === 'sources'"
+                v-if="e.visual === 'sources'"
                 class="flex items-center gap-3"
               >
                 <span
@@ -99,7 +99,7 @@ const lignes = [
                 </span>
               </div>
 
-              <div v-else-if="e.visuel === 'url'" class="w-full max-w-[15rem]">
+              <div v-else-if="e.visual === 'url'" class="w-full max-w-[15rem]">
                 <div
                   class="flex items-center gap-2 rounded-full border border-hairline bg-surface-soft px-3.5 py-2 text-left"
                 >
@@ -111,7 +111,7 @@ const lignes = [
                 </div>
                 <div class="mt-3 flex flex-wrap justify-center gap-1.5">
                   <span
-                    v-for="(c, j) in champs"
+                    v-for="(c, j) in fields"
                     :key="c.label"
                     class="champ rounded-full px-2.5 py-1 text-[11px] font-semibold text-ink-deep"
                     :class="c.tint"
@@ -124,7 +124,7 @@ const lignes = [
 
               <div v-else class="w-full max-w-[15rem] space-y-2">
                 <div
-                  v-for="(l, j) in lignes"
+                  v-for="(l, j) in rows"
                   :key="j"
                   class="rangee flex items-center gap-2.5"
                   :style="{ animationDelay: `${j * 0.16}s` }"
@@ -132,7 +132,7 @@ const lignes = [
                   <span class="size-6 shrink-0 rounded-md bg-surface" />
                   <span
                     class="h-2 rounded-full bg-hairline"
-                    :class="l.largeur"
+                    :class="l.width"
                   />
                   <span
                     class="ml-auto grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-ink-deep"

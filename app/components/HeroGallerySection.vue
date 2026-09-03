@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SiteSource } from "~/types";
 
-interface Vitrine {
+interface Showcase {
   source: SiteSource;
   label: string;
   titre: string;
@@ -12,7 +12,7 @@ interface Vitrine {
   score: number;
 }
 
-const VITRINES: Vitrine[] = [
+const SHOWCASES: Showcase[] = [
   {
     source: "seloger",
     label: "SeLoger",
@@ -75,30 +75,30 @@ const VITRINES: Vitrine[] = [
   },
 ];
 
-const DUREE_AUTO = 4200;
+const AUTO_DURATION = 4200;
 
-const actif = ref(0);
-const manuel = ref(false);
-let minuteur: ReturnType<typeof setInterval> | undefined;
+const active = ref(0);
+const manual = ref(false);
+let timer: ReturnType<typeof setInterval> | undefined;
 
-const vitrine = computed(() => VITRINES[actif.value]!);
-const suivante = computed(() => VITRINES[(actif.value + 1) % VITRINES.length]!);
-const numero = (i: number) => String(i + 1).padStart(2, "0");
+const current = computed(() => SHOWCASES[active.value]!);
+const next = computed(() => SHOWCASES[(active.value + 1) % SHOWCASES.length]!);
+const number = (i: number) => String(i + 1).padStart(2, "0");
 
-function choisir(i: number) {
-  manuel.value = true;
-  actif.value = i;
-  clearInterval(minuteur);
+function select(i: number) {
+  manual.value = true;
+  active.value = i;
+  clearInterval(timer);
 }
 
 onMounted(() => {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  minuteur = setInterval(() => {
-    if (!manuel.value) actif.value = (actif.value + 1) % VITRINES.length;
-  }, DUREE_AUTO);
+  timer = setInterval(() => {
+    if (!manual.value) active.value = (active.value + 1) % SHOWCASES.length;
+  }, AUTO_DURATION);
 });
 
-onBeforeUnmount(() => clearInterval(minuteur));
+onBeforeUnmount(() => clearInterval(timer));
 </script>
 
 <template>
@@ -116,9 +116,9 @@ onBeforeUnmount(() => clearInterval(minuteur));
       >
         <div>
           <p class="flex items-baseline gap-3 text-sm font-bold tabular-nums">
-            <span class="text-ink">{{ numero(actif) }}</span>
+            <span class="text-ink">{{ number(active) }}</span>
             <span class="text-hairline-strong">/</span>
-            <span class="text-stone">{{ numero(VITRINES.length - 1) }}</span>
+            <span class="text-stone">{{ number(SHOWCASES.length - 1) }}</span>
           </p>
 
           <h1
@@ -134,13 +134,13 @@ onBeforeUnmount(() => clearInterval(minuteur));
         <div>
           <Transition name="vitrine" mode="out-in">
             <article
-              :key="vitrine.source"
+              :key="current.source"
               class="overflow-hidden rounded-sm border border-hairline-soft bg-white"
             >
               <div class="relative aspect-[5/4] overflow-hidden bg-surface">
                 <img
-                  :src="`/logements/${vitrine.source}.jpg`"
-                  :alt="`${vitrine.titre} à ${vitrine.lieu}`"
+                  :src="`/logements/${current.source}.jpg`"
+                  :alt="`${current.titre} à ${current.lieu}`"
                   width="900"
                   height="720"
                   fetchpriority="high"
@@ -150,23 +150,23 @@ onBeforeUnmount(() => clearInterval(minuteur));
                 <span
                   class="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/90 py-1 pl-1.5 pr-3 text-[10px] font-bold uppercase tracking-wider text-ink shadow-sm backdrop-blur"
                 >
-                  <SourceLogo :source="vitrine.source" :taille="16" />
-                  Importé de {{ vitrine.label }}
+                  <SourceLogo :source="current.source" :taille="16" />
+                  Importé de {{ current.label }}
                 </span>
 
                 <span
                   class="absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-ink text-sm font-bold tabular-nums text-white"
-                  :title="`Score Hovly ${vitrine.score}/100`"
+                  :title="`Score Hovly ${current.score}/100`"
                 >
-                  {{ vitrine.score }}
+                  {{ current.score }}
                 </span>
               </div>
 
               <div class="px-5 py-4">
                 <p class="text-lg font-semibold tracking-tight text-ink-deep">
-                  {{ vitrine.titre }}
+                  {{ current.titre }}
                 </p>
-                <p class="mt-0.5 text-sm text-stone">{{ vitrine.lieu }}</p>
+                <p class="mt-0.5 text-sm text-stone">{{ current.lieu }}</p>
 
                 <dl
                   class="mt-4 grid grid-cols-3 gap-3 border-t border-hairline-soft pt-4 text-sm"
@@ -176,7 +176,7 @@ onBeforeUnmount(() => clearInterval(minuteur));
                       Loyer
                     </dt>
                     <dd class="mt-0.5 font-semibold tabular-nums text-ink">
-                      {{ vitrine.prix }}
+                      {{ current.prix }}
                     </dd>
                   </div>
                   <div>
@@ -184,7 +184,7 @@ onBeforeUnmount(() => clearInterval(minuteur));
                       Surface
                     </dt>
                     <dd class="mt-0.5 font-semibold tabular-nums text-ink">
-                      {{ vitrine.surface }}
+                      {{ current.surface }}
                     </dd>
                   </div>
                   <div>
@@ -192,7 +192,7 @@ onBeforeUnmount(() => clearInterval(minuteur));
                       DPE
                     </dt>
                     <dd class="mt-0.5 font-semibold text-ink">
-                      {{ vitrine.dpe }}
+                      {{ current.dpe }}
                     </dd>
                   </div>
                 </dl>
@@ -201,7 +201,7 @@ onBeforeUnmount(() => clearInterval(minuteur));
           </Transition>
 
           <img
-            :src="`/logements/${suivante.source}.jpg`"
+            :src="`/logements/${next.source}.jpg`"
             alt=""
             width="1"
             height="1"
@@ -213,9 +213,9 @@ onBeforeUnmount(() => clearInterval(minuteur));
             <p
               class="min-w-0 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-ink"
             >
-              {{ vitrine.label }}
+              {{ current.label }}
               <span class="mx-1.5 text-hairline-strong">/</span>
-              <span class="font-medium text-stone">{{ vitrine.titre }}</span>
+              <span class="font-medium text-stone">{{ current.titre }}</span>
             </p>
 
             <NuxtLink
@@ -230,25 +230,25 @@ onBeforeUnmount(() => clearInterval(minuteur));
 
       <div id="sources" class="mt-12 scroll-mt-24 lg:mt-16">
         <ul class="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-6">
-          <li v-for="(v, i) in VITRINES" :key="v.source">
+          <li v-for="(v, i) in SHOWCASES" :key="v.source">
             <button
               type="button"
               class="block w-full text-left transition"
-              :aria-current="i === actif"
+              :aria-current="i === active"
               :aria-label="`Voir un bien importé de ${v.label}`"
-              @click="choisir(i)"
+              @click="select(i)"
             >
               <span
                 class="block text-[11px] font-bold tabular-nums transition"
-                :class="i === actif ? 'text-ink' : 'text-hairline-strong'"
+                :class="i === active ? 'text-ink' : 'text-hairline-strong'"
               >
-                {{ numero(i) }}
+                {{ number(i) }}
               </span>
 
               <span
                 class="relative mt-2 block aspect-[4/3] overflow-hidden rounded-sm bg-surface transition duration-300"
                 :class="
-                  i === actif
+                  i === active
                     ? 'opacity-100 ring-2 ring-ink'
                     : 'opacity-45 grayscale hover:opacity-80 hover:grayscale-0'
                 "

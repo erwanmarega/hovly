@@ -9,9 +9,9 @@ const SOURCES: SiteSource[] = [
   "bienici",
 ];
 
-const titre = ["Arrête", "de", "jongler.", "Commence", "à", "comparer."];
+const words = ["Arrête", "de", "jongler.", "Commence", "à", "comparer."];
 
-const gages = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
+const guarantees = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
 </script>
 
 <template>
@@ -27,7 +27,7 @@ const gages = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
         class="relative mx-auto max-w-2xl text-4xl md:text-5xl font-light tracking-tight text-ink"
       >
         <span
-          v-for="(mot, i) in titre"
+          v-for="(mot, i) in words"
           :key="i"
           class="mot inline-block"
           :style="{ '--retard': `${0.05 + i * 0.07}s` }"
@@ -66,7 +66,7 @@ const gages = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
         class="gages relative mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
       >
         <li
-          v-for="(g, i) in gages"
+          v-for="(g, i) in guarantees"
           :key="g"
           class="flex items-center gap-1.5 text-sm font-medium text-ink/60"
         >

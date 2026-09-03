@@ -33,7 +33,7 @@ const features = [
   }
 ] as const
 
-const colonnes = [
+const columns = [
   { w: 'w-full', score: 'bg-teal' },
   { w: 'w-5/6', score: 'bg-brand' },
   { w: 'w-2/3', score: 'bg-coral' }
@@ -145,7 +145,7 @@ const colonnes = [
           </div>
 
           <div v-else-if="f.cle === 'tableau'" class="space-y-2">
-            <div v-for="(c, j) in colonnes" :key="j" class="barre flex items-center gap-2" :style="{ '--i': j }">
+            <div v-for="(c, j) in columns" :key="j" class="barre flex items-center gap-2" :style="{ '--i': j }">
               <span class="h-2 rounded-full bg-hairline transition-all duration-500" :class="c.w" />
               <span class="ml-auto size-2.5 shrink-0 rounded-full" :class="c.score" />
             </div>
