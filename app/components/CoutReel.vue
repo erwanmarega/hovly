@@ -3,7 +3,7 @@ import type { Property } from '~/types'
 
 const props = defineProps<{ bien: Property }>()
 
-const { calculer } = useCoutReel()
+const { calculate: calculer } = useActualCost()
 
 const cout = computed(() => calculer(props.bien))
 const eur = (centimes: number) => formatNumber(Math.round(centimes / 100))
@@ -11,7 +11,7 @@ const eur = (centimes: number) => formatNumber(Math.round(centimes / 100))
 const detailsOuverts = ref(false)
 
 const parts = computed(() =>
-  cout.value.postes
+  cout.value.items
     .filter((p) => (p.montant ?? 0) > 0)
     .map((p) => ({
       ...p,
@@ -43,11 +43,11 @@ const libelleAnnonce = computed(() =>
     <div class="flex items-start justify-between gap-3">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Coût réel</h2>
       <span
-        v-if="cout.ecartPourcent > 0"
+        v-if="cout.overagePercent > 0"
         class="rounded-full bg-coral px-2.5 py-1 text-xs font-bold text-[#600000]"
         :title="titreEcart"
       >
-        +{{ cout.ecartPourcent }} %
+        +{{ cout.overagePercent }} %
       </span>
     </div>
 
@@ -55,7 +55,7 @@ const libelleAnnonce = computed(() =>
       {{ eur(cout.total) }} €<span class="text-base font-medium text-stone">/mois</span>
     </p>
     <p class="mt-1 text-xs text-stone">
-      {{ libelleAnnonce }} : {{ eur(cout.affiche) }} €
+      {{ libelleAnnonce }} : {{ eur(cout.displayed) }} €
     </p>
 
     <div class="mt-4 flex h-2 overflow-hidden rounded-full bg-surface">
@@ -69,7 +69,7 @@ const libelleAnnonce = computed(() =>
     </div>
 
     <ul class="mt-4 space-y-2 text-sm">
-      <li v-for="p in cout.postes" :key="p.cle" class="flex items-center justify-between gap-3">
+      <li v-for="p in cout.items" :key="p.cle" class="flex items-center justify-between gap-3">
         <span class="flex min-w-0 items-center gap-2">
           <span class="size-2 shrink-0 rounded-full" :class="TEINTES[p.cle]" />
           <span class="truncate text-steel">{{ p.label }}</span>
@@ -81,7 +81,7 @@ const libelleAnnonce = computed(() =>
       </li>
     </ul>
 
-    <p v-if="cout.incomplet" class="mt-3 text-xs text-stone">
+    <p v-if="cout.incomplete" class="mt-3 text-xs text-stone">
       Estimation basse : une donnée manque
       <template v-if="bien.charges == null">(charges non renseignées)</template>
       <template v-else>(DPE non renseigné)</template>.
@@ -95,10 +95,10 @@ const libelleAnnonce = computed(() =>
     </button>
 
     <div v-if="detailsOuverts" class="mt-2 space-y-1.5 rounded-xl bg-surface px-3 py-2.5">
-      <p v-for="p in cout.postes" :key="p.cle" class="text-xs text-stone">
+      <p v-for="p in cout.items" :key="p.cle" class="text-xs text-stone">
         <span class="font-medium text-steel">{{ p.label }}</span> — {{ p.detail }}
       </p>
-      <p v-for="h in cout.hypotheses" :key="h" class="text-xs text-stone">{{ h }}</p>
+      <p v-for="h in cout.assumptions" :key="h" class="text-xs text-stone">{{ h }}</p>
       <NuxtLink to="/profil" class="block text-xs font-medium text-blue hover:underline">
         Ajuster depuis mon profil
       </NuxtLink>

@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { compare, MAX_COMPARISON } from '../app/composables/useComparator'
 import { scoreProperty } from '../app/composables/useScore'
 import {
-  DUREE_DEFAUT_ANS,
-  FRAIS_NOTAIRE,
-  TAUX_DEFAUT,
-  mensualiteCredit
-} from '../app/composables/useCoutReel'
+  DEFAULT_DURATION_YEARS,
+  NOTARY_FEES,
+  DEFAULT_RATE,
+  monthlyLoanPayment
+} from '../app/composables/useActualCost'
 import type { Property } from '../app/types'
 
 let compteur = 0
@@ -206,7 +206,7 @@ describe('comparer — biens en achat', () => {
     const l = ligne(compare(liste, scores(liste)), 'total')
 
     const attendu = Math.round(
-      (mensualiteCredit(Math.round(20000000 * (1 + FRAIS_NOTAIRE)), TAUX_DEFAUT, DUREE_DEFAUT_ANS) +
+      (monthlyLoanPayment(Math.round(20000000 * (1 + NOTARY_FEES)), DEFAULT_RATE, DEFAULT_DURATION_YEARS) +
         10000) /
         100
     )

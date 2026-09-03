@@ -31,7 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const { monthlyPrice, pricePerSqm } = useProperties()
-const { calculer: coutDe } = useCoutReel()
+const { calculate: coutDe } = useActualCost()
 const { actif: trajetsActifs, ancreChoisie } = useTrajets()
 
 const couts = computed(() => new Map(props.biens.map((b) => [b.id, coutDe(b)])))

@@ -59,19 +59,19 @@ const triAsc = ref(false);
 
 const { preferences } = usePreferences();
 
-const { calculer: coutDe } = useCoutReel();
+const { calculate: coutDe } = useActualCost();
 const { retenu: trajetDe, refresh: refreshTrajets } = useTrajets();
 useAsyncData("trajets-dashboard", () => refreshTrajets(), { server: false });
 
 const trajetSec = (b: Property) =>
   trajetDe(b.id)?.duree_s ?? Number.POSITIVE_INFINITY;
 
-const contexteScore = computed(() => representants(biens.value));
+const contexteScore = computed(() => representatives(biens.value));
 const scoreDe = (b: Property) =>
   scoreProperty(b, contexteScore.value, preferences.value);
 
 const groupesDoublons = computed(() =>
-  grouperDoublons(biens.value.filter((b) => b.actif))
+  groupDuplicates(biens.value.filter((b) => b.actif))
 );
 
 const {

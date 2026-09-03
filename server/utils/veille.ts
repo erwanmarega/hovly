@@ -1,6 +1,6 @@
 import type { Property, SavedSearch, WatchResult } from '~/types'
 import type { SendSummary } from '~/types/check'
-import { similarite, SEUIL_DOUBLON } from '~/composables/useDoublons'
+import { similarity, DUPLICATE_THRESHOLD } from '~/composables/useDuplicates'
 import { scrapeListe, type AnnonceListe } from './scrape/liste'
 import { detecterSource } from './scrape/source'
 import { formatPrice } from './price'
@@ -90,7 +90,7 @@ export function estConnu(a: AnnonceListe, biens: Property[], urlsVues: Set<strin
   if (!assezDeSignal(a)) return false
 
   const candidate = commeBien(a)
-  return biens.some((b) => similarite(candidate, b).score >= SEUIL_DOUBLON)
+  return biens.some((b) => similarity(candidate, b).score >= DUPLICATE_THRESHOLD)
 }
 
 /** Backoff exponentiel : un site qui répond mal n'est pas martelé toutes les heures. */

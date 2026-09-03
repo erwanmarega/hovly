@@ -162,7 +162,7 @@ const scoreApercu = computed(() => {
     actif: true,
     created_at: new Date().toISOString()
   } satisfies Property
-  return scoreProperty(provisoire, representants(biens.value), preferences.value)
+  return scoreProperty(provisoire, representatives(biens.value), preferences.value)
 })
 
 async function collerDepuisPressePapier() {

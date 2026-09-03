@@ -55,12 +55,12 @@ const marche = computed(() => (bien.value ? marchePour(bien.value.id) : null));
 
 const score = computed(() =>
   bien.value
-    ? scoreProperty(bien.value, representants(biens.value), preferences.value)
+    ? scoreProperty(bien.value, representatives(biens.value), preferences.value)
     : null
 );
 
 const doublons = computed(() =>
-  bien.value ? doublonsDe(bien.value, biens.value) : []
+  bien.value ? duplicatesOf(bien.value, biens.value) : []
 );
 
 const filAriane = computed(() => [

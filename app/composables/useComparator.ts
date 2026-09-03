@@ -1,7 +1,7 @@
 import type { Anchor, Property, SharedProperty, DPE, Commute } from '~/types'
 import type { Score } from '~/composables/useScore'
-import type { OptionsCout } from '~/composables/useCoutReel'
-import { coutReel } from '~/composables/useCoutReel'
+import type { OptionsCout } from '~/composables/useActualCost'
+import { actualCost } from '~/composables/useActualCost'
 import { isPurchase } from '~/composables/useProperties'
 import { pricePerSqm } from '~/composables/useMarket'
 import { cleTrajet, formatDuree } from '~/composables/useTrajets'
@@ -58,14 +58,14 @@ export function compare(
   trajets?: CommutesContext,
   dvf?: (number | null)[]
 ): ComparisonRow[] {
-  const costs = properties.map((b) => coutReel(b, optionsCout))
+  const costs = properties.map((b) => actualCost(b, optionsCout))
   const rents = properties.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
   const charges = properties.map((b) => (b.charges != null ? Math.round(b.charges / 100) : null))
   // Pour un achat, le « total mensuel » est la mensualité estimée + charges ;
   // pour une location, le loyer + charges comme avant.
   const totals = properties.map((b, i) => {
     if (isPurchase(b)) {
-      const loanPayment = costs[i]!.postes.find((p) => p.cle === 'credit')?.montant ?? 0
+      const loanPayment = costs[i]!.items.find((p) => p.cle === 'credit')?.montant ?? 0
       return Math.round((loanPayment + (b.charges ?? 0)) / 100) || null
     }
     return rents[i] == null ? null : rents[i]! + (charges[i] ?? 0)

@@ -427,7 +427,7 @@ v-for="axe in [
                         v-model.number="brouillon.prixKwh"
                         type="number"
                         min="1"
-                        :placeholder="String(PRIX_KWH_DEFAUT)"
+                        :placeholder="String(DEFAULT_KWH_PRICE)"
                         :class="inputCls"
                       >
                     </div>
@@ -479,7 +479,7 @@ v-for="axe in [
                         type="number"
                         min="0"
                         step="0.05"
-                        :placeholder="String(TAUX_DEFAUT)"
+                        :placeholder="String(DEFAULT_RATE)"
                         :class="inputCls"
                       >
                     </div>
@@ -490,7 +490,7 @@ v-for="axe in [
                         type="number"
                         min="1"
                         max="30"
-                        :placeholder="String(DUREE_DEFAUT_ANS)"
+                        :placeholder="String(DEFAULT_DURATION_YEARS)"
                         :class="inputCls"
                       >
                     </div>
