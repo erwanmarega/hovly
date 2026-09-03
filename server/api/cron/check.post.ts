@@ -18,39 +18,39 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const parUser = new Map<string, Property[]>()
+  const byUser = new Map<string, Property[]>()
   for (const b of (biens ?? []) as Property[]) {
-    const list = parUser.get(b.user_id) ?? []
+    const list = byUser.get(b.user_id) ?? []
     list.push(b)
-    parUser.set(b.user_id, list)
+    byUser.set(b.user_id, list)
   }
 
-  let totalAlertes = 0
-  let emailsEnvoyes = 0
-  let emailsEchoues = 0
-  let pushEnvoyes = 0
-  let pushEchoues = 0
-  for (const [userId, liste] of parUser) {
-    const resume = await checkProperties(service, liste)
-    totalAlertes += resume.alerts.length
-    if (resume.alerts.length) {
+  let totalAlerts = 0
+  let emailsSent = 0
+  let emailsFailed = 0
+  let pushSent = 0
+  let pushFailed = 0
+  for (const [userId, list] of byUser) {
+    const summary = await checkProperties(service, list)
+    totalAlerts += summary.alerts.length
+    if (summary.alerts.length) {
       const { data } = await service.auth.admin.getUserById(userId)
-      const envois = await notify(data?.user?.email ?? null, resume)
-      emailsEnvoyes += envois.sent
-      emailsEchoues += envois.failed
+      const emailResult = await notify(data?.user?.email ?? null, summary)
+      emailsSent += emailResult.sent
+      emailsFailed += emailResult.failed
 
-      const push = await notifyPush(service, userId, resume)
-      pushEnvoyes += push.sent
-      pushEchoues += push.failed
+      const push = await notifyPush(service, userId, summary)
+      pushSent += push.sent
+      pushFailed += push.failed
     }
   }
 
   return {
     ok: true,
-    users: parUser.size,
+    users: byUser.size,
     biens: biens?.length ?? 0,
-    alertes: totalAlertes,
-    emails: { envoyes: emailsEnvoyes, echecs: emailsEchoues },
-    push: { envoyes: pushEnvoyes, echecs: pushEchoues }
+    alertes: totalAlerts,
+    emails: { envoyes: emailsSent, echecs: emailsFailed },
+    push: { envoyes: pushSent, echecs: pushFailed }
   }
 })

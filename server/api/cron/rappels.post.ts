@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const service = serverSupabaseServiceRole(event)
-  const maintenant = new Date()
+  const now = new Date()
 
   const { data, error } = await service
     .from('biens')
@@ -18,34 +18,34 @@ export default defineEventHandler(async (event) => {
     .eq('actif', true)
     .is('rappel_envoye_le', null)
     .not('visite_le', 'is', null)
-    .gt('visite_le', maintenant.toISOString())
-    .lt('visite_le', new Date(maintenant.getTime() + 24 * 60 * 60 * 1000).toISOString())
+    .gt('visite_le', now.toISOString())
+    .lt('visite_le', new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString())
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const parUser = new Map<string, Property[]>()
+  const byUser = new Map<string, Property[]>()
   for (const b of (data ?? []) as Property[]) {
-    const liste = parUser.get(b.user_id) ?? []
-    liste.push(b)
-    parUser.set(b.user_id, liste)
+    const list = byUser.get(b.user_id) ?? []
+    list.push(b)
+    byUser.set(b.user_id, list)
   }
 
-  let envoyes = 0
-  let echecs = 0
-  const raisons: string[] = []
+  let sent = 0
+  let failed = 0
+  const reasons: string[] = []
 
-  for (const [userId, liste] of parUser) {
-    const { data: compte } = await service.auth.admin.getUserById(userId)
-    const resume = await sendReminders(
+  for (const [userId, list] of byUser) {
+    const { data: account } = await service.auth.admin.getUserById(userId)
+    const summary = await sendReminders(
       service,
-      liste,
-      compte?.user?.email ?? null,
-      maintenant
+      list,
+      account?.user?.email ?? null,
+      now
     )
-    envoyes += resume.envoyes
-    echecs += resume.echecs
-    for (const r of resume.raisons) if (!raisons.includes(r)) raisons.push(r)
+    sent += summary.envoyes
+    failed += summary.echecs
+    for (const r of summary.raisons) if (!reasons.includes(r)) reasons.push(r)
   }
 
-  return { ok: true, users: parUser.size, candidats: data?.length ?? 0, envoyes, echecs, raisons }
+  return { ok: true, users: byUser.size, candidats: data?.length ?? 0, envoyes: sent, echecs: failed, raisons: reasons }
 })
