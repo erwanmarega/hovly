@@ -319,7 +319,7 @@ async function lancerVerif() {
               class="alerte"
               :style="{ '--i': i }"
             >
-              <AlertRow :alerte="a" />
+              <AlertRow :alert="a" />
             </li>
           </ul>
         </section>

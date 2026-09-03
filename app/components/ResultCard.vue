@@ -2,31 +2,31 @@
 import type { WatchResult } from '~/types'
 
 const props = defineProps<{
-  resultat: WatchResult
-  occupe?: boolean
+  result: WatchResult
+  busy?: boolean
 }>()
 
 const emit = defineEmits<{
-  garder: [id: string]
-  ignorer: [id: string]
+  keep: [id: string]
+  ignore: [id: string]
 }>()
 
-const source = computed(() => detecterSource(props.resultat.url))
+const source = computed(() => detecterSource(props.result.url))
 
 const pricePerSqm = computed(() => {
-  const { prix, surface } = props.resultat
+  const { prix, surface } = props.result
   if (!prix || !surface) return null
   return Math.round(prix / 100 / surface)
 })
 
-const titre = computed(() => props.resultat.titre?.trim() || 'Annonce sans titre')
+const titre = computed(() => props.result.titre?.trim() || 'Annonce sans titre')
 
 const lieu = computed(() =>
-  [props.resultat.ville, props.resultat.code_postal].filter(Boolean).join(' ')
+  [props.result.ville, props.result.code_postal].filter(Boolean).join(' ')
 )
 
 const quand = computed(() =>
-  new Date(props.resultat.trouve_le).toLocaleString('fr-FR', {
+  new Date(props.result.trouve_le).toLocaleString('fr-FR', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -40,8 +40,8 @@ const quand = computed(() =>
     class="flex flex-col gap-3 rounded-2xl border border-hairline-soft bg-white p-3.5 sm:flex-row sm:items-center"
   >
     <img
-      v-if="resultat.photo"
-      :src="resultat.photo"
+      v-if="result.photo"
+      :src="result.photo"
       :alt="titre"
       loading="lazy"
       class="h-28 w-full shrink-0 rounded-xl bg-surface object-cover sm:size-16"
@@ -50,7 +50,7 @@ const quand = computed(() =>
 
     <div class="min-w-0 flex-1">
       <a
-        :href="resultat.url"
+        :href="result.url"
         target="_blank"
         rel="noopener"
         class="line-clamp-2 font-medium text-ink hover:underline"
@@ -66,17 +66,17 @@ const quand = computed(() =>
 
       <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
         <PropertyStats
-          :surface="resultat.surface"
-          :nb-pieces="resultat.nb_pieces"
+          :surface="result.surface"
+          :nb-pieces="result.nb_pieces"
           pieces-label="p"
           :price-per-sqm="pricePerSqm"
         >
           <template #avant>
             <span
-              v-if="formatPrice(resultat.prix)"
+              v-if="formatPrice(result.prix)"
               class="rounded-full bg-ink px-2 py-0.5 font-semibold tabular-nums text-white"
             >
-              {{ formatPrice(resultat.prix) }}
+              {{ formatPrice(result.prix) }}
             </span>
           </template>
         </PropertyStats>
@@ -85,19 +85,19 @@ const quand = computed(() =>
 
     <div class="flex shrink-0 items-center gap-2">
       <button
-        :disabled="occupe"
+        :disabled="busy"
         class="rounded-full border border-hairline px-3.5 py-2 text-sm font-medium text-steel transition hover:bg-surface hover:text-ink disabled:opacity-50"
-        @click="emit('ignorer', resultat.id)"
+        @click="emit('ignore', result.id)"
       >
         Ignorer
       </button>
       <button
-        :disabled="occupe"
+        :disabled="busy"
         class="flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
-        @click="emit('garder', resultat.id)"
+        @click="emit('keep', result.id)"
       >
         <span
-          v-if="occupe"
+          v-if="busy"
           class="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
         />
         Garder

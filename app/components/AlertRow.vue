@@ -3,7 +3,7 @@ import type { Alert } from "~/types";
 
 const props = withDefaults(
   defineProps<{
-    alerte: Alert;
+    alert: Alert;
     compact?: boolean;
   }>(),
   { compact: false }
@@ -17,10 +17,10 @@ const heure = (iso: string) =>
     minute: "2-digit",
   });
 
-const baisse = computed(() => props.alerte.type === "baisse_prix");
+const baisse = computed(() => props.alert.type === "baisse_prix");
 
 const ecart = computed(() => {
-  const { ancien_prix: ancien, nouveau_prix: nouveau } = props.alerte;
+  const { ancien_prix: ancien, nouveau_prix: nouveau } = props.alert;
   if (!baisse.value || !ancien || !nouveau) return null;
   return Math.round(((nouveau - ancien) / ancien) * 100);
 });
@@ -34,26 +34,26 @@ const { markRead: marquerLue } = useAlerts();
 
 <template>
   <NuxtLink
-    :to="`/bien/${alerte.bien_id}`"
+    :to="`/bien/${alert.bien_id}`"
     class="carte flex items-center gap-4 border bg-white"
-    @click="marquerLue(alerte.id)"
+    @click="marquerLue(alert.id)"
     :class="[
       compact ? 'gap-3 rounded-xl p-2.5' : 'rounded-2xl p-4',
-      alerte.vue
+      alert.vue
         ? 'border-hairline-soft'
         : 'border-blue/40 ring-1 ring-blue/10',
     ]"
   >
     <div class="relative shrink-0">
       <img
-        v-if="alerte.biens?.photos?.[0]"
-        :src="alerte.biens.photos[0]"
+        v-if="alert.biens?.photos?.[0]"
+        :src="alert.biens.photos[0]"
         alt=""
         loading="lazy"
         class="rounded-xl bg-surface"
         :class="[
           compact ? 'size-10' : 'size-12',
-          isDefaultPhoto(alerte.biens.photos[0]) ? 'object-contain' : 'object-cover',
+          isDefaultPhoto(alert.biens.photos[0]) ? 'object-contain' : 'object-cover',
         ]"
       />
       <div
@@ -112,25 +112,25 @@ const { markRead: marquerLue } = useAlerts();
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2">
         <span class="text-sm font-semibold">{{ libelle }}</span>
-        <span v-if="!alerte.vue" class="size-2 shrink-0 rounded-full bg-blue" />
+        <span v-if="!alert.vue" class="size-2 shrink-0 rounded-full bg-blue" />
       </div>
       <p class="truncate text-sm text-slate">
-        {{ alerte.biens?.titre ?? "Bien" }}
+        {{ alert.biens?.titre ?? "Bien" }}
       </p>
       <p
-        v-if="alerte.biens?.ville && !compact"
+        v-if="alert.biens?.ville && !compact"
         class="truncate text-xs text-stone"
       >
-        {{ alerte.biens.ville }}
+        {{ alert.biens.ville }}
       </p>
       <p
         v-if="compact"
         class="mt-0.5 flex items-center gap-1.5 text-xs text-stone"
       >
         <template v-if="baisse">
-          <s>{{ eur(alerte.ancien_prix) }}</s>
+          <s>{{ eur(alert.ancien_prix) }}</s>
           <span class="font-semibold text-ink">{{
-            eur(alerte.nouveau_prix)
+            eur(alert.nouveau_prix)
           }}</span>
           <span
             v-if="ecart !== null"
@@ -139,17 +139,17 @@ const { markRead: marquerLue } = useAlerts();
           >
         </template>
         <span v-else class="font-medium text-[#600000]">Plus disponible</span>
-        · {{ heure(alerte.envoyee_le) }}
+        · {{ heure(alert.envoyee_le) }}
       </p>
     </div>
 
     <div v-if="!compact" class="shrink-0 text-right">
       <p v-if="baisse" class="flex items-center justify-end gap-2">
         <s class="text-xs font-normal text-stone">{{
-          eur(alerte.ancien_prix)
+          eur(alert.ancien_prix)
         }}</s>
         <span class="text-sm font-semibold">{{
-          eur(alerte.nouveau_prix)
+          eur(alert.nouveau_prix)
         }}</span>
         <span
           v-if="ecart !== null"
@@ -158,7 +158,7 @@ const { markRead: marquerLue } = useAlerts();
         >
       </p>
       <p v-else class="text-sm font-medium text-[#600000]">Plus disponible</p>
-      <p class="mt-1 text-xs text-stone">{{ heure(alerte.envoyee_le) }}</p>
+      <p class="mt-1 text-xs text-stone">{{ heure(alert.envoyee_le) }}</p>
     </div>
   </NuxtLink>
 </template>

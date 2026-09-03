@@ -1,43 +1,43 @@
 <script setup lang="ts">
-const MAX_APERCU = 5
+const MAX_PREVIEW = 5
 
 const { alertes, unread: nonVues, refresh, markAllRead: marquerLues } = useAlerts()
 
-const ouvert = ref(false)
-const chargement = ref(false)
+const open = ref(false)
+const loading = ref(false)
 
-const recentes = computed(() => alertes.value.slice(0, MAX_APERCU))
+const recentes = computed(() => alertes.value.slice(0, MAX_PREVIEW))
 
-async function charger() {
-  chargement.value = true
+async function load() {
+  loading.value = true
   try {
     await refresh()
   } finally {
-    chargement.value = false
+    loading.value = false
   }
 }
 
-async function basculer() {
-  ouvert.value = !ouvert.value
-  if (ouvert.value) await charger()
+async function toggle() {
+  open.value = !open.value
+  if (open.value) await load()
 }
 
-function surTouche(e: KeyboardEvent) {
-  if (e.key === 'Escape') ouvert.value = false
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') open.value = false
 }
 
-function surMessageSw(e: MessageEvent) {
-  if (e.data?.type === 'PUSH_ALERTE') charger()
+function onSwMessage(e: MessageEvent) {
+  if (e.data?.type === 'PUSH_ALERTE') load()
 }
 
 onMounted(() => {
-  document.addEventListener('keydown', surTouche)
-  navigator.serviceWorker?.addEventListener('message', surMessageSw)
+  document.addEventListener('keydown', onKey)
+  navigator.serviceWorker?.addEventListener('message', onSwMessage)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('keydown', surTouche)
-  navigator.serviceWorker?.removeEventListener('message', surMessageSw)
+  document.removeEventListener('keydown', onKey)
+  navigator.serviceWorker?.removeEventListener('message', onSwMessage)
 })
 </script>
 
@@ -45,10 +45,10 @@ onBeforeUnmount(() => {
   <div class="relative">
     <button
       class="relative grid size-9 place-items-center rounded-full border border-hairline bg-white text-stone transition hover:bg-surface hover:text-ink"
-      :class="ouvert && 'bg-surface text-ink'"
-      :aria-expanded="ouvert"
+      :class="open && 'bg-surface text-ink'"
+      :aria-expanded="open"
       aria-label="Notifications"
-      @click="basculer"
+      @click="toggle"
     >
       <svg
         class="cloche size-4"
@@ -70,12 +70,12 @@ onBeforeUnmount(() => {
       </span>
     </button>
 
-    <template v-if="ouvert">
+    <template v-if="open">
       <button
         class="fixed inset-0 z-40 cursor-default"
         tabindex="-1"
         aria-label="Fermer les notifications"
-        @click="ouvert = false"
+        @click="open = false"
       />
 
       <div
@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
 
         <PushSettings variante="ligne" />
 
-        <div v-if="chargement && !alertes.length" class="space-y-2 p-3">
+        <div v-if="loading && !alertes.length" class="space-y-2 p-3">
           <span
             v-for="n in 3"
             :key="n"
@@ -110,14 +110,14 @@ onBeforeUnmount(() => {
 
         <ul v-else class="max-h-[22rem] space-y-1.5 overflow-y-auto p-2">
           <li v-for="a in recentes" :key="a.id">
-            <AlertRow :alerte="a" compact @click="ouvert = false" />
+            <AlertRow :alert="a" compact @click="open = false" />
           </li>
         </ul>
 
         <NuxtLink
           to="/alertes"
           class="block border-t border-hairline-soft px-3 py-2.5 text-center text-sm font-medium text-steel transition hover:bg-surface hover:text-ink"
-          @click="ouvert = false"
+          @click="open = false"
         >
           Voir toutes les alertes
         </NuxtLink>

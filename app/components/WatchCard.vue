@@ -2,20 +2,20 @@
 import type { SavedSearch } from '~/types'
 
 const props = defineProps<{
-  recherche: SavedSearch
-  ouverte?: boolean
-  scanEnCours?: boolean
+  search: SavedSearch
+  open?: boolean
+  scanning?: boolean
 }>()
 
 const emit = defineEmits<{
-  basculer: [id: string]
-  scanner: [id: string]
+  toggle: [id: string]
+  scan: [id: string]
   pause: [id: string, active: boolean]
-  supprimer: [id: string]
+  remove: [id: string]
 }>()
 
-const criteres = computed(() => {
-  const r = props.recherche
+const criteria = computed(() => {
+  const r = props.search
   return [
     r.prix_min && r.prix_max
       ? `${formatPrice(r.prix_min)}–${formatPrice(r.prix_max)}`
@@ -29,8 +29,8 @@ const criteres = computed(() => {
   ].filter(Boolean)
 })
 
-const derniere = computed(() => {
-  const iso = props.recherche.derniere_verif
+const lastScan = computed(() => {
+  const iso = props.search.derniere_verif
   if (!iso) return 'jamais scannée'
 
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
@@ -41,14 +41,14 @@ const derniere = computed(() => {
   return `il y a ${Math.round(heures / 24)} j`
 })
 
-const enPause = computed(() => !props.recherche.active)
+const paused = computed(() => !props.search.active)
 </script>
 
 <template>
   <article
     class="overflow-hidden rounded-2xl border bg-white transition"
     :class="
-      recherche.nouveaux
+      search.nouveaux
         ? 'border-blue/40 ring-1 ring-blue/10'
         : 'border-hairline-soft'
     "
@@ -56,27 +56,27 @@ const enPause = computed(() => !props.recherche.active)
     <div class="flex flex-wrap items-center gap-3 p-4">
       <button
         class="flex min-w-0 flex-1 items-center gap-3 text-left"
-        :aria-expanded="ouverte"
-        @click="emit('basculer', recherche.id)"
+        :aria-expanded="open"
+        @click="emit('toggle', search.id)"
       >
         <SourceLogo
-          v-if="recherche.site_source"
-          :source="recherche.site_source"
+          v-if="search.site_source"
+          :source="search.site_source"
           :with-name="false"
           :size="28"
         />
 
         <span class="min-w-0 flex-1">
           <span class="flex items-center gap-2">
-            <span class="truncate font-medium text-ink">{{ recherche.label }}</span>
+            <span class="truncate font-medium text-ink">{{ search.label }}</span>
             <span
-              v-if="recherche.nouveaux"
+              v-if="search.nouveaux"
               class="grid min-w-5 shrink-0 place-items-center rounded-full bg-blue px-1.5 text-xs font-bold text-white"
             >
-              {{ recherche.nouveaux }}
+              {{ search.nouveaux }}
             </span>
             <span
-              v-if="enPause"
+              v-if="paused"
               class="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-stone"
             >
               En pause
@@ -84,16 +84,16 @@ const enPause = computed(() => !props.recherche.active)
           </span>
 
           <span class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-stone">
-            <span v-for="c in criteres" :key="c" class="rounded-full bg-surface px-2 py-0.5">
+            <span v-for="c in criteria" :key="c" class="rounded-full bg-surface px-2 py-0.5">
               {{ c }}
             </span>
-            <span>Scannée {{ derniere }}</span>
+            <span>Scannée {{ lastScan }}</span>
           </span>
         </span>
 
         <svg
           class="size-4 shrink-0 text-stone transition"
-          :class="ouverte && 'rotate-180'"
+          :class="open && 'rotate-180'"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -105,13 +105,13 @@ const enPause = computed(() => !props.recherche.active)
 
       <div class="flex shrink-0 items-center gap-1">
         <button
-          :disabled="scanEnCours"
+          :disabled="scanning"
           title="Scanner maintenant"
           class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-surface hover:text-ink disabled:opacity-50"
-          @click="emit('scanner', recherche.id)"
+          @click="emit('scan', search.id)"
         >
           <span
-            v-if="scanEnCours"
+            v-if="scanning"
             class="size-4 animate-spin rounded-full border-2 border-stone/40 border-t-ink"
           />
           <svg
@@ -128,12 +128,12 @@ const enPause = computed(() => !props.recherche.active)
         </button>
 
         <button
-          :title="enPause ? 'Reprendre la veille' : 'Mettre en pause'"
+          :title="paused ? 'Reprendre la veille' : 'Mettre en pause'"
           class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-surface hover:text-ink"
-          @click="emit('pause', recherche.id, enPause)"
+          @click="emit('pause', search.id, paused)"
         >
           <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <template v-if="enPause">
+            <template v-if="paused">
               <path d="m6 3 14 9-14 9V3Z" />
             </template>
             <template v-else>
@@ -143,7 +143,7 @@ const enPause = computed(() => !props.recherche.active)
         </button>
 
         <a
-          :href="recherche.url"
+          :href="search.url"
           target="_blank"
           rel="noopener"
           title="Ouvrir la recherche sur le site"
@@ -159,7 +159,7 @@ const enPause = computed(() => !props.recherche.active)
         <button
           title="Supprimer la veille"
           class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-coral hover:text-[#600000]"
-          @click="emit('supprimer', recherche.id)"
+          @click="emit('remove', search.id)"
         >
           <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 6h18" />
@@ -171,16 +171,16 @@ const enPause = computed(() => !props.recherche.active)
     </div>
 
     <p
-      v-if="recherche.derniere_erreur"
+      v-if="search.derniere_erreur"
       class="border-t border-hairline-soft bg-coral/20 px-4 py-2.5 text-xs text-[#600000]"
     >
-      Dernier scan en échec : {{ recherche.derniere_erreur }}
-      <template v-if="enPause">
+      Dernier scan en échec : {{ search.derniere_erreur }}
+      <template v-if="paused">
         — veille mise en pause automatiquement, vérifie que l'URL est toujours valide.
       </template>
     </p>
 
-    <div v-if="ouverte" class="border-t border-hairline-soft bg-surface/50 p-3">
+    <div v-if="open" class="border-t border-hairline-soft bg-surface/50 p-3">
       <slot />
     </div>
   </article>

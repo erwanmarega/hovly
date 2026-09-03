@@ -216,13 +216,13 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
         <WatchCard
           v-for="r in recherches"
           :key="r.id"
-          :recherche="r"
-          :ouverte="ouverte === r.id"
-          :scan-en-cours="scanEnCours === r.id"
-          @basculer="basculer"
-          @scanner="lancerScan"
+          :search="r"
+          :open="ouverte === r.id"
+          :scanning="scanEnCours === r.id"
+          @toggle="basculer"
+          @scan="lancerScan"
           @pause="basculerPause"
-          @supprimer="demanderSuppression"
+          @remove="demanderSuppression"
         >
           <div v-if="!resultats[r.id]" class="h-16 animate-pulse rounded-xl bg-white" />
 
@@ -234,10 +234,10 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
             <ResultCard
               v-for="res in resultats[r.id]"
               :key="res.id"
-              :resultat="res"
-              :occupe="resultatOccupe === res.id"
-              @garder="garderResultat(r.id, $event)"
-              @ignorer="ignorerResultat(r.id, $event)"
+              :result="res"
+              :busy="resultatOccupe === res.id"
+              @keep="garderResultat(r.id, $event)"
+              @ignore="ignorerResultat(r.id, $event)"
             />
           </div>
         </WatchCard>
