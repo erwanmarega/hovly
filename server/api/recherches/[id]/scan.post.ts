@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: biens } = await client.from('biens').select('*')
 
-  const resume = await verifierRecherche(client, recherche as SavedSearch, (biens ?? []) as Property[])
+  const resume = await checkSearch(client, recherche as SavedSearch, (biens ?? []) as Property[])
 
   // Scan manuel : l'utilisateur regarde déjà l'écran, pas de notification.
   if (resume.erreur) {

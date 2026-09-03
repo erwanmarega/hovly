@@ -1,6 +1,6 @@
 import type { Property, SavedSearch } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
-import { aVerifier, notifierVeille, purgerResultatsTraites, verifierRecherche } from '../../utils/veille'
+import { needsCheck, notifyWatch, purgeProcessedResults, checkSearch } from '../../utils/veille'
 
 /** Plafond par exécution : un cron ne doit pas partir en scan de plusieurs heures. */
 const MAX_RECHERCHES_PAR_RUN = 25
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const maintenant = new Date()
   const dues = ((recherches ?? []) as SavedSearch[])
-    .filter((r) => aVerifier(r, maintenant))
+    .filter((r) => needsCheck(r, maintenant))
     .slice(0, MAX_RECHERCHES_PAR_RUN)
 
   // Les biens déjà suivis servent à écarter les annonces multi-diffusées :
@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
   let echecs = 0
 
   for (const recherche of dues) {
-    const resume = await verifierRecherche(
+    const resume = await checkSearch(
       service,
       recherche,
       await biensDe(recherche.user_id),
@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     if (!resume.nouvelles.length) continue
 
     nouvelles += resume.nouvelles.length
-    const envois = await notifierVeille(
+    const envois = await notifyWatch(
       service,
       recherche.user_id,
       await emailDe(recherche.user_id),
@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
     echecs += envois.failed
   }
 
-  const purges = await purgerResultatsTraites(service)
+  const purges = await purgeProcessedResults(service)
 
   return {
     ok: true,

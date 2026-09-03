@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await client
     .from('recherches')
     .insert({
-      ...champsVeille(body),
+      ...watchFields(body),
       user_id: user.id,
       label: String(body?.label ?? '').trim().slice(0, 60) || `Veille ${source}`,
       url,
