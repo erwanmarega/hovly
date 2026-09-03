@@ -62,8 +62,8 @@ const enPause = computed(() => !props.recherche.active)
         <SourceLogo
           v-if="recherche.site_source"
           :source="recherche.site_source"
-          :avec-nom="false"
-          :taille="28"
+          :with-name="false"
+          :size="28"
         />
 
         <span class="min-w-0 flex-1">

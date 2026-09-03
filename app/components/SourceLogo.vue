@@ -4,10 +4,10 @@ import type { SiteSource } from '~/types'
 withDefaults(
   defineProps<{
     source: SiteSource
-    avecNom?: boolean
-    taille?: number
+    withName?: boolean
+    size?: number
   }>(),
-  { avecNom: true, taille: 24 }
+  { withName: true, size: 24 }
 )
 
 const LABELS: Record<SiteSource, string> = {
@@ -26,13 +26,13 @@ const LABELS: Record<SiteSource, string> = {
     <img
       :src="`/logos/${source}.png`"
       :alt="LABELS[source]"
-      :width="taille"
-      :height="taille"
-      :style="{ width: `${taille}px`, height: `${taille}px` }"
+      :width="size"
+      :height="size"
+      :style="{ width: `${size}px`, height: `${size}px` }"
       class="shrink-0 rounded object-contain"
       loading="lazy"
       decoding="async"
     >
-    <span v-if="avecNom" class="text-lg font-semibold text-steel">{{ LABELS[source] }}</span>
+    <span v-if="withName" class="text-lg font-semibold text-steel">{{ LABELS[source] }}</span>
   </span>
 </template>

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    titre?: string
-    accroche?: string
+    title?: string
+    tagline?: string
   }>(),
   {
-    titre: 'Tes annonces, enfin au même endroit.',
-    accroche: 'Colle une URL, Hovly extrait tout : prix, surface, DPE, photos. Puis compare et suis les baisses.'
+    title: 'Tes annonces, enfin au même endroit.',
+    tagline: 'Colle une URL, Hovly extrait tout : prix, surface, DPE, photos. Puis compare et suis les baisses.'
   }
 )
 
-const CARTES = [
-  { valeur: '82', detail: 'Score Hovly', teinte: 'bg-teal text-[#0a4a42]', decalage: 'ml-0', delai: '0s' },
-  { valeur: '−150 €', detail: 'Baisse détectée', teinte: 'bg-coral text-[#600000]', decalage: 'ml-10', delai: '1.4s' },
-  { valeur: '22 min', detail: 'Boulot, en transports', teinte: 'bg-white text-ink', decalage: 'ml-4', delai: '2.6s' }
+const CARDS = [
+  { value: '82', detail: 'Score Hovly', tint: 'bg-teal text-[#0a4a42]', offset: 'ml-0', delay: '0s' },
+  { value: '−150 €', detail: 'Baisse détectée', tint: 'bg-coral text-[#600000]', offset: 'ml-10', delay: '1.4s' },
+  { value: '22 min', detail: 'Boulot, en transports', tint: 'bg-white text-ink', offset: 'ml-4', delay: '2.6s' }
 ]
 </script>
 
@@ -36,23 +36,23 @@ const CARTES = [
       >
 
       <h2 class="mt-8 max-w-md text-4xl font-light leading-tight tracking-tight text-ink-deep">
-        {{ titre }}
+        {{ title }}
       </h2>
-      <p class="mt-4 max-w-sm text-ink-deep/60">{{ accroche }}</p>
+      <p class="mt-4 max-w-sm text-ink-deep/60">{{ tagline }}</p>
 
       <ul class="mt-12 space-y-3">
         <li
-          v-for="c in CARTES"
+          v-for="c in CARDS"
           :key="c.detail"
           class="carte flex w-fit items-center gap-3 rounded-2xl bg-white/70 py-2.5 pl-2.5 pr-5 shadow-[0_8px_28px_rgba(5,0,56,0.08)] backdrop-blur"
-          :class="c.decalage"
-          :style="{ animationDelay: c.delai }"
+          :class="c.offset"
+          :style="{ animationDelay: c.delay }"
         >
           <span
             class="grid h-10 min-w-14 place-items-center rounded-xl px-2 text-sm font-bold tabular-nums"
-            :class="c.teinte"
+            :class="c.tint"
           >
-            {{ c.valeur }}
+            {{ c.value }}
           </span>
           <span class="text-sm font-medium text-ink-deep/70">{{ c.detail }}</span>
         </li>

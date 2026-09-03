@@ -159,7 +159,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
               </p>
               <p class="mt-0.5 flex items-center gap-1.5 text-xs text-stone">
                 <span class="truncate">{{ b.ville }}</span>
-                <SourceLogo :source="b.site_source" :avec-nom="false" :taille="14" />
+                <SourceLogo :source="b.site_source" :with-name="false" :size="14" />
                 <span
                   v-if="doublons.get(b.id)"
                   class="rounded-full bg-brand-light px-1.5 py-0.5 text-[10px] font-semibold text-[#8a6d1c]"

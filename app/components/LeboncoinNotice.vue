@@ -1,6 +1,6 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ contexte?: "annonce" | "veille" }>(), {
-  contexte: "annonce",
+withDefaults(defineProps<{ context?: "annonce" | "veille" }>(), {
+  context: "annonce",
 });
 </script>
 
@@ -12,7 +12,7 @@ withDefaults(defineProps<{ contexte?: "annonce" | "veille" }>(), {
       Leboncoin : extraction moins fiable
     </p>
     <p class="mt-1 text-xs leading-relaxed text-ink/70">
-      <template v-if="contexte === 'veille'">
+      <template v-if="context === 'veille'">
         Leboncoin bloque les robots : Hovly passe par un service d'extraction
         tiers pour cette recherche. Les scans sont plus lents et peuvent revenir
         incomplets. Si la même recherche existe sur SeLoger, PAP ou Bien'ici,

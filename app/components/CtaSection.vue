@@ -94,8 +94,8 @@ const guarantees = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
           v-for="s in SOURCES"
           :key="s"
           :source="s"
-          :avec-nom="false"
-          :taille="26"
+          :with-name="false"
+          :size="26"
           class="logo opacity-45 transition hover:opacity-100"
         />
       </div>

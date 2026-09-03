@@ -1,10 +1,10 @@
 <script setup lang="ts">
-export interface Miette {
+export interface Crumb {
   label: string
   to?: string
 }
 
-defineProps<{ items: Miette[] }>()
+defineProps<{ items: Crumb[] }>()
 </script>
 
 <template>

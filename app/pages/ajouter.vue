@@ -433,7 +433,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     <template v-else>!</template>
                   </span>
 
-                  <SourceLogo v-if="e.source" :source="e.source" :avec-nom="false" :taille="16" />
+                  <SourceLogo v-if="e.source" :source="e.source" :with-name="false" :size="16" />
                   <span v-else class="size-4 shrink-0 rounded bg-surface" />
 
                   <span class="min-w-0 flex-1 truncate" :class="e.statut === 'echec' ? 'text-[#600000]' : 'text-slate'">
@@ -495,7 +495,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                   key="ok"
                   class="mt-3 inline-flex items-center gap-2 rounded-full bg-teal/40 px-3 py-1.5 text-xs font-semibold text-[#0a4a42]"
                 >
-                  <SourceLogo :source="sourceDetectee" :avec-nom="false" :taille="16" />
+                  <SourceLogo :source="sourceDetectee" :with-name="false" :size="16" />
                   {{ LABELS[sourceDetectee] }} reconnu
                 </p>
                 <p
@@ -576,7 +576,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                 class="source-chip inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-3.5 py-2 text-sm font-medium text-steel transition"
                 :class="sourceDetectee === s && 'border-ink text-ink'"
               >
-                <SourceLogo :source="s" :avec-nom="false" :taille="18" />
+                <SourceLogo :source="s" :with-name="false" :size="18" />
                 {{ LABELS[s] }}
                 <span v-if="s === 'leboncoin'" class="text-xs font-normal text-stone">
                   · extraction limitée
@@ -761,7 +761,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     v-if="sourceDetectee"
                     class="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink backdrop-blur-sm"
                   >
-                    <SourceLogo :source="sourceDetectee" :avec-nom="false" :taille="14" />
+                    <SourceLogo :source="sourceDetectee" :with-name="false" :size="14" />
                     {{ LABELS[sourceDetectee] }}
                   </span>
                 </div>

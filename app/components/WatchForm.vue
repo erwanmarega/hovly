@@ -69,7 +69,7 @@ function soumettre() {
           de résultats. Hovly la rescanne et te prévient dès qu'une annonce apparaît.
         </p>
       </div>
-      <SourceLogo v-if="source" :source="source" :avec-nom="false" :taille="28" />
+      <SourceLogo v-if="source" :source="source" :with-name="false" :size="28" />
     </div>
 
     <div class="mt-4 space-y-4">
@@ -86,7 +86,7 @@ function soumettre() {
         Century 21.
       </p>
 
-      <LeboncoinNotice v-if="source === 'leboncoin'" contexte="veille" class="-mt-1" />
+      <LeboncoinNotice v-if="source === 'leboncoin'" context="veille" class="-mt-1" />
 
       <TextField
         id="veille-label"

@@ -52,8 +52,8 @@ const emit = defineEmits<{
             <span class="truncate">{{ bien.ville }}</span>
             <SourceLogo
               :source="bien.site_source"
-              :avec-nom="false"
-              :taille="14"
+              :with-name="false"
+              :size="14"
             />
             <span
               v-if="doublons"

@@ -237,7 +237,7 @@ const sourceLabels: Record<string, string> = {
                     </NuxtLink>
 
                     <p class="mt-1 flex items-center gap-1.5 text-xs font-normal text-stone">
-                      <SourceLogo :source="b.site_source" :avec-nom="false" :taille="14" />
+                      <SourceLogo :source="b.site_source" :with-name="false" :size="14" />
                       {{ sourceLabels[b.site_source] }} · {{ b.ville }}
                     </p>
                     <div class="mt-2">

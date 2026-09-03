@@ -577,8 +577,8 @@ async function confirmerSuppression() {
                   >
                     <SourceLogo
                       :source="d.site_source"
-                      :avec-nom="false"
-                      :taille="20"
+                      :with-name="false"
+                      :size="20"
                     />
                     <span class="min-w-0 flex-1">
                       <span class="block truncate text-sm font-medium text-ink">

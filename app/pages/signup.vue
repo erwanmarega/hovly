@@ -125,8 +125,8 @@ async function handleSignup() {
     </div>
 
     <BrandPanel
-      titre="Arrête de jongler entre douze onglets."
-      accroche="Un seul tableau pour tous tes biens : score, coût réel, temps de trajet, historique des prix."
+      title="Arrête de jongler entre douze onglets."
+      tagline="Un seul tableau pour tous tes biens : score, coût réel, temps de trajet, historique des prix."
     />
   </div>
 </template>

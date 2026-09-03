@@ -59,7 +59,7 @@ const quand = computed(() =>
       </a>
 
       <p class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-stone">
-        <SourceLogo v-if="source" :source="source" :avec-nom="false" :taille="14" />
+        <SourceLogo v-if="source" :source="source" :with-name="false" :size="14" />
         <span v-if="lieu" class="truncate">{{ lieu }}</span>
         <span class="shrink-0">· {{ quand }}</span>
       </p>
