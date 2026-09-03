@@ -1,6 +1,6 @@
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 import { assertTailleCorps, nettoyerTexte } from '../../utils/validation'
-import { genererTokenPartage, MAX_BIENS_PARTAGE } from '../../utils/partages'
+import { generateShareToken, MAX_SHARED_PROPERTIES } from '../../utils/partages'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -13,16 +13,16 @@ export default defineEventHandler(async (event) => {
     ? [...new Set(body.bien_ids.filter((id: unknown): id is string => typeof id === 'string'))]
     : []
 
-  if (!bienIds.length || bienIds.length > MAX_BIENS_PARTAGE) {
+  if (!bienIds.length || bienIds.length > MAX_SHARED_PROPERTIES) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Sélection invalide',
-      message: `Sélectionne entre 1 et ${MAX_BIENS_PARTAGE} biens à partager.`
+      message: `Sélectionne entre 1 et ${MAX_SHARED_PROPERTIES} biens à partager.`
     })
   }
 
   const titre = nettoyerTexte(body?.titre, 80)
-  const token = genererTokenPartage()
+  const token = generateShareToken()
 
   const { data: partage, error } = await client
     .from('partages')

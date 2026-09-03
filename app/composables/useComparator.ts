@@ -121,7 +121,7 @@ export function compare(
 /**
  * Comparaison pour la page de partage publique : seuls les champs de
  * `SharedProperty` sont dispo (pas de charges, préférences, trajets ni score,
- * tous privés — voir `CHAMPS_PUBLICS_BIEN` côté serveur).
+ * tous privés — voir `PUBLIC_PROPERTY_FIELDS` côté serveur).
  */
 export function comparePublic(properties: SharedProperty[]): ComparisonRow[] {
   const rents = properties.map((b) => (b.prix ? Math.round(b.prix / 100) : null))

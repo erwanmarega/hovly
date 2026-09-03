@@ -1,13 +1,13 @@
 import type { GeoPrecision } from '~/types'
 
-export interface Localisation {
+export interface Location {
   lat: number
   lon: number
   precision: GeoPrecision
   label: string
 }
 
-export interface AdresseBien {
+export interface PropertyAddress {
   adresse?: string | null
   ville?: string | null
   code_postal?: string | null
@@ -22,7 +22,7 @@ const PRECISIONS: Record<string, GeoPrecision> = {
   municipality: 'ville'
 }
 
-async function interroger(params: Record<string, string>): Promise<Localisation | null> {
+async function query(params: Record<string, string>): Promise<Location | null> {
   const url = new URL(BAN)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
 
@@ -44,19 +44,19 @@ async function interroger(params: Record<string, string>): Promise<Localisation 
   return { lat: coords[1], lon: coords[0], precision, label: f.properties.label ?? '' }
 }
 
-export async function geocoder(bien: AdresseBien): Promise<Localisation | null> {
+export async function geocoder(bien: PropertyAddress): Promise<Location | null> {
   const cp = bien.code_postal?.trim() || ''
-  const requete = [bien.adresse, bien.ville].filter(Boolean).join(' ').trim()
+  const q = [bien.adresse, bien.ville].filter(Boolean).join(' ').trim()
 
-  if (requete) {
-    const params: Record<string, string> = { q: requete, limit: '1' }
+  if (q) {
+    const params: Record<string, string> = { q, limit: '1' }
     if (cp) params.postcode = cp
-    const trouve = await interroger(params)
-    if (trouve) return trouve
+    const found = await query(params)
+    if (found) return found
   }
 
   if (/^\d{5}$/.test(cp)) {
-    return await interroger({ q: cp, type: 'municipality', limit: '1' })
+    return await query({ q: cp, type: 'municipality', limit: '1' })
   }
 
   return null

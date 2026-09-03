@@ -1,8 +1,8 @@
 import type { SharedProperty, PublicShare } from '~/types'
-import { partageExpire, SELECT_PUBLIC_BIEN } from '../../utils/partages'
+import { isShareExpired, PUBLIC_PROPERTY_SELECT } from '../../utils/partages'
 
 // Route publique : pas de requireUser. N'expose jamais `select('*')` sur
-// `biens` ici — seuls les champs de `SELECT_PUBLIC_BIEN` sont utiles à un
+// `biens` ici — seuls les champs de `PUBLIC_PROPERTY_SELECT` sont utiles à un
 // visiteur sans compte.
 
 export default defineEventHandler(async (event): Promise<PublicShare> => {
@@ -25,13 +25,13 @@ export default defineEventHandler(async (event): Promise<PublicShare> => {
 
   // Un token expiré renvoie la même erreur qu'un token inexistant : ne pas
   // donner à un attaquant qui bruteforce un signal sur l'existence passée.
-  if (!partage || partageExpire(partage.expire_le)) {
+  if (!partage || isShareExpired(partage.expire_le)) {
     throw createError({ statusCode: 404, statusMessage: 'Lien introuvable' })
   }
 
   const { data: liens, error: linksError } = await client
     .from('partage_biens')
-    .select(`biens (${SELECT_PUBLIC_BIEN})`)
+    .select(`biens (${PUBLIC_PROPERTY_SELECT})`)
     .eq('partage_id', partage.id)
 
   if (linksError) {
