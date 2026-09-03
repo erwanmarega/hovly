@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Anchor, TravelMode } from '~/types'
 
-const props = defineProps<{ ancres: Anchor[] }>()
-const emit = defineEmits<{ 'update:ancres': [ancres: Anchor[]] }>()
+const props = defineProps<{ anchors: Anchor[] }>()
+const emit = defineEmits<{ 'update:anchors': [anchors: Anchor[]] }>()
 
 const MODES: { value: TravelMode; label: string }[] = [
   { value: 'transport', label: 'Transports' },
@@ -15,30 +15,30 @@ const label = ref('')
 const adresse = ref('')
 const mode = ref<TravelMode>('transport')
 const maxMinutes = ref<number | null>(null)
-const recherche = ref(false)
-const erreur = ref('')
+const searching = ref(false)
+const error = ref('')
 
-const complet = computed(() => props.ancres.length >= MAX_ANCHORS)
+const full = computed(() => props.anchors.length >= MAX_ANCHORS)
 
 const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone mb-1.5'
 const inputCls =
   'w-full rounded-lg border border-hairline-strong bg-white px-3 py-2 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20'
 
-async function ajouter() {
-  erreur.value = ''
+async function add() {
+  error.value = ''
   if (!adresse.value.trim()) {
-    erreur.value = 'Renseigne une adresse.'
+    error.value = 'Renseigne une adresse.'
     return
   }
 
-  recherche.value = true
+  searching.value = true
   try {
     const loc = await $fetch<{ lat: number; lon: number; label: string }>(
       '/api/ancres/geocoder',
       { method: 'POST', body: { adresse: adresse.value } }
     )
 
-    const ancre: Anchor = {
+    const anchor: Anchor = {
       id: `a${Date.now().toString(36)}`,
       label: label.value.trim() || loc.label.split(' ').slice(0, 3).join(' ') || 'Ancre',
       adresse: loc.label || adresse.value.trim(),
@@ -48,37 +48,37 @@ async function ajouter() {
       maxMinutes: maxMinutes.value && maxMinutes.value > 0 ? maxMinutes.value : null
     }
 
-    emit('update:ancres', [...props.ancres, ancre])
+    emit('update:anchors', [...props.anchors, anchor])
     label.value = ''
     adresse.value = ''
     maxMinutes.value = null
   } catch (e: unknown) {
-    erreur.value = errorMessage(e, 'Adresse introuvable.')
+    error.value = errorMessage(e, 'Adresse introuvable.')
   } finally {
-    recherche.value = false
+    searching.value = false
   }
 }
 
-function retirer(id: string) {
+function remove(id: string) {
   emit(
-    'update:ancres',
-    props.ancres.filter((a) => a.id !== id)
+    'update:anchors',
+    props.anchors.filter((a) => a.id !== id)
   )
 }
 
-function changerMode(id: string, m: TravelMode) {
+function changeMode(id: string, m: TravelMode) {
   emit(
-    'update:ancres',
-    props.ancres.map((a) => (a.id === id ? { ...a, mode: m } : a))
+    'update:anchors',
+    props.anchors.map((a) => (a.id === id ? { ...a, mode: m } : a))
   )
 }
 </script>
 
 <template>
   <div>
-    <ul v-if="ancres.length" class="space-y-2">
+    <ul v-if="anchors.length" class="space-y-2">
       <li
-        v-for="a in ancres"
+        v-for="a in anchors"
         :key="a.id"
         class="flex flex-wrap items-center gap-3 rounded-xl border border-hairline-soft bg-surface-soft px-3 py-2.5"
       >
@@ -101,14 +101,14 @@ function changerMode(id: string, m: TravelMode) {
                 ? 'bg-ink text-white'
                 : 'border border-hairline bg-white text-steel hover:bg-surface'
             "
-            @click="changerMode(a.id, m.value)"
+            @click="changeMode(a.id, m.value)"
           >
             {{ m.label }}
           </button>
           <button
             class="ml-1 grid size-7 place-items-center rounded-lg text-stone transition hover:bg-coral hover:text-[#600000]"
             :aria-label="`Retirer ${a.label}`"
-            @click="retirer(a.id)"
+            @click="remove(a.id)"
           >
             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -118,7 +118,7 @@ function changerMode(id: string, m: TravelMode) {
       </li>
     </ul>
 
-    <div v-if="!complet" class="mt-4">
+    <div v-if="!full" class="mt-4">
       <p :class="labelCls">Mode de déplacement</p>
       <div class="flex flex-wrap items-center gap-1.5">
         <button
@@ -138,7 +138,7 @@ function changerMode(id: string, m: TravelMode) {
       </div>
     </div>
 
-    <div v-if="!complet" class="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr_auto_auto]">
+    <div v-if="!full" class="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr_auto_auto]">
       <div>
         <label :class="labelCls">Nom</label>
         <input v-model="label" type="text" placeholder="Boulot" :class="inputCls">
@@ -150,7 +150,7 @@ function changerMode(id: string, m: TravelMode) {
           type="text"
           placeholder="12 rue de Rivoli, Paris"
           :class="inputCls"
-          @keyup.enter="ajouter"
+          @keyup.enter="add"
         >
       </div>
       <div>
@@ -165,11 +165,11 @@ function changerMode(id: string, m: TravelMode) {
       </div>
       <div class="flex items-end">
         <button
-          :disabled="recherche"
+          :disabled="searching"
           class="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black disabled:opacity-50"
-          @click="ajouter"
+          @click="add"
         >
-          {{ recherche ? '…' : 'Ajouter' }}
+          {{ searching ? '…' : 'Ajouter' }}
         </button>
       </div>
     </div>
@@ -178,6 +178,6 @@ function changerMode(id: string, m: TravelMode) {
       Maximum {{ MAX_ANCHORS }} points d’ancrage.
     </p>
 
-    <p v-if="erreur" class="mt-2 text-xs text-[#600000]">{{ erreur }}</p>
+    <p v-if="error" class="mt-2 text-xs text-[#600000]">{{ error }}</p>
   </div>
 </template>

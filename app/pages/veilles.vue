@@ -184,11 +184,11 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
       <WatchForm
         v-if="formulaireOuvert"
         class="mt-5"
-        :url-initiale="urlInitiale"
-        :en-cours="creation"
-        :erreur="erreurCreation"
-        @soumettre="creerVeille"
-        @annuler="formulaireOuvert = false"
+        :initial-url="urlInitiale"
+        :loading="creation"
+        :error="erreurCreation"
+        @submit="creerVeille"
+        @cancel="formulaireOuvert = false"
       />
 
       <div v-if="pending" class="mt-6 space-y-3">

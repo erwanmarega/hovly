@@ -554,8 +554,8 @@ v-for="axe in [
 
             <AnchorSettings
               class="mt-6"
-              :ancres="brouillon.ancres"
-              @update:ancres="majAncres"
+              :anchors="brouillon.ancres"
+              @update:anchors="majAncres"
             />
 
             <p v-if="erreurTrajets" class="mt-3 text-xs text-[#600000]">{{ erreurTrajets }}</p>
