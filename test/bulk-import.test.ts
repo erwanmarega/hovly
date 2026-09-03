@@ -5,7 +5,7 @@ import {
   extractUrls,
   parseUrls,
   importSummary
-} from '../app/composables/useImportMasse'
+} from '../app/composables/useBulkImport'
 
 describe('cleanUrl', () => {
   it('retire les paramètres de pistage', () => {

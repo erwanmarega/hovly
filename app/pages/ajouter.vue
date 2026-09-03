@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Property, DPE, SiteSource, Status, Transaction } from '~/types'
-import type { ImportEntry } from '~/composables/useImportMasse'
+import type { ImportEntry } from '~/composables/useBulkImport'
 import { detectSource, STATUSES } from '~/composables/useProperties'
 
 useHead({ title: 'Ajouter un bien — Hovly' })
