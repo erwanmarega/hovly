@@ -29,7 +29,7 @@ export default defineEventHandler(async (event): Promise<PublicShare> => {
     throw createError({ statusCode: 404, statusMessage: 'Lien introuvable' })
   }
 
-  const { data: liens, error: linksError } = await client
+  const { data: links, error: linksError } = await client
     .from('partage_biens')
     .select(`biens (${PUBLIC_PROPERTY_SELECT})`)
     .eq('partage_id', partage.id)
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<PublicShare> => {
     console.error('[partages] lecture des biens échouée', linksError.message)
   }
 
-  const biens = ((liens ?? []) as unknown as { biens: SharedProperty | null }[])
+  const biens = ((links ?? []) as unknown as { biens: SharedProperty | null }[])
     .map((l) => l.biens)
     .filter((b): b is SharedProperty => b != null)
 

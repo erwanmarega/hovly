@@ -34,11 +34,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  const { error: errLiens } = await client
+  const { error: errLinks } = await client
     .from('partage_biens')
     .insert(bienIds.map((bien_id) => ({ partage_id: partage.id, bien_id })))
 
-  if (errLiens) {
+  if (errLinks) {
     // La policy RLS rejette un bien qui n'appartient pas à l'utilisateur (ou
     // qui n'existe pas) : on annule le partage plutôt que de laisser un lien
     // à moitié rempli.

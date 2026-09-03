@@ -3,7 +3,7 @@ import { serverSupabaseServiceRole } from '#supabase/server'
 import { needsCheck, notifyWatch, purgeProcessedResults, checkSearch } from '../../utils/veille'
 
 /** Plafond par exécution : un cron ne doit pas partir en scan de plusieurs heures. */
-const MAX_RECHERCHES_PAR_RUN = 25
+const MAX_SEARCHES_PER_RUN = 25
 
 export default defineEventHandler(async (event) => {
   const secret = process.env.CRON_SECRET
@@ -22,73 +22,73 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const maintenant = new Date()
-  const dues = ((recherches ?? []) as SavedSearch[])
-    .filter((r) => needsCheck(r, maintenant))
-    .slice(0, MAX_RECHERCHES_PAR_RUN)
+  const now = new Date()
+  const due = ((recherches ?? []) as SavedSearch[])
+    .filter((r) => needsCheck(r, now))
+    .slice(0, MAX_SEARCHES_PER_RUN)
 
   // Les biens déjà suivis servent à écarter les annonces multi-diffusées :
   // une lecture par utilisateur, pas une par veille.
-  const biensParUser = new Map<string, Property[]>()
-  async function biensDe(userId: string): Promise<Property[]> {
-    const cache = biensParUser.get(userId)
-    if (cache) return cache
+  const propertiesByUser = new Map<string, Property[]>()
+  async function propertiesFor(userId: string): Promise<Property[]> {
+    const cached = propertiesByUser.get(userId)
+    if (cached) return cached
 
     const { data } = await service.from('biens').select('*').eq('user_id', userId)
-    const liste = (data ?? []) as Property[]
-    biensParUser.set(userId, liste)
-    return liste
+    const list = (data ?? []) as Property[]
+    propertiesByUser.set(userId, list)
+    return list
   }
 
   const emails = new Map<string, string | null>()
-  async function emailDe(userId: string): Promise<string | null> {
+  async function emailFor(userId: string): Promise<string | null> {
     if (emails.has(userId)) return emails.get(userId)!
 
     const { data } = await service.auth.admin.getUserById(userId)
-    const adresse = data?.user?.email ?? null
-    emails.set(userId, adresse)
-    return adresse
+    const email = data?.user?.email ?? null
+    emails.set(userId, email)
+    return email
   }
 
-  let nouvelles = 0
-  let erreurs = 0
-  let envoyes = 0
-  let echecs = 0
+  let newCount = 0
+  let errorCount = 0
+  let sent = 0
+  let failed = 0
 
-  for (const recherche of dues) {
-    const resume = await checkSearch(
+  for (const search of due) {
+    const summary = await checkSearch(
       service,
-      recherche,
-      await biensDe(recherche.user_id),
-      maintenant
+      search,
+      await propertiesFor(search.user_id),
+      now
     )
 
-    if (resume.erreur) {
-      erreurs++
+    if (summary.erreur) {
+      errorCount++
       continue
     }
-    if (!resume.nouvelles.length) continue
+    if (!summary.nouvelles.length) continue
 
-    nouvelles += resume.nouvelles.length
-    const envois = await notifyWatch(
+    newCount += summary.nouvelles.length
+    const notifyResult = await notifyWatch(
       service,
-      recherche.user_id,
-      await emailDe(recherche.user_id),
-      resume
+      search.user_id,
+      await emailFor(search.user_id),
+      summary
     )
-    envoyes += envois.sent
-    echecs += envois.failed
+    sent += notifyResult.sent
+    failed += notifyResult.failed
   }
 
-  const purges = await purgeProcessedResults(service)
+  const purged = await purgeProcessedResults(service)
 
   return {
     ok: true,
     actives: recherches?.length ?? 0,
-    scannees: dues.length,
-    nouvelles,
-    erreurs,
-    notifications: { envoyes, echecs },
-    purges
+    scannees: due.length,
+    nouvelles: newCount,
+    erreurs: errorCount,
+    notifications: { envoyes: sent, echecs: failed },
+    purges: purged
   }
 })

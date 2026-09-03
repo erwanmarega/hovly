@@ -31,8 +31,8 @@ export default defineEventHandler(async (event) => {
     if (age < ttl) return { market: cache.donnees as NeighborhoodMarket | null }
   }
 
-  const ventes = await nearbySales(lat, lon, localType)
-  const market = marketStatistics(ventes)
+  const sales = await nearbySales(lat, lon, localType)
+  const market = marketStatistics(sales)
 
   await client
     .from('marche_quartier')
