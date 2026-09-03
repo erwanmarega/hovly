@@ -7,24 +7,24 @@ export default defineEventHandler(async (event) => {
   const client = await db(event)
   const id = getRouterParam(event, 'id')
 
-  const { data: recherche, error } = await client
+  const { data: search, error } = await client
     .from('recherches')
     .select('*')
     .eq('id', id)
     .single()
 
-  if (error || !recherche) {
+  if (error || !search) {
     throw createError({ statusCode: 404, statusMessage: 'Veille introuvable' })
   }
 
   const { data: biens } = await client.from('biens').select('*')
 
-  const resume = await checkSearch(client, recherche as SavedSearch, (biens ?? []) as Property[])
+  const summary = await checkSearch(client, search as SavedSearch, (biens ?? []) as Property[])
 
   // Scan manuel : l'utilisateur regarde déjà l'écran, pas de notification.
-  if (resume.erreur) {
-    throw createError({ statusCode: 422, statusMessage: resume.erreur })
+  if (summary.erreur) {
+    throw createError({ statusCode: 422, statusMessage: summary.erreur })
   }
 
-  return resume
+  return summary
 })

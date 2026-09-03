@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   }
 
   return (data ?? []).map((r: any): SavedSearch => {
-    const { recherche_resultats, ...recherche } = r
-    return { ...recherche, nouveaux: recherche_resultats?.[0]?.count ?? 0 }
+    const { recherche_resultats, ...search } = r
+    return { ...search, nouveaux: recherche_resultats?.[0]?.count ?? 0 }
   })
 })
