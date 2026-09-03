@@ -38,7 +38,7 @@ function aChange(avant: unknown, apres: unknown): boolean {
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.refresh, QUOTAS.refreshHeure)
+  assertRateLimitForUser(event, user.id, QUOTAS.refresh, QUOTAS.refreshPerHour)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
 

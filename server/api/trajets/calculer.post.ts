@@ -22,7 +22,7 @@ const memePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.trajets, QUOTAS.trajetsHeure)
+  assertRateLimitForUser(event, user.id, QUOTAS.commutes, QUOTAS.commutesPerHour)
   assertBodySize(event)
 
   const body = await readBody<{ ancres?: unknown }>(event)

@@ -21,7 +21,7 @@ function depuisResultat(r: WatchResult) {
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapeHeure)
+  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapePerHour)
   assertBodySize(event)
   const client = await db(event)
   const id = getRouterParam(event, 'id')

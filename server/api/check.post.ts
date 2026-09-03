@@ -4,7 +4,7 @@ import { assertRateLimitForUser, QUOTAS } from '../utils/rate-limit'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.check, QUOTAS.checkHeure)
+  assertRateLimitForUser(event, user.id, QUOTAS.check, QUOTAS.checkPerHour)
   const service = serviceDb(event)
 
   const { data: biens, error } = await service

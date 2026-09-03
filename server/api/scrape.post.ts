@@ -4,7 +4,7 @@ import { assertBodySize, validateSourceUrl } from '../utils/validation'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapeHeure)
+  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapePerHour)
   assertBodySize(event)
 
   const { url } = await readBody(event)

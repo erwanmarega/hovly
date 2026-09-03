@@ -32,8 +32,8 @@ class RateLimitStore {
   check(key: string, windowMs: number, max: number): RateLimitResult {
     this.maybeCleanup()
 
-    const maintenant = Date.now()
-    const resetAt = maintenant + windowMs
+    const now = Date.now()
+    const resetAt = now + windowMs
     let entry = this.buckets.get(key)
 
     if (!entry) {
@@ -41,16 +41,16 @@ class RateLimitStore {
       this.buckets.set(key, entry)
     }
 
-    const fenetreDebut = maintenant - windowMs
-    const requetesRecentes = entry.requests.filter((t) => t > fenetreDebut)
-    entry.requests = requetesRecentes
+    const windowStart = now - windowMs
+    const recentRequests = entry.requests.filter((t) => t > windowStart)
+    entry.requests = recentRequests
 
-    if (requetesRecentes.length >= max) {
+    if (recentRequests.length >= max) {
       return { ok: false, remaining: 0, resetAt }
     }
 
-    requetesRecentes.push(maintenant)
-    return { ok: true, remaining: Math.max(0, max - requetesRecentes.length), resetAt }
+    recentRequests.push(now)
+    return { ok: true, remaining: Math.max(0, max - recentRequests.length), resetAt }
   }
 
   reset() {
@@ -59,20 +59,20 @@ class RateLimitStore {
   }
 
   private maybeCleanup() {
-    const maintenant = Date.now()
-    if (maintenant - this.lastCleanup < this.cleanupIntervalMs) return
+    const now = Date.now()
+    if (now - this.lastCleanup < this.cleanupIntervalMs) return
 
     for (const [key, entry] of this.buckets) {
       // Garde une marge de 2x la plus grande fenêtre possible serait impossible
       // à connaître ici ; on supprime les buckets vides et on tronque les vieilles
       // requêtes de plus de 24h.
-      const cutoff = maintenant - 24 * 60 * 60 * 1000
+      const cutoff = now - 24 * 60 * 60 * 1000
       entry.requests = entry.requests.filter((t) => t > cutoff)
       if (entry.requests.length === 0) {
         this.buckets.delete(key)
       }
     }
-    this.lastCleanup = maintenant
+    this.lastCleanup = now
   }
 }
 
@@ -119,8 +119,8 @@ export function getClientIp(event: H3Event): string | null {
   // Cloudflare et proxys courants.
   const forwarded = headers['x-forwarded-for']
   if (typeof forwarded === 'string') {
-    const premiere = forwarded.split(',')[0]?.trim()
-    if (premiere) return premiere
+    const first = forwarded.split(',')[0]?.trim()
+    if (first) return first
   }
 
   const cf = headers['cf-connecting-ip']
@@ -184,20 +184,20 @@ export const QUOTAS = {
   global: { windowMs: 60_000, max: 120 },
   /** Scraping d'une annonce unique. */
   scrape: { windowMs: 60_000, max: 10 },
-  scrapeHeure: { windowMs: 60 * 60_000, max: 50 },
+  scrapePerHour: { windowMs: 60 * 60_000, max: 50 },
   /** Rafraîchissement manuel d'un bien. */
   refresh: { windowMs: 60_000, max: 10 },
-  refreshHeure: { windowMs: 60 * 60_000, max: 50 },
+  refreshPerHour: { windowMs: 60 * 60_000, max: 50 },
   /** Scan manuel d'une veille (page de résultats). */
   scan: { windowMs: 60_000, max: 5 },
-  scanHeure: { windowMs: 60 * 60_000, max: 30 },
+  scanPerHour: { windowMs: 60 * 60_000, max: 30 },
   /** Calcul des trajets. */
-  trajets: { windowMs: 60_000, max: 10 },
-  trajetsHeure: { windowMs: 60 * 60_000, max: 100 },
+  commutes: { windowMs: 60_000, max: 10 },
+  commutesPerHour: { windowMs: 60 * 60_000, max: 100 },
   /** Vérification manuelle des biens (check). */
   check: { windowMs: 60_000, max: 5 },
-  checkHeure: { windowMs: 60 * 60_000, max: 20 },
+  checkPerHour: { windowMs: 60 * 60_000, max: 20 },
   /** Création d'un lien de partage. */
-  partage: { windowMs: 60_000, max: 10 },
-  partageHeure: { windowMs: 60 * 60_000, max: 30 }
+  share: { windowMs: 60_000, max: 10 },
+  sharePerHour: { windowMs: 60 * 60_000, max: 30 }
 } as const

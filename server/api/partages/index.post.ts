@@ -4,7 +4,7 @@ import { generateShareToken, MAX_SHARED_PROPERTIES } from '../../utils/partages'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.partage, QUOTAS.partageHeure)
+  assertRateLimitForUser(event, user.id, QUOTAS.share, QUOTAS.sharePerHour)
   assertBodySize(event)
   const client = await db(event)
   const body = await readBody(event)
