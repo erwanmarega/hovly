@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Status } from '~/types'
 
-defineProps<{ statut: Status }>()
+defineProps<{ status: Status }>()
 
 const map: Record<Status, { label: string; cls: string }> = {
   a_visiter: { label: 'À visiter', cls: 'bg-surface-yellow text-[#746019]' },
@@ -15,8 +15,8 @@ const map: Record<Status, { label: string; cls: string }> = {
 <template>
   <span
     class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap"
-    :class="map[statut].cls"
+    :class="map[status].cls"
   >
-    {{ map[statut].label }}
+    {{ map[status].label }}
   </span>
 </template>

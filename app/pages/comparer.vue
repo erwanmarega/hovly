@@ -241,7 +241,7 @@ const sourceLabels: Record<string, string> = {
                       {{ sourceLabels[b.site_source] }} · {{ b.ville }}
                     </p>
                     <div class="mt-2">
-                      <StatusBadge :statut="b.statut" />
+                      <StatusBadge :status="b.statut" />
                     </div>
                   </div>
                 </th>

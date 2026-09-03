@@ -6,19 +6,19 @@ const props = withDefaults(
     type?: string
     autocomplete?: string
     placeholder?: string
-    invalide?: boolean
+    invalid?: boolean
     autofocus?: boolean
   }>(),
-  { type: 'text', autocomplete: undefined, placeholder: undefined, invalide: false, autofocus: false }
+  { type: 'text', autocomplete: undefined, placeholder: undefined, invalid: false, autofocus: false }
 )
 
-const valeur = defineModel<string>({ required: true })
+const value = defineModel<string>({ required: true })
 
-const demasque = ref(false)
+const showPassword = ref(false)
 
-const estMotDePasse = computed(() => props.type === 'password')
-const typeEffectif = computed(() =>
-  estMotDePasse.value ? (demasque.value ? 'text' : 'password') : props.type
+const isPassword = computed(() => props.type === 'password')
+const effectiveType = computed(() =>
+  isPassword.value ? (showPassword.value ? 'text' : 'password') : props.type
 )
 </script>
 
@@ -32,28 +32,28 @@ const typeEffectif = computed(() =>
     <div class="relative">
       <input
         :id="id"
-        v-model="valeur"
-        :type="typeEffectif"
+        v-model="value"
+        :type="effectiveType"
         :autocomplete="autocomplete"
         :placeholder="placeholder"
         :autofocus="autofocus"
-        :aria-invalid="invalide"
+        :aria-invalid="invalid"
         class="h-12 w-full rounded-xl border bg-white px-4 text-sm outline-none transition placeholder:text-stone focus:ring-4"
         :class="[
-          invalide
+          invalid
             ? 'border-coral-soft focus:border-coral-soft focus:ring-coral/40'
             : 'border-hairline-strong hover:border-stone focus:border-ink-deep focus:ring-ink-deep/10',
-          estMotDePasse && 'pr-12'
+          isPassword && 'pr-12'
         ]"
       >
 
       <button
-        v-if="estMotDePasse"
+        v-if="isPassword"
         type="button"
         class="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-xl text-stone transition hover:text-ink"
-        :aria-label="demasque ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-        :aria-pressed="demasque"
-        @click="demasque = !demasque"
+        :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+        :aria-pressed="showPassword"
+        @click="showPassword = !showPassword"
       >
         <svg
           class="size-5"
@@ -65,7 +65,7 @@ const typeEffectif = computed(() =>
           stroke-linejoin="round"
           aria-hidden="true"
         >
-          <template v-if="demasque">
+          <template v-if="showPassword">
             <path d="M3 3l18 18" />
             <path d="M10.6 5.2A9.7 9.7 0 0 1 12 5c5 0 9 4.5 9 7a11 11 0 0 1-2.4 3.5" />
             <path d="M6.6 6.8A11.6 11.6 0 0 0 3 12c0 2.5 4 7 9 7a9.4 9.4 0 0 0 4.2-1" />

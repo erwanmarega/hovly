@@ -79,7 +79,7 @@ function soumettre() {
         label="URL de la page de résultats"
         type="url"
         placeholder="https://www.seloger.com/list.htm?..."
-        :invalide="!urlValide"
+        :invalid="!urlValide"
       />
       <p v-if="!urlValide" class="-mt-3 text-xs text-[#600000]">
         Site non supporté. Sites gérés : SeLoger, Leboncoin, PAP, Logic-Immo, Bien’ici,

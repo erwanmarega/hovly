@@ -101,7 +101,7 @@ async function motDePasseOublie() {
           <GoogleButton
             class="mt-8"
             :disabled="occupe"
-            @erreur="error = $event"
+            @error="error = $event"
           />
 
           <div class="my-7 flex items-center gap-4">
@@ -119,7 +119,7 @@ async function motDePasseOublie() {
               autocomplete="email"
               placeholder="toi@exemple.com"
               autofocus
-              :invalide="!!error"
+              :invalid="!!error"
             />
 
             <TextField
@@ -129,7 +129,7 @@ async function motDePasseOublie() {
               type="password"
               autocomplete="current-password"
               placeholder="••••••••"
-              :invalide="!!error"
+              :invalid="!!error"
             >
               <template #action>
                 <button

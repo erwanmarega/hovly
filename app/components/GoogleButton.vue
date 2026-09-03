@@ -1,23 +1,23 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ libelle?: string, disabled?: boolean }>(), {
-  libelle: 'Continuer avec Google',
+withDefaults(defineProps<{ label?: string, disabled?: boolean }>(), {
+  label: 'Continuer avec Google',
   disabled: false
 })
 
-const emit = defineEmits<{ erreur: [message: string] }>()
+const emit = defineEmits<{ error: [message: string] }>()
 
 const supabase = useSupabaseClient()
-const redirection = ref(false)
+const redirecting = ref(false)
 
-async function connecter() {
-  redirection.value = true
+async function connect() {
+  redirecting.value = true
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: `${window.location.origin}/confirm` }
   })
   if (error) {
-    redirection.value = false
-    emit('erreur', 'Connexion Google impossible.')
+    redirecting.value = false
+    emit('error', 'Connexion Google impossible.')
   }
 }
 </script>
@@ -25,9 +25,9 @@ async function connecter() {
 <template>
   <button
     type="button"
-    :disabled="disabled || redirection"
+    :disabled="disabled || redirecting"
     class="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-hairline-strong bg-white px-5 text-sm font-medium text-ink transition hover:border-stone hover:bg-surface-soft focus:outline-none focus:ring-4 focus:ring-ink-deep/10 disabled:opacity-60"
-    @click="connecter"
+    @click="connect"
   >
     <svg class="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
       <path
@@ -44,6 +44,6 @@ async function connecter() {
         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
       />
     </svg>
-    {{ redirection ? 'Redirection…' : libelle }}
+    {{ redirecting ? 'Redirection…' : label }}
   </button>
 </template>

@@ -28,7 +28,7 @@ const emit = defineEmits<{ supprimer: [id: string] }>()
       <span v-else class="grid size-full place-items-center text-sm text-stone">Aucune photo</span>
 
       <span class="absolute left-3 top-3">
-        <StatusBadge :statut="bien.statut" />
+        <StatusBadge :status="bien.statut" />
       </span>
       <span class="absolute right-3 top-3">
         <ScoreBadge :score="score" />

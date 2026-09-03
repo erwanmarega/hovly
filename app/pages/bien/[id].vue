@@ -278,7 +278,7 @@ async function confirmerSuppression() {
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <StatusBadge :statut="bien.statut" />
+              <StatusBadge :status="bien.statut" />
               <span class="text-xs font-medium text-stone">
                 {{ sourceLabels[bien.site_source] }} · ajouté le {{ dateAjout }}
               </span>
@@ -614,7 +614,7 @@ async function confirmerSuppression() {
                   class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left transition hover:bg-surface"
                   @click="menuStatut = !menuStatut"
                 >
-                  <StatusBadge :statut="bien.statut" />
+                  <StatusBadge :status="bien.statut" />
                   <svg
                     class="size-4 text-stone"
                     viewBox="0 0 24 24"
