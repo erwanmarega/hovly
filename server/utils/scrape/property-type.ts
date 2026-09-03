@@ -8,12 +8,12 @@
 
 import type { PropertyType } from '~/types'
 
-const MOTS_MAISON = ['maison', 'villa']
-const MOTS_APPARTEMENT = ['appartement', 'appart', 'studio', 'duplex', 'loft']
+const HOUSE_WORDS = ['maison', 'villa']
+const APARTMENT_WORDS = ['appartement', 'appart', 'studio', 'duplex', 'loft']
 
-export function detecterTypeBien(titre: string): PropertyType | null {
+export function detectPropertyType(titre: string): PropertyType | null {
   const t = titre.toLowerCase()
-  if (MOTS_MAISON.some((m) => t.includes(m))) return 'maison'
-  if (MOTS_APPARTEMENT.some((m) => t.includes(m))) return 'appartement'
+  if (HOUSE_WORDS.some((m) => t.includes(m))) return 'maison'
+  if (APARTMENT_WORDS.some((m) => t.includes(m))) return 'appartement'
   return null
 }

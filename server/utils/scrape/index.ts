@@ -9,8 +9,8 @@ import {
   type PageData
 } from './extract'
 import { detecterSource } from './source'
-import { detecterTransaction } from './transaction'
-import { detecterTypeBien } from './type-bien'
+import { detectTransaction } from './transaction'
+import { detectPropertyType } from './property-type'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
 import { assertPublicHostname } from '../validation'
@@ -87,8 +87,8 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
   }
   data.url_source = url
   data.site_source = source
-  data.transaction = detecterTransaction(url, data.prix ?? null)
-  data.type_bien = detecterTypeBien(data.titre ?? '')
+  data.transaction = detectTransaction(url, data.prix ?? null)
+  data.type_bien = detectPropertyType(data.titre ?? '')
 
   const indisponible =
     status === 404 ||

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { detecterTypeBien } from '../server/utils/scrape/type-bien'
+import { detectPropertyType } from '../server/utils/scrape/property-type'
 
-describe('detecterTypeBien — mots du titre', () => {
+describe('detectPropertyType — mots du titre', () => {
   it.each([
     ['Appartement 3 pièces 76 m² - Paris 11e', 'appartement'],
     ['Maison 5 pièces avec jardin - Nantes', 'maison'],
@@ -13,11 +13,11 @@ describe('detecterTypeBien — mots du titre', () => {
     ['Immeuble de rapport 6 lots', null],
     ['', null]
   ] as const)('%s → %s', (titre, attendu) => {
-    expect(detecterTypeBien(titre)).toBe(attendu)
+    expect(detectPropertyType(titre)).toBe(attendu)
   })
 
   it('est insensible à la casse', () => {
-    expect(detecterTypeBien('MAISON 4 PIÈCES')).toBe('maison')
-    expect(detecterTypeBien('appartement T2')).toBe('appartement')
+    expect(detectPropertyType('MAISON 4 PIÈCES')).toBe('maison')
+    expect(detectPropertyType('appartement T2')).toBe('appartement')
   })
 })
