@@ -8,10 +8,10 @@ export default defineEventHandler(async (event) => {
   assertBodySize(event)
 
   const { url } = await readBody(event)
-  const urlValidee = validateSourceUrl(url)
+  const validatedUrl = validateSourceUrl(url)
 
   try {
-    const { data } = await scrapeUrl(urlValidee)
+    const { data } = await scrapeUrl(validatedUrl)
     return data
   } catch (e: any) {
     if (e?.statusCode) throw e
