@@ -69,6 +69,42 @@ const filAriane = computed(() => [
 
 const photoActive = ref(0);
 
+const INTERVALLE_DEFILEMENT_MS = 2000;
+let minuteurDefilement: ReturnType<typeof setInterval> | null = null;
+
+function arreterDefilement() {
+  if (minuteurDefilement) {
+    clearInterval(minuteurDefilement);
+    minuteurDefilement = null;
+  }
+}
+
+function demarrerDefilement() {
+  arreterDefilement();
+  const photos = bien.value?.photos;
+  if (!photos || photos.length <= 1) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  minuteurDefilement = setInterval(() => {
+    const n = bien.value?.photos.length ?? 0;
+    if (n) photoActive.value = (photoActive.value + 1) % n;
+  }, INTERVALLE_DEFILEMENT_MS);
+}
+
+function selectionnerPhoto(i: number) {
+  photoActive.value = i;
+  demarrerDefilement();
+}
+
+watch(
+  () => bien.value?.photos.length,
+  () => {
+    photoActive.value = 0;
+    demarrerDefilement();
+  }
+);
+
+onBeforeUnmount(arreterDefilement);
+
 const prixMensuel = computed(() =>
   bien.value ? Math.round(bien.value.prix / 100) : 0
 );
@@ -362,6 +398,8 @@ async function confirmerSuppression() {
             <div
               v-if="bien.photos.length"
               class="overflow-hidden rounded-2xl border border-hairline bg-[#FFD02F]"
+              @mouseenter="arreterDefilement"
+              @mouseleave="demarrerDefilement"
             >
               <img
                 :src="bien.photos[photoActive]"
@@ -386,7 +424,7 @@ async function confirmerSuppression() {
                       ? 'border-ink'
                       : 'border-transparent opacity-70 hover:opacity-100'
                   "
-                  @click="photoActive = i"
+                  @click="selectionnerPhoto(i)"
                 >
                   <img :src="p" alt="" class="size-full object-cover" />
                 </button>
