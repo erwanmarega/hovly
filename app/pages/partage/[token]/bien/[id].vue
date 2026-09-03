@@ -21,7 +21,7 @@ const bien = computed(
   () => partage.value?.biens.find((b) => b.id === id) ?? null
 );
 
-const achat = computed(() => bien.value != null && isPurchase(bien.value));
+const purchase = computed(() => bien.value != null && isPurchase(bien.value));
 
 useHead({
   title: () =>
@@ -104,7 +104,7 @@ useHead({
           <p class="text-2xl font-semibold tabular-nums">
             <template v-if="bien.prix != null">
               {{ formatNumber(Math.round(bien.prix / 100)) }} €<span
-                v-if="!achat"
+                v-if="!purchase"
                 class="text-sm font-normal text-stone"
                 >/mois</span
               >
@@ -116,7 +116,7 @@ useHead({
 
           <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
             <PropertyStats
-              taille="md"
+              size="md"
               :surface="bien.surface"
               :rooms="bien.nb_pieces"
               :rooms-label="bien.nb_pieces && bien.nb_pieces > 1 ? 'pièces' : 'pièce'"

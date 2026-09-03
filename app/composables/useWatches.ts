@@ -18,103 +18,103 @@ export const toEuros = (centimes: number | null) =>
   centimes == null ? null : Math.round(centimes / 100)
 
 export function useWatches() {
-  const recherches = useState<SavedSearch[]>('recherches', () => [])
-  const resultats = useState<Record<string, WatchResult[]>>('veille-resultats', () => ({}))
+  const searches = useState<SavedSearch[]>('recherches', () => [])
+  const results = useState<Record<string, WatchResult[]>>('veille-resultats', () => ({}))
 
   const newCount = computed(() =>
-    recherches.value.reduce((total, r) => total + (r.nouveaux ?? 0), 0)
+    searches.value.reduce((total, r) => total + (r.nouveaux ?? 0), 0)
   )
 
-  function updateCounter(rechercheId: string, delta: number) {
-    const r = recherches.value.find((x) => x.id === rechercheId)
+  function updateCounter(searchId: string, delta: number) {
+    const r = searches.value.find((x) => x.id === searchId)
     if (r) r.nouveaux = Math.max(0, (r.nouveaux ?? 0) + delta)
   }
 
   async function refresh() {
-    recherches.value = await $fetch<SavedSearch[]>('/api/recherches')
-    return recherches.value
+    searches.value = await $fetch<SavedSearch[]>('/api/recherches')
+    return searches.value
   }
 
   async function create(payload: Partial<SavedSearch>): Promise<SavedSearch> {
     const row = await $fetch<SavedSearch>('/api/recherches', { method: 'POST', body: payload })
-    recherches.value = [{ ...row, nouveaux: 0 }, ...recherches.value]
+    searches.value = [{ ...row, nouveaux: 0 }, ...searches.value]
     return row
   }
 
   async function update(id: string, patch: Partial<SavedSearch>) {
-    const r = recherches.value.find((x) => x.id === id)
-    const avant = r ? { ...r } : null
+    const r = searches.value.find((x) => x.id === id)
+    const before = r ? { ...r } : null
     if (r) Object.assign(r, patch)
     try {
       await $fetch(`/api/recherches/${id}`, { method: 'PATCH', body: patch })
     } catch (e) {
-      if (r && avant) Object.assign(r, avant)
+      if (r && before) Object.assign(r, before)
       throw e
     }
   }
 
   async function remove(id: string) {
-    const snapshot = recherches.value
-    recherches.value = recherches.value.filter((x) => x.id !== id)
+    const snapshot = searches.value
+    searches.value = searches.value.filter((x) => x.id !== id)
     try {
       await $fetch(`/api/recherches/${id}`, { method: 'DELETE' })
-      const { [id]: _supprime, ...reste } = resultats.value
-      resultats.value = reste
+      const { [id]: _removed, ...rest } = results.value
+      results.value = rest
     } catch (e) {
-      recherches.value = snapshot
+      searches.value = snapshot
       throw e
     }
   }
 
   async function scan(id: string): Promise<ScanSummary> {
-    const resume = await $fetch<ScanSummary>(`/api/recherches/${id}/scan`, { method: 'POST' })
+    const summary = await $fetch<ScanSummary>(`/api/recherches/${id}/scan`, { method: 'POST' })
 
-    const r = recherches.value.find((x) => x.id === id)
+    const r = searches.value.find((x) => x.id === id)
     if (r) {
       r.derniere_verif = new Date().toISOString()
       r.derniere_erreur = null
       r.echecs_consecutifs = 0
-      r.nouveaux = (r.nouveaux ?? 0) + resume.nouvelles.length
+      r.nouveaux = (r.nouveaux ?? 0) + summary.nouvelles.length
     }
-    if (resume.nouvelles.length) {
-      resultats.value[id] = [...resume.nouvelles, ...(resultats.value[id] ?? [])]
+    if (summary.nouvelles.length) {
+      results.value[id] = [...summary.nouvelles, ...(results.value[id] ?? [])]
     }
-    return resume
+    return summary
   }
 
   async function loadResults(id: string, etat?: ResultState) {
-    const liste = await $fetch<WatchResult[]>(`/api/recherches/${id}/resultats`, {
+    const list = await $fetch<WatchResult[]>(`/api/recherches/${id}/resultats`, {
       query: etat ? { etat } : undefined
     })
-    resultats.value[id] = liste
-    return liste
+    results.value[id] = list
+    return list
   }
 
-  function removeResult(rechercheId: string, resultatId: string) {
-    const liste = resultats.value[rechercheId]
-    if (liste) resultats.value[rechercheId] = liste.filter((r) => r.id !== resultatId)
+  function removeResult(searchId: string, resultId: string) {
+    const list = results.value[searchId]
+    if (list) results.value[searchId] = list.filter((r) => r.id !== resultId)
   }
 
-  async function ignore(rechercheId: string, resultatId: string) {
-    await $fetch(`/api/resultats/${resultatId}`, { method: 'PATCH', body: { etat: 'ignore' } })
-    removeResult(rechercheId, resultatId)
-    updateCounter(rechercheId, -1)
+  async function ignore(searchId: string, resultId: string) {
+    await $fetch(`/api/resultats/${resultId}`, { method: 'PATCH', body: { etat: 'ignore' } })
+    removeResult(searchId, resultId)
+    updateCounter(searchId, -1)
   }
 
   /** Scrape la fiche complète et crée le bien. Plus lent qu'« ignorer » : prévoir un état de chargement. */
-  async function keep(rechercheId: string, resultatId: string): Promise<Property> {
-    const { bien } = await $fetch<{ bien: Property }>(`/api/resultats/${resultatId}`, {
+  async function keep(searchId: string, resultId: string): Promise<Property> {
+    const { bien } = await $fetch<{ bien: Property }>(`/api/resultats/${resultId}`, {
       method: 'PATCH',
       body: { etat: 'garde' }
     })
-    removeResult(rechercheId, resultatId)
-    updateCounter(rechercheId, -1)
+    removeResult(searchId, resultId)
+    updateCounter(searchId, -1)
     return bien
   }
 
   return {
-    recherches,
-    resultats,
+    searches,
+    results,
     newCount,
     refresh,
     create,
