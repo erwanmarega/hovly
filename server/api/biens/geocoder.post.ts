@@ -1,4 +1,4 @@
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
   const resume = { traites: 0, localises: 0, echecs: 0 }
 
-  for (const bien of (biens ?? []) as Pick<Bien, 'id' | 'adresse' | 'ville' | 'code_postal'>[]) {
+  for (const bien of (biens ?? []) as Pick<Property, 'id' | 'adresse' | 'ville' | 'code_postal'>[]) {
     resume.traites++
     const loc = await geocoder(bien)
     if (!loc) {

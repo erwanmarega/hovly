@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bien, Statut } from '~/types'
+import type { Property, Status } from '~/types'
 import type { Score } from '~/composables/useScore'
 
 type Clef =
@@ -13,8 +13,8 @@ type Clef =
   | 'trajet'
 
 const props = defineProps<{
-  biens: Bien[]
-  score: (bien: Bien) => Score
+  biens: Property[]
+  score: (bien: Property) => Score
   doublons: Map<string, number>
   triClef: Clef
   triAsc: boolean
@@ -27,7 +27,7 @@ const emit = defineEmits<{
   tri: [clef: Clef]
   'update:page': [page: number]
   supprimer: [id: string]
-  statut: [id: string, statut: Statut]
+  statut: [id: string, statut: Status]
 }>()
 
 const { prixMensuel, prixM2 } = useBiens()
@@ -149,7 +149,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
               :src="b.photos[0]"
               :alt="b.titre"
               class="size-14 shrink-0 rounded-xl bg-surface"
-              :class="estPhotoParDefaut(b.photos[0]) ? 'object-contain' : 'object-cover'"
+              :class="isDefaultPhoto(b.photos[0]) ? 'object-contain' : 'object-cover'"
               loading="lazy"
             >
             <div v-else class="size-14 shrink-0 rounded-xl bg-surface" />
@@ -184,16 +184,16 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="hidden w-28 shrink-0 text-right tabular-nums lg:block">
             <p class="font-semibold">
-              {{ formaterNombre(prixMensuel(b)) }} €<span v-if="!estAchat(b)" class="text-xs font-normal text-stone">/mois</span>
+              {{ formatNumber(prixMensuel(b)) }} €<span v-if="!estAchat(b)" class="text-xs font-normal text-stone">/mois</span>
             </p>
             <p class="text-xs text-stone">
-              réel {{ formaterNombre(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
+              réel {{ formatNumber(Math.round((couts.get(b.id)?.total ?? 0) / 100)) }} €
             </p>
           </div>
 
           <div class="hidden w-24 shrink-0 text-right tabular-nums xl:block">
             <p class="text-sm text-slate">{{ b.surface }} m²</p>
-            <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ formaterNombre(prixM2(b)) }} €/m²</p>
+            <p class="text-xs text-stone">{{ b.nb_pieces }} p · {{ formatNumber(prixM2(b)) }} €/m²</p>
           </div>
 
           <div class="hidden w-10 shrink-0 xl:block"><BadgeDPE :dpe="b.dpe" /></div>

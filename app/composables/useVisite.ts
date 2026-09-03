@@ -1,4 +1,4 @@
-import type { AvisVisite, Bien, Checklist } from '~/types'
+import type { VisitRating, Property, Checklist } from '~/types'
 
 export interface CritereVisite {
   id: string
@@ -33,13 +33,13 @@ export const QUESTIONS_AGENT: QuestionAgent[] = [
   { id: 'internet', label: 'Fibre installée dans l’immeuble ?' }
 ]
 
-export const AVIS: { value: AvisVisite; label: string; classe: string }[] = [
+export const AVIS: { value: VisitRating; label: string; classe: string }[] = [
   { value: 'bon', label: 'Bon', classe: 'bg-teal text-[#0a4a42]' },
   { value: 'moyen', label: 'Moyen', classe: 'bg-brand-light text-[#8a6d1c]' },
   { value: 'mauvais', label: 'Mauvais', classe: 'bg-coral text-[#600000]' }
 ]
 
-const POIDS: Record<AvisVisite, number> = { bon: 1, moyen: 0.5, mauvais: 0 }
+const POIDS: Record<VisitRating, number> = { bon: 1, moyen: 0.5, mauvais: 0 }
 
 export function normaliserChecklist(brut: Partial<Checklist> | null | undefined): Checklist {
   return {
@@ -70,7 +70,7 @@ export function bilanVisite(brut: Partial<Checklist> | null | undefined): BilanV
 
 export type EtatVisite = 'aucune' | 'a_venir' | 'aujourdhui' | 'passee'
 
-export function etatVisite(bien: Bien, maintenant = new Date()): EtatVisite {
+export function etatVisite(bien: Property, maintenant = new Date()): EtatVisite {
   if (!bien.visite_le) return 'aucune'
   const d = new Date(bien.visite_le)
   if (Number.isNaN(d.getTime())) return 'aucune'
@@ -143,7 +143,7 @@ export function creneauxRapides(maintenant = new Date()): { label: string; iso: 
   ].filter((c) => new Date(c.iso).getTime() > maintenant.getTime())
 }
 
-export function prochainesVisites(biens: Bien[], maintenant = new Date()): Bien[] {
+export function prochainesVisites(biens: Property[], maintenant = new Date()): Property[] {
   return biens
     .filter((b) => b.actif && b.visite_le && new Date(b.visite_le).getTime() >= maintenant.getTime())
     .sort((a, b) => new Date(a.visite_le!).getTime() - new Date(b.visite_le!).getTime())

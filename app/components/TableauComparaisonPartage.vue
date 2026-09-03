@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { BienPartage } from "~/types";
+import type { SharedProperty } from "~/types";
 import { comparerPublic } from "~/composables/useComparateur";
 
-const props = defineProps<{ biens: BienPartage[]; token: string }>();
+const props = defineProps<{ biens: SharedProperty[]; token: string }>();
 
 const lignes = computed(() => comparerPublic(props.biens));
 </script>
@@ -29,7 +29,7 @@ const lignes = computed(() => comparerPublic(props.biens));
                 :alt="b.titre ?? ''"
                 loading="lazy"
                 class="aspect-[4/3] w-full rounded-xl bg-surface"
-                :class="estPhotoParDefaut(b.photos[0]) ? 'object-contain' : 'object-cover'"
+                :class="isDefaultPhoto(b.photos[0]) ? 'object-contain' : 'object-cover'"
               >
               <div
                 v-else

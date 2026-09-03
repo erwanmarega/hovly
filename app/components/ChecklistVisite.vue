@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { AvisVisite, Bien } from '~/types'
+import type { VisitRating, Property } from '~/types'
 
-const props = defineProps<{ bien: Bien }>()
+const props = defineProps<{ bien: Property }>()
 
-const emit = defineEmits<{ maj: [patch: Partial<Bien>] }>()
+const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
 const { enregistrerChecklist, enregistrerCompteRendu } = useVisite()
 
@@ -39,11 +39,11 @@ async function sauver() {
   }
 }
 
-function noter(critere: string, avis: AvisVisite) {
+function noter(critere: string, avis: VisitRating) {
   const efface = checklist.value.notes[critere] === avis
   const notes = Object.fromEntries(
     Object.entries(checklist.value.notes).filter(([id]) => id !== critere)
-  ) as Record<string, AvisVisite>
+  ) as Record<string, VisitRating>
   if (!efface) notes[critere] = avis
 
   checklist.value = { ...checklist.value, notes }

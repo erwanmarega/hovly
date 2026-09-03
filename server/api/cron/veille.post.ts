@@ -1,4 +1,4 @@
-import type { Bien, Recherche } from '~/types'
+import type { Property, SavedSearch } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { aVerifier, notifierVeille, purgerResultatsTraites, verifierRecherche } from '../../utils/veille'
 
@@ -23,19 +23,19 @@ export default defineEventHandler(async (event) => {
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
   const maintenant = new Date()
-  const dues = ((recherches ?? []) as Recherche[])
+  const dues = ((recherches ?? []) as SavedSearch[])
     .filter((r) => aVerifier(r, maintenant))
     .slice(0, MAX_RECHERCHES_PAR_RUN)
 
   // Les biens déjà suivis servent à écarter les annonces multi-diffusées :
   // une lecture par utilisateur, pas une par veille.
-  const biensParUser = new Map<string, Bien[]>()
-  async function biensDe(userId: string): Promise<Bien[]> {
+  const biensParUser = new Map<string, Property[]>()
+  async function biensDe(userId: string): Promise<Property[]> {
     const cache = biensParUser.get(userId)
     if (cache) return cache
 
     const { data } = await service.from('biens').select('*').eq('user_id', userId)
-    const liste = (data ?? []) as Bien[]
+    const liste = (data ?? []) as Property[]
     biensParUser.set(userId, liste)
     return liste
   }
@@ -76,8 +76,8 @@ export default defineEventHandler(async (event) => {
       await emailDe(recherche.user_id),
       resume
     )
-    envoyes += envois.envoyes
-    echecs += envois.echecs
+    envoyes += envois.sent
+    echecs += envois.failed
   }
 
   const purges = await purgerResultatsTraites(service)

@@ -1,15 +1,15 @@
-import type { Ancre, Bien, ModeTrajet, Trajet } from '~/types'
+import type { Anchor, Property, TravelMode, Commute } from '~/types'
 import { dureesVersAncre, paquets, routageDisponible } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 import { assertTailleCorps } from '../../utils/validation'
 import { MAX_ANCRES } from '~/composables/usePreferences'
 
-const MODES: ModeTrajet[] = ['voiture', 'velo', 'marche', 'transport']
+const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
 
-function ancresValides(brut: unknown): Ancre[] {
+function ancresValides(brut: unknown): Anchor[] {
   if (!Array.isArray(brut)) return []
   return brut.filter(
-    (a): a is Ancre =>
+    (a): a is Anchor =>
       !!a &&
       typeof a.id === 'string' &&
       typeof a.lat === 'number' &&
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
 
   if (erreurBiens) throw createError({ statusCode: 500, statusMessage: erreurBiens.message })
 
-  const biens = (biensBruts ?? []) as Pick<Bien, 'id' | 'lat' | 'lon'>[]
+  const biens = (biensBruts ?? []) as Pick<Property, 'id' | 'lat' | 'lon'>[]
 
   if (ancres.length === 0) {
     await client.from('trajets').delete().not('id', 'is', null)
@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
     .not('ancre', 'in', `(${ancres.map((a) => `"${a.id}"`).join(',')})`)
 
   const { data: existantsBruts } = await client.from('trajets').select('*')
-  const existants = (existantsBruts ?? []) as Trajet[]
+  const existants = (existantsBruts ?? []) as Commute[]
 
   const cle = (bienId: string, ancreId: string, mode: string) => `${bienId}|${ancreId}|${mode}`
   const connus = new Map(existants.map((t) => [cle(t.bien_id, t.ancre, t.mode), t]))

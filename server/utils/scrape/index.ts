@@ -1,4 +1,4 @@
-import type { Bien, SiteSource } from '~/types'
+import type { Property, SiteSource } from '~/types'
 import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
 import {
   extraire,
@@ -17,7 +17,7 @@ import { assertHostnamePublique } from '../validation'
 
 export interface ScrapeResult {
   source: SiteSource
-  data: Partial<Bien>
+  data: Partial<Property>
   indisponible: boolean
 }
 

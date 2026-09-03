@@ -1,4 +1,4 @@
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
 export interface Similarite {
   score: number
@@ -72,7 +72,7 @@ const proche = (a: number, b: number, tolerance: number) => {
   return max === 0 ? a === b : Math.abs(a - b) / max <= tolerance
 }
 
-export function similarite(a: Bien, b: Bien): Similarite {
+export function similarite(a: Property, b: Property): Similarite {
   if (a.id === b.id) return { score: 0, raisons: [] }
   if (a.url_source && a.url_source === b.url_source) {
     return { score: 1, raisons: ['URL identique'] }
@@ -130,11 +130,11 @@ export function similarite(a: Bien, b: Bien): Similarite {
   return { score: Math.min(1, Math.round(score * 100) / 100), raisons }
 }
 
-export function sontDoublons(a: Bien, b: Bien, seuil = SEUIL_DOUBLON): boolean {
+export function sontDoublons(a: Property, b: Property, seuil = SEUIL_DOUBLON): boolean {
   return similarite(a, b).score >= seuil
 }
 
-export function grouperDoublons(biens: Bien[], seuil = SEUIL_DOUBLON): Bien[][] {
+export function grouperDoublons(biens: Property[], seuil = SEUIL_DOUBLON): Property[][] {
   const parent = new Map<string, string>()
   const racine = (id: string): string => {
     const p = parent.get(id)
@@ -157,7 +157,7 @@ export function grouperDoublons(biens: Bien[], seuil = SEUIL_DOUBLON): Bien[][] 
     }
   }
 
-  const groupes = new Map<string, Bien[]>()
+  const groupes = new Map<string, Property[]>()
   for (const b of biens) {
     const r = racine(b.id)
     groupes.set(r, [...(groupes.get(r) ?? []), b])
@@ -166,11 +166,11 @@ export function grouperDoublons(biens: Bien[], seuil = SEUIL_DOUBLON): Bien[][] 
   return [...groupes.values()].filter((g) => g.length > 1)
 }
 
-export function doublonsDe(bien: Bien, biens: Bien[], seuil = SEUIL_DOUBLON): Bien[] {
+export function doublonsDe(bien: Property, biens: Property[], seuil = SEUIL_DOUBLON): Property[] {
   return biens.filter((b) => b.id !== bien.id && sontDoublons(bien, b, seuil))
 }
 
-export function representants(biens: Bien[], seuil = SEUIL_DOUBLON): Bien[] {
+export function representants(biens: Property[], seuil = SEUIL_DOUBLON): Property[] {
   const groupes = grouperDoublons(biens, seuil)
   const aEcarter = new Set<string>()
 

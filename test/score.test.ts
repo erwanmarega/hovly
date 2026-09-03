@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { scoreBien, PREFERENCES_DEFAUT } from '../app/composables/useScore'
-import type { Bien, DPE } from '../app/types'
+import type { Property, DPE } from '../app/types'
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',
@@ -29,11 +29,11 @@ function bien(over: Partial<Bien> = {}): Bien {
   }
 }
 
-const partPrix = (b: Bien, ctx: Bien[]) =>
+const partPrix = (b: Property, ctx: Property[]) =>
   scoreBien(b, ctx).parts.find((p) => p.label === 'Prix au m²')!
-const partDpe = (b: Bien, ctx: Bien[]) =>
+const partDpe = (b: Property, ctx: Property[]) =>
   scoreBien(b, ctx).parts.find((p) => p.label === 'Performance énergétique')!
-const partCharges = (b: Bien, ctx: Bien[]) =>
+const partCharges = (b: Property, ctx: Property[]) =>
   scoreBien(b, ctx).parts.find((p) => p.label === 'Charges')!
 
 describe('scoreBien — prix au m²', () => {

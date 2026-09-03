@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
-const props = withDefaults(defineProps<{ biens: Bien[]; max?: number }>(), { max: 3 })
+const props = withDefaults(defineProps<{ biens: Property[]; max?: number }>(), { max: 3 })
 
 const maintenant = useMaintenant()
 

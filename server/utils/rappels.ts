@@ -1,7 +1,7 @@
-import type { Bien } from '~/types'
-import type { ResumeEnvois } from '~/types/check'
-import { envoyerRappelEmail } from './email'
-import { envoyerPush, pushDisponible } from './push'
+import type { Property } from '~/types'
+import type { SendSummary } from '~/types/check'
+import { sendReminderEmail } from './email'
+import { sendPush, pushAvailable } from './push'
 
 export interface ResumeRappels {
   candidats: number
@@ -12,7 +12,7 @@ export interface ResumeRappels {
 
 export const FENETRE_MS = 24 * 60 * 60 * 1000
 
-export function aRappeler(bien: Bien, maintenant = new Date()): boolean {
+export function aRappeler(bien: Property, maintenant = new Date()): boolean {
   if (!bien.actif || !bien.visite_le || bien.rappel_envoye_le) return false
 
   const visite = new Date(bien.visite_le).getTime()
@@ -33,7 +33,7 @@ const heure = (iso: string) =>
 
 export async function envoyerRappels(
   client: any,
-  biens: Bien[],
+  biens: Property[],
   email: string | null,
   maintenant = new Date()
 ): Promise<ResumeRappels> {
@@ -44,23 +44,23 @@ export async function envoyerRappels(
   for (const bien of aTraiter) {
     let envoye = false
 
-    const mail = await envoyerRappelEmail(email, bien).catch((e: Error) => ({
+    const mail = await sendReminderEmail(email, bien).catch((e: Error) => ({
       envoye: false,
       raison: e.message
     }))
     if (mail.envoye) envoye = true
     else if (mail.raison && !resume.raisons.includes(mail.raison)) resume.raisons.push(mail.raison)
 
-    if (pushDisponible()) {
-      const push: ResumeEnvois = await envoyerPush(client, bien.user_id, {
+    if (pushAvailable()) {
+      const push: SendSummary = await sendPush(client, bien.user_id, {
         titre: 'Visite demain',
         corps: `${bien.titre} — ${heure(bien.visite_le!)}`,
         url: `/bien/${bien.id}`,
         tag: `visite-${bien.id}`
-      }).catch((e: Error) => ({ envoyes: 0, echecs: 1, raisons: [e.message] }))
+      }).catch((e: Error) => ({ sent: 0, failed: 1, reasons: [e.message] }))
 
-      if (push.envoyes > 0) envoye = true
-      for (const r of push.raisons) if (!resume.raisons.includes(r)) resume.raisons.push(r)
+      if (push.sent > 0) envoye = true
+      for (const r of push.reasons) if (!resume.raisons.includes(r)) resume.raisons.push(r)
     }
 
     if (envoye) {

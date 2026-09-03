@@ -1,4 +1,4 @@
-import type { Bien, DPE, Preferences } from '~/types'
+import type { Property, DPE, Preferences } from '~/types'
 import { estAchat } from './useBiens'
 import { prixAuM2 } from './useMarche'
 
@@ -67,7 +67,7 @@ function clamp01(x: number): number {
   return Math.max(0, Math.min(1, x))
 }
 
-function pm2(b: Bien): number {
+function pm2(b: Property): number {
   return prixAuM2(b) ?? 0
 }
 
@@ -98,7 +98,7 @@ function repartir(prefs: Preferences): { prix: number; dpe: number; charges: num
   return { prix, dpe, charges: 100 - prix - dpe }
 }
 
-function criteres(bien: Bien, prefs: Preferences): Critere[] {
+function criteres(bien: Property, prefs: Preferences): Critere[] {
   const out: Critere[] = []
   const eur = (n: number) => n.toLocaleString('fr-FR')
 
@@ -138,8 +138,8 @@ function criteres(bien: Bien, prefs: Preferences): Critere[] {
 }
 
 export function scoreBien(
-  bien: Bien,
-  contexte: Bien[],
+  bien: Property,
+  contexte: Property[],
   prefs: Preferences = PREFERENCES_DEFAUT
 ): Score {
   const poids = repartir(prefs)

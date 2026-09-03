@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Recherche } from '~/types'
+import type { SavedSearch } from '~/types'
 
 const props = withDefaults(
   defineProps<{
@@ -11,7 +11,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  soumettre: [payload: Partial<Recherche>]
+  soumettre: [payload: Partial<SavedSearch>]
   annuler: []
 }>()
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 import {
   ASSURANCE_FIXE_AN,
   ASSURANCE_PAR_M2_AN,
@@ -17,7 +17,7 @@ import {
 } from '../app/composables/useCoutReel'
 import { PREFERENCES_DEFAUT } from '../app/composables/useScore'
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',
@@ -176,7 +176,7 @@ describe('mensualiteCredit', () => {
 })
 
 describe('coutReel — bien en achat', () => {
-  const achat = (over: Partial<Bien> = {}) =>
+  const achat = (over: Partial<Property> = {}) =>
     bien({ transaction: 'achat', prix: 20000000, charges: 15000, ...over })
 
   it('remplace le loyer par une mensualité estimée', () => {

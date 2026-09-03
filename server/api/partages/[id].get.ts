@@ -1,11 +1,11 @@
-import type { BienPartage, PartagePublic } from '~/types'
+import type { SharedProperty, PublicShare } from '~/types'
 import { partageExpire, SELECT_PUBLIC_BIEN } from '../../utils/partages'
 
 // Route publique : pas de requireUser. N'expose jamais `select('*')` sur
 // `biens` ici — seuls les champs de `SELECT_PUBLIC_BIEN` sont utiles à un
 // visiteur sans compte.
 
-export default defineEventHandler(async (event): Promise<PartagePublic> => {
+export default defineEventHandler(async (event): Promise<PublicShare> => {
   // Le fichier utilise le param `id` (et non `token`) car Nitro fusionne les
   // routes d'un même segment de chemin : `[id].delete.ts` dans ce même dossier
   // impose le nom de param `id` pour tout `/api/partages/:param`, quelle que
@@ -38,9 +38,9 @@ export default defineEventHandler(async (event): Promise<PartagePublic> => {
     console.error('[partages] lecture des biens échouée', linksError.message)
   }
 
-  const biens = ((liens ?? []) as unknown as { biens: BienPartage | null }[])
+  const biens = ((liens ?? []) as unknown as { biens: SharedProperty | null }[])
     .map((l) => l.biens)
-    .filter((b): b is BienPartage => b != null)
+    .filter((b): b is SharedProperty => b != null)
 
   return { titre: partage.titre, cree_le: partage.cree_le, biens }
 })

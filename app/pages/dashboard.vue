@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bien, Statut } from "~/types";
+import type { Property, Status } from "~/types";
 import type { Score } from "~/composables/useScore";
 import { STATUTS } from "~/composables/useBiens";
 
@@ -8,7 +8,7 @@ useHead({ title: "Mes biens — Hovly" });
 const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } =
   useBiens();
 
-const bienASupprimer = ref<Bien | null>(null);
+const bienASupprimer = ref<Property | null>(null);
 const suppressionEnCours = ref(false);
 const { annoncer: annoncerToast } = useToast();
 
@@ -43,7 +43,7 @@ const vue = ref<(typeof VUES)[number]["value"]>("liste");
 const selection = ref<string | null>(null);
 const bienSurvole = ref<string | null>(null);
 
-const filtreStatut = ref<Statut | "tous">("tous");
+const filtreStatut = ref<Status | "tous">("tous");
 const recherche = ref("");
 const triClef = ref<
   | "date"
@@ -63,11 +63,11 @@ const { calculer: coutDe } = useCoutReel();
 const { retenu: trajetDe, refresh: refreshTrajets } = useTrajets();
 useAsyncData("trajets-dashboard", () => refreshTrajets(), { server: false });
 
-const trajetSec = (b: Bien) =>
+const trajetSec = (b: Property) =>
   trajetDe(b.id)?.duree_s ?? Number.POSITIVE_INFINITY;
 
 const contexteScore = computed(() => representants(biens.value));
-const scoreDe = (b: Bien) =>
+const scoreDe = (b: Property) =>
   scoreBien(b, contexteScore.value, preferences.value);
 
 const groupesDoublons = computed(() =>
@@ -216,7 +216,7 @@ const stats = computed(() => {
   const locations = actifs.filter((b) => !estAchat(b));
   const groupe = locations.length ? locations : actifs;
   const prix = groupe.map(prixMensuel).filter((p) => p > 0);
-  const meilleur = actifs.reduce<{ score: Score; bien: Bien } | null>(
+  const meilleur = actifs.reduce<{ score: Score; bien: Property } | null>(
     (best, b) => {
       const score = scoreDe(b);
       return !best || score.total > best.score.total
@@ -240,7 +240,7 @@ const compteurs = computed(() => {
   const actifs = biens.value.filter((b) => b.actif);
   const parStatut = Object.fromEntries(
     STATUTS.map((s) => [s.value, 0])
-  ) as Record<Statut, number>;
+  ) as Record<Status, number>;
   for (const b of actifs) parStatut[b.statut]++;
   return { tous: actifs.length, ...parStatut };
 });
@@ -310,7 +310,7 @@ function toggleTri(clef: typeof triClef.value) {
               v-if="stats.prixMax"
               class="mt-1.5 text-2xl font-light tabular-nums"
             >
-              {{ formaterNombre(stats.prixMin) }} – {{ formaterNombre(stats.prixMax) }}
+              {{ formatNumber(stats.prixMin) }} – {{ formatNumber(stats.prixMax) }}
               <span class="text-base text-stone">€</span>
             </dd>
             <dd v-else class="mt-1.5 text-3xl font-light text-stone">—</dd>

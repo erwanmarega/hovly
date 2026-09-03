@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Ancre, ModeTrajet } from '~/types'
+import type { Anchor, TravelMode } from '~/types'
 
-const props = defineProps<{ ancres: Ancre[] }>()
-const emit = defineEmits<{ 'update:ancres': [ancres: Ancre[]] }>()
+const props = defineProps<{ ancres: Anchor[] }>()
+const emit = defineEmits<{ 'update:ancres': [ancres: Anchor[]] }>()
 
-const MODES: { value: ModeTrajet; label: string }[] = [
+const MODES: { value: TravelMode; label: string }[] = [
   { value: 'transport', label: 'Transports' },
   { value: 'voiture', label: 'Voiture' },
   { value: 'velo', label: 'Vélo' },
@@ -13,7 +13,7 @@ const MODES: { value: ModeTrajet; label: string }[] = [
 
 const label = ref('')
 const adresse = ref('')
-const mode = ref<ModeTrajet>('transport')
+const mode = ref<TravelMode>('transport')
 const maxMinutes = ref<number | null>(null)
 const recherche = ref(false)
 const erreur = ref('')
@@ -38,7 +38,7 @@ async function ajouter() {
       { method: 'POST', body: { adresse: adresse.value } }
     )
 
-    const ancre: Ancre = {
+    const ancre: Anchor = {
       id: `a${Date.now().toString(36)}`,
       label: label.value.trim() || loc.label.split(' ').slice(0, 3).join(' ') || 'Ancre',
       adresse: loc.label || adresse.value.trim(),
@@ -66,7 +66,7 @@ function retirer(id: string) {
   )
 }
 
-function changerMode(id: string, m: ModeTrajet) {
+function changerMode(id: string, m: TravelMode) {
   emit(
     'update:ancres',
     props.ancres.map((a) => (a.id === id ? { ...a, mode: m } : a))

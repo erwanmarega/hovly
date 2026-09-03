@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ResultatVeille } from '~/types'
+import type { WatchResult } from '~/types'
 
 const props = defineProps<{
-  resultat: ResultatVeille
+  resultat: WatchResult
   occupe?: boolean
 }>()
 
@@ -73,10 +73,10 @@ const quand = computed(() =>
         >
           <template #avant>
             <span
-              v-if="formaterPrix(resultat.prix)"
+              v-if="formatPrice(resultat.prix)"
               class="rounded-full bg-ink px-2 py-0.5 font-semibold tabular-nums text-white"
             >
-              {{ formaterPrix(resultat.prix) }}
+              {{ formatPrice(resultat.prix) }}
             </span>
           </template>
         </StatsBien>

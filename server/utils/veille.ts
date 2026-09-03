@@ -1,11 +1,11 @@
-import type { Bien, Recherche, ResultatVeille } from '~/types'
-import type { ResumeEnvois } from '~/types/check'
+import type { Property, SavedSearch, WatchResult } from '~/types'
+import type { SendSummary } from '~/types/check'
 import { similarite, SEUIL_DOUBLON } from '~/composables/useDoublons'
 import { scrapeListe, type AnnonceListe } from './scrape/liste'
 import { detecterSource } from './scrape/source'
-import { formaterPrix } from './prix'
-import { envoyerVeilleEmail } from './email'
-import { envoyerPush, pushDisponible } from './push'
+import { formatPrice } from './price'
+import { sendWatchEmail } from './email'
+import { sendPush, pushAvailable } from './push'
 
 export interface ResumeVeille {
   recherche_id: string
@@ -13,7 +13,7 @@ export interface ResumeVeille {
   trouvees: number
   filtrees: number
   connues: number
-  nouvelles: ResultatVeille[]
+  nouvelles: WatchResult[]
   erreur: string | null
 }
 
@@ -59,7 +59,7 @@ function assezDeSignal(a: AnnonceListe): boolean {
  * Un filtre ne s'applique qu'aux annonces dont on a extrait la valeur : une carte
  * illisible passe et sera filtrée à la main plutôt que perdue silencieusement.
  */
-export function correspond(a: AnnonceListe, r: Recherche): boolean {
+export function correspond(a: AnnonceListe, r: SavedSearch): boolean {
   if (r.prix_max != null && a.prix != null && a.prix > r.prix_max) return false
   if (r.prix_min != null && a.prix != null && a.prix < r.prix_min) return false
   if (r.surface_min != null && a.surface != null && a.surface < r.surface_min) return false
@@ -67,7 +67,7 @@ export function correspond(a: AnnonceListe, r: Recherche): boolean {
   return true
 }
 
-function commeBien(a: AnnonceListe): Bien {
+function commeBien(a: AnnonceListe): Property {
   return {
     id: `annonce:${a.url}`,
     url_source: a.url,
@@ -77,14 +77,14 @@ function commeBien(a: AnnonceListe): Bien {
     nb_pieces: a.nb_pieces ?? 0,
     ville: a.ville ?? '',
     code_postal: a.code_postal ?? ''
-  } as Bien
+  } as Property
 }
 
 /**
  * Écarte ce que l'utilisateur suit déjà : même URL, ou même logement reposté
  * ailleurs (multi-diffusion agence), détecté par `similarite`.
  */
-export function estConnu(a: AnnonceListe, biens: Bien[], urlsVues: Set<string>): boolean {
+export function estConnu(a: AnnonceListe, biens: Property[], urlsVues: Set<string>): boolean {
   if (urlsVues.has(a.url)) return true
   if (biens.some((b) => b.url_source === a.url)) return true
   if (!assezDeSignal(a)) return false
@@ -94,13 +94,13 @@ export function estConnu(a: AnnonceListe, biens: Bien[], urlsVues: Set<string>):
 }
 
 /** Backoff exponentiel : un site qui répond mal n'est pas martelé toutes les heures. */
-export function prochaineVerif(r: Recherche): number {
+export function prochaineVerif(r: SavedSearch): number {
   const base = Math.max(r.frequence_min, FREQUENCE_MIN_PLANCHER)
   const facteur = 2 ** Math.min(r.echecs_consecutifs, MAX_ECHECS_BACKOFF)
   return base * facteur
 }
 
-export function aVerifier(r: Recherche, maintenant = new Date()): boolean {
+export function aVerifier(r: SavedSearch, maintenant = new Date()): boolean {
   if (!r.active) return false
   if (!r.derniere_verif) return true
 
@@ -132,8 +132,8 @@ function ligne(a: AnnonceListe, rechercheId: string) {
  */
 export async function verifierRecherche(
   client: any,
-  recherche: Recherche,
-  biens: Bien[],
+  recherche: SavedSearch,
+  biens: Property[],
   maintenant = new Date()
 ): Promise<ResumeVeille> {
   const resume: ResumeVeille = {
@@ -191,7 +191,7 @@ export async function verifierRecherche(
       .select()
 
     if (error) resume.erreur = error.message
-    else resume.nouvelles = (data ?? []) as ResultatVeille[]
+    else resume.nouvelles = (data ?? []) as WatchResult[]
   }
 
   await client
@@ -226,9 +226,9 @@ export async function purgerResultatsTraites(client: any): Promise<number> {
   return data?.length ?? 0
 }
 
-export function resumeCourt(r: ResultatVeille): string {
+export function resumeCourt(r: WatchResult): string {
   return (
-    [formaterPrix(r.prix), r.surface ? `${r.surface} m²` : '', r.nb_pieces ? `T${r.nb_pieces}` : '']
+    [formatPrice(r.prix), r.surface ? `${r.surface} m²` : '', r.nb_pieces ? `T${r.nb_pieces}` : '']
       .filter(Boolean)
       .join(' · ') ||
     r.titre ||
@@ -242,30 +242,30 @@ export async function notifierVeille(
   userId: string,
   email: string | null,
   resume: ResumeVeille
-): Promise<ResumeEnvois> {
-  const envois: ResumeEnvois = { envoyes: 0, echecs: 0, raisons: [] }
-  if (!resume.nouvelles.length) return envois
+): Promise<SendSummary> {
+  const emails: SendSummary = { sent: 0, failed: 0, reasons: [] }
+  if (!resume.nouvelles.length) return emails
 
   const n = resume.nouvelles.length
 
-  if (pushDisponible()) {
-    const push = await envoyerPush(client, userId, {
+  if (pushAvailable()) {
+    const push = await sendPush(client, userId, {
       titre: n === 1 ? `Nouveau bien — ${resume.label}` : `${n} nouveaux biens — ${resume.label}`,
       corps: resume.nouvelles.slice(0, 3).map(resumeCourt).join(' | '),
       url: `/veilles?recherche=${resume.recherche_id}`,
       tag: `veille-${resume.recherche_id}`
-    }).catch((e: Error) => ({ envoyes: 0, echecs: 1, raisons: [e.message] }))
+    }).catch((e: Error) => ({ sent: 0, failed: 1, reasons: [e.message] }))
 
-    envois.envoyes += push.envoyes
-    envois.echecs += push.echecs
-    for (const r of push.raisons) if (!envois.raisons.includes(r)) envois.raisons.push(r)
+    emails.sent += push.sent
+    emails.failed += push.failed
+    for (const r of push.reasons) if (!emails.reasons.includes(r)) emails.reasons.push(r)
   }
 
-  const mail = await envoyerVeilleEmail(email, resume.label, resume.nouvelles).catch(
+  const mail = await sendWatchEmail(email, resume.label, resume.nouvelles).catch(
     (e: Error) => ({ envoye: false, raison: e.message })
   )
-  if (mail.envoye) envois.envoyes++
-  else if (mail.raison && !envois.raisons.includes(mail.raison)) envois.raisons.push(mail.raison)
+  if (mail.envoye) emails.sent++
+  else if (mail.raison && !emails.reasons.includes(mail.raison)) emails.reasons.push(mail.raison)
 
-  return envois
+  return emails
 }

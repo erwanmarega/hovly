@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
-const props = defineProps<{ bien: Bien }>()
+const props = defineProps<{ bien: Property }>()
 
 const { ancres, actif, calculable, disponible, calcul, erreur, pour, calculer, chargerEtat } =
   useTrajets()

@@ -7,10 +7,10 @@ import {
   TAUX_DEFAUT,
   mensualiteCredit
 } from '../app/composables/useCoutReel'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 
 let compteur = 0
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   compteur++
   return {
     id: `b${compteur}`,
@@ -46,7 +46,7 @@ function bien(over: Partial<Bien> = {}): Bien {
   }
 }
 
-const scores = (liste: Bien[]) => liste.map((b) => scoreBien(b, liste))
+const scores = (liste: Property[]) => liste.map((b) => scoreBien(b, liste))
 const ligne = (lignes: ReturnType<typeof comparer>, cle: string) =>
   lignes.find((l) => l.cle === cle)!
 

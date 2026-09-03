@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 import {
   CRITERES_VISITE,
   bilanVisite,
@@ -15,7 +15,7 @@ import {
 
 const MAINTENANT = new Date('2026-07-25T09:00:00')
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',

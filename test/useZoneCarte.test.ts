@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 
 const etats = new Map<string, { value: any }>()
 vi.stubGlobal('useState', (cle: string, init: () => any) => {
@@ -9,7 +9,7 @@ vi.stubGlobal('useState', (cle: string, init: () => any) => {
 
 const { distanceM, useZoneCarte } = await import('../app/composables/useZoneCarte')
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',

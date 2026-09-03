@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { Statut } from "~/types";
+import type { Status } from "~/types";
 import { STATUTS } from "~/composables/useBiens";
 
 const props = defineProps<{
-  statut: Statut;
+  statut: Status;
   versLeHaut?: boolean;
 }>();
 
-const emit = defineEmits<{ change: [statut: Statut] }>();
+const emit = defineEmits<{ change: [statut: Status] }>();
 
 const LARGEUR = 176; // w-44
 const MARGE = 8;
@@ -46,7 +46,7 @@ function fermer() {
   place.value = false;
 }
 
-function choisir(s: Statut) {
+function choisir(s: Status) {
   fermer();
   if (s !== props.statut) emit("change", s);
 }

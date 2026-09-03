@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
-const props = defineProps<{ bien: Bien }>()
+const props = defineProps<{ bien: Property }>()
 
 const { calculer } = useCoutReel()
 
 const cout = computed(() => calculer(props.bien))
-const eur = (centimes: number) => formaterNombre(Math.round(centimes / 100))
+const eur = (centimes: number) => formatNumber(Math.round(centimes / 100))
 
 const detailsOuverts = ref(false)
 

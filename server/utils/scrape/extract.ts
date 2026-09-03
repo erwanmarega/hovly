@@ -1,4 +1,4 @@
-import type { Bien, DPE } from '~/types'
+import type { Property, DPE } from '~/types'
 
 export interface LienCarte {
   href: string
@@ -257,7 +257,7 @@ export function piecesLeboncoin(attrs: Record<string, string>): number | null {
   return attrs.rooms ? parseInt(attrs.rooms, 10) : null
 }
 
-export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
+export function extraireLeboncoin(nextData: string | undefined): Partial<Property> {
   if (!nextData) return {}
   let ad: any
   try {
@@ -285,7 +285,7 @@ export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
   const dpeRaw = (label.energy_rate || val.energy_rate || '').toUpperCase()
   const dpe = DPE_VALIDES.includes(dpeRaw) ? (dpeRaw as DPE) : null
 
-  const out: Partial<Bien> = {
+  const out: Partial<Property> = {
     titre: (ad.subject || '').slice(0, 200) || null,
     prix,
     surface,
@@ -301,7 +301,7 @@ export function extraireLeboncoin(nextData: string | undefined): Partial<Bien> {
   return out
 }
 
-export function extraireOrpi(estateData: string | undefined): Partial<Bien> {
+export function extraireOrpi(estateData: string | undefined): Partial<Property> {
   if (!estateData) return {}
   let e: any
   try {
@@ -317,7 +317,7 @@ export function extraireOrpi(estateData: string | undefined): Partial<Bien> {
   const ville = e.city?.name || e.locationDescription || null
   const chargesEuros = typeof e.chargeReserve === 'number' ? e.chargeReserve : null
 
-  const out: Partial<Bien> = {
+  const out: Partial<Property> = {
     prix: typeof e.price === 'number' ? Math.round(e.price * 100) : undefined,
     charges: chargesEuros != null ? Math.round(chargesEuros * 100) : null,
     surface: typeof e.surface === 'number' ? Math.round(e.surface) : undefined,
@@ -340,9 +340,9 @@ function montantEuros(texte: string, motif: RegExp): number | null {
   return v == null ? null : Math.round(v)
 }
 
-export function extraireCentury21(data: PageData): Partial<Bien> {
+export function extraireCentury21(data: PageData): Partial<Property> {
   const txt = data.bodyText.replace(/\s+/g, ' ')
-  const out: Partial<Bien> = {}
+  const out: Partial<Property> = {}
 
   const loyer = montantEuros(txt, /Loyer de base\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
   if (loyer != null) {
@@ -390,7 +390,7 @@ export function extraireCentury21(data: PageData): Partial<Bien> {
   return out
 }
 
-export function extraire(data: PageData): Partial<Bien> {
+export function extraire(data: PageData): Partial<Property> {
   const node = trouverNoeudImmo(data.jsonLd)
   const flat = aplatirJsonLd(data.jsonLd)
   const txt = data.bodyText

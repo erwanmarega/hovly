@@ -26,7 +26,7 @@ const classePastille = computed(() =>
   <span v-if="surface" :class="classePastille">{{ surface }} m²</span>
   <span v-if="nbPieces" :class="classePastille">{{ nbPieces }} {{ piecesLabel }}</span>
   <span v-if="etage != null" :class="classePastille">Étage {{ etage }}</span>
-  <span v-if="prixM2 != null" :class="classePastille">{{ formaterNombre(prixM2) }} €/m²</span>
+  <span v-if="prixM2 != null" :class="classePastille">{{ formatNumber(prixM2) }} €/m²</span>
   <BadgeDPE v-if="dpe !== undefined" :dpe="dpe" />
   <slot />
 </template>

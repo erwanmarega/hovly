@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ModeTrajet } from '~/types'
+import type { TravelMode } from '~/types'
 
-defineProps<{ mode: ModeTrajet }>()
+defineProps<{ mode: TravelMode }>()
 </script>
 
 <template>

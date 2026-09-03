@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Alerte } from "~/types";
+import type { Alert } from "~/types";
 
 useHead({ title: "Alertes — Hovly" });
 
@@ -62,7 +62,7 @@ function cleJour(iso: string) {
 }
 
 const groupes = computed(() => {
-  const map = new Map<string, Alerte[]>();
+  const map = new Map<string, Alert[]>();
   for (const a of filtrees.value) {
     const cle = cleJour(a.envoyee_le);
     const liste = map.get(cle) ?? [];
@@ -79,18 +79,18 @@ async function lancerVerif() {
   try {
     const r = await verifierMaintenant();
     const base =
-      r.alertes.length > 0
-        ? `${r.baisses} baisse(s), ${r.supprimes} annonce(s) disparue(s) sur ${r.verifies} bien(s) vérifié(s).`
-        : `Aucun changement sur ${r.verifies} bien(s) vérifié(s).`;
-    const mails = r.envois?.echecs
-      ? ` ${r.envois.echecs} email(s) non envoyé(s) : ${r.envois.raisons.join(
+      r.alerts.length > 0
+        ? `${r.priceDrops} baisse(s), ${r.removed} annonce(s) disparue(s) sur ${r.checked} bien(s) vérifié(s).`
+        : `Aucun changement sur ${r.checked} bien(s) vérifié(s).`;
+    const mails = r.emails?.failed
+      ? ` ${r.emails.failed} email(s) non envoyé(s) : ${r.emails.reasons.join(
           ", "
         )}.`
-      : r.envois?.envoyes
-      ? ` ${r.envois.envoyes} email(s) envoyé(s).`
+      : r.emails?.sent
+      ? ` ${r.emails.sent} email(s) envoyé(s).`
       : "";
     checkMsg.value = base + mails;
-    checkErr.value = !!r.envois?.echecs || r.erreurs > 0;
+    checkErr.value = !!r.emails?.failed || r.errors > 0;
   } catch {
     checkErr.value = true;
     checkMsg.value =

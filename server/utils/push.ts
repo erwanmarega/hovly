@@ -1,40 +1,40 @@
 import webpush from 'web-push'
-import type { AlerteCreee, ResumeEnvois } from '~/types/check'
-import { formaterPrix } from './prix'
+import type { CreatedAlert, SendSummary } from '~/types/check'
+import { formatPrice } from './price'
 
-export interface AbonnementPush {
+export interface PushSubscription {
   id: string
   endpoint: string
   p256dh: string
   auth: string
 }
 
-export interface PayloadPush {
+export interface PushPayload {
   titre: string
   corps: string
   url: string
   tag?: string
 }
 
-let configure = false
+let configured = false
 
-export function pushDisponible(): boolean {
+export function pushAvailable(): boolean {
   const publique = process.env.VAPID_PUBLIC_KEY
   const privee = process.env.VAPID_PRIVATE_KEY
   if (!publique || !privee) return false
 
-  if (!configure) {
-    const sujet = process.env.VAPID_SUBJECT || 'mailto:contact@hovly.app'
-    webpush.setVapidDetails(sujet, publique, privee)
-    configure = true
+  if (!configured) {
+    const subject = process.env.VAPID_SUBJECT || 'mailto:contact@hovly.app'
+    webpush.setVapidDetails(subject, publique, privee)
+    configured = true
   }
   return true
 }
 
-export function payloadAlerte(alerte: AlerteCreee): PayloadPush {
+export function alertPayload(alerte: CreatedAlert): PushPayload {
   if (alerte.type === 'baisse_prix') {
-    const ancien = formaterPrix(alerte.ancien_prix)
-    const nouveau = formaterPrix(alerte.nouveau_prix)
+    const ancien = formatPrice(alerte.ancien_prix)
+    const nouveau = formatPrice(alerte.nouveau_prix)
     return {
       titre: `Baisse de prix — ${alerte.titre}`,
       corps: ancien && nouveau ? `${ancien} → ${nouveau}` : 'Le prix a baissé.',
@@ -51,16 +51,16 @@ export function payloadAlerte(alerte: AlerteCreee): PayloadPush {
   }
 }
 
-export async function envoyerPush(
+export async function sendPush(
   client: any,
   userId: string,
-  payload: PayloadPush
-): Promise<ResumeEnvois> {
-  const envois: ResumeEnvois = { envoyes: 0, echecs: 0, raisons: [] }
+  payload: PushPayload
+): Promise<SendSummary> {
+  const result: SendSummary = { sent: 0, failed: 0, reasons: [] }
 
-  if (!pushDisponible()) {
-    envois.raisons.push('clés VAPID absentes')
-    return envois
+  if (!pushAvailable()) {
+    result.reasons.push('clés VAPID absentes')
+    return result
   }
 
   const { data, error } = await client
@@ -69,27 +69,27 @@ export async function envoyerPush(
     .eq('user_id', userId)
 
   if (error) {
-    envois.echecs++
-    envois.raisons.push(error.message)
-    return envois
+    result.failed++
+    result.reasons.push(error.message)
+    return result
   }
 
-  const abonnements = (data ?? []) as AbonnementPush[]
-  const corps = JSON.stringify(payload)
+  const subscriptions = (data ?? []) as PushSubscription[]
+  const body = JSON.stringify(payload)
 
-  for (const a of abonnements) {
+  for (const a of subscriptions) {
     try {
       await webpush.sendNotification(
         { endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } },
-        corps,
+        body,
         { TTL: 60 * 60 * 24 }
       )
-      envois.envoyes++
+      result.sent++
     } catch (e: unknown) {
       const err = e as { statusCode?: number; body?: string; message?: string }
-      envois.echecs++
+      result.failed++
       const raison = `${err.statusCode ?? ''} ${err.body || err.message || 'erreur inconnue'}`.trim()
-      if (!envois.raisons.includes(raison)) envois.raisons.push(raison)
+      if (!result.reasons.includes(raison)) result.reasons.push(raison)
 
       if (err.statusCode === 404 || err.statusCode === 410) {
         await client.from('push_abonnements').delete().eq('id', a.id)
@@ -99,13 +99,13 @@ export async function envoyerPush(
     }
   }
 
-  return envois
+  return result
 }
 
-export async function envoyerAlertePush(
+export async function sendAlertPush(
   client: any,
   userId: string,
-  alerte: AlerteCreee
-): Promise<ResumeEnvois> {
-  return envoyerPush(client, userId, payloadAlerte(alerte))
+  alerte: CreatedAlert
+): Promise<SendSummary> {
+  return sendPush(client, userId, alertPayload(alerte))
 }

@@ -3,7 +3,7 @@
 // « sans garantie de disponibilité » : toute erreur renvoie simplement [],
 // l'appelant décide alors de ne rien afficher.
 
-import type { MarcheQuartier } from '~/types'
+import type { NeighborhoodMarket } from '~/types'
 
 export interface VenteMarche {
   prixM2: number
@@ -96,7 +96,7 @@ function percentile(tries: number[], p: number): number {
 }
 
 /** Statistiques sur les prix au m², ou null si l'échantillon est trop faible. */
-export function statistiquesMarche(ventes: VenteMarche[]): MarcheQuartier | null {
+export function statistiquesMarche(ventes: VenteMarche[]): NeighborhoodMarket | null {
   if (ventes.length < SEUIL_VENTES) return null
 
   const prix = ventes.map((v) => v.prixM2).sort((a, b) => a - b)

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { Bien, Recherche } from '../app/types'
+import type { Property, SavedSearch } from '../app/types'
 import type { AnnonceListe } from '../server/utils/scrape/liste'
 
 const scrapeListe = vi.fn()
@@ -7,8 +7,8 @@ const scrapeListe = vi.fn()
 vi.mock('../server/utils/scrape/liste', () => ({
   scrapeListe: (...a: any[]) => scrapeListe(...a)
 }))
-vi.mock('../server/utils/email', () => ({ envoyerVeilleEmail: vi.fn() }))
-vi.mock('../server/utils/push', () => ({ envoyerPush: vi.fn(), pushDisponible: () => false }))
+vi.mock('../server/utils/email', () => ({ sendWatchEmail: vi.fn() }))
+vi.mock('../server/utils/push', () => ({ sendPush: vi.fn(), pushAvailable: () => false }))
 
 const {
   correspond,
@@ -20,7 +20,7 @@ const {
   purgerResultatsTraites
 } = await import('../server/utils/veille')
 
-function recherche(over: Partial<Recherche> = {}): Recherche {
+function recherche(over: Partial<SavedSearch> = {}): SavedSearch {
   return {
     id: 'r1',
     user_id: 'u1',
@@ -55,7 +55,7 @@ function annonce(over: Partial<AnnonceListe> = {}): AnnonceListe {
   }
 }
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',
@@ -69,7 +69,7 @@ function bien(over: Partial<Bien> = {}): Bien {
     code_postal: '75011',
     created_at: '2026-07-01T10:00:00.000Z',
     ...over
-  } as Bien
+  } as Property
 }
 
 describe('correspond', () => {

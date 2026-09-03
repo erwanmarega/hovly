@@ -7,7 +7,7 @@ const utile = computed(() => ancres.value.length > 1)
 <template>
   <div v-if="utile" class="flex items-center gap-2">
     <label class="whitespace-nowrap text-xs font-medium text-stone" for="ancre-trajet">
-      Trajet
+      Commute
     </label>
     <select
       id="ancre-trajet"

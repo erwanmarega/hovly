@@ -1,4 +1,4 @@
-import type { ModeTrajet } from '~/types'
+import type { TravelMode } from '~/types'
 
 export interface Point {
   lat: number
@@ -10,7 +10,7 @@ export interface Duree {
   distance_m: number | null
 }
 
-const PROFILS_ORS: Record<Exclude<ModeTrajet, 'transport'>, string> = {
+const PROFILS_ORS: Record<Exclude<TravelMode, 'transport'>, string> = {
   voiture: 'driving-car',
   velo: 'cycling-regular',
   marche: 'foot-walking'
@@ -20,7 +20,7 @@ export const MAX_ORIGINES = 40
 
 export const CONCURRENCE_TRANSPORT = 2
 
-export function routageDisponible(mode?: ModeTrajet): boolean {
+export function routageDisponible(mode?: TravelMode): boolean {
   if (mode === 'transport') return true
   if (mode) return !!process.env.ORS_API_KEY
   return true
@@ -39,7 +39,7 @@ export function paquets<T>(liste: T[], taille = MAX_ORIGINES): T[][] {
 async function matriceOrs(
   origines: Point[],
   ancre: Point,
-  mode: Exclude<ModeTrajet, 'transport'>
+  mode: Exclude<TravelMode, 'transport'>
 ): Promise<Duree[]> {
   const cle = process.env.ORS_API_KEY
   if (!cle) throw createError({ statusCode: 503, statusMessage: 'ORS_API_KEY absente' })
@@ -162,7 +162,7 @@ async function itinerairesTransitous(origines: Point[], ancre: Point): Promise<D
 export async function dureesVersAncre(
   origines: Point[],
   ancre: Point,
-  mode: ModeTrajet
+  mode: TravelMode
 ): Promise<Duree[]> {
   if (origines.length === 0) return []
   if (mode === 'transport') return itinerairesTransitous(origines, ancre)

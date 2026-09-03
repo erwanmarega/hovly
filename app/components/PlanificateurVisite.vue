@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
-const props = defineProps<{ bien: Bien }>()
+const props = defineProps<{ bien: Property }>()
 
-const emit = defineEmits<{ maj: [patch: Partial<Bien>] }>()
+const emit = defineEmits<{ maj: [patch: Partial<Property>] }>()
 
 const { planifier } = useVisite()
 const { setStatut } = useBiens()

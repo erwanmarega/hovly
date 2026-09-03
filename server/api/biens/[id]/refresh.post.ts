@@ -1,9 +1,9 @@
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 import { scrapeUrl } from '../../../utils/scrape'
 import { geocoder } from '../../../utils/geocode'
-import { prixPlausible } from '../../../utils/check'
+import { isPricePlausible } from '../../../utils/check'
 import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
-import { PHOTO_PAR_DEFAUT } from '../../../utils/biens'
+import { DEFAULT_PHOTO } from '../../../utils/biens'
 
 const CHAMPS_RAFRAICHIS = [
   'titre',
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
   if (error || !bien) {
     throw createError({ statusCode: 404, statusMessage: 'Bien introuvable' })
   }
-  const actuel = bien as Bien
+  const actuel = bien as Property
 
   const { data: extrait, indisponible } = await scrapeUrl(actuel.url_source)
 
@@ -78,13 +78,13 @@ export default defineEventHandler(async (event) => {
   // photo après ce re-scrape : on l'applique maintenant plutôt que d'attendre
   // indéfiniment une image que le scraping ne trouvera peut-être jamais.
   if (!actuel.photos?.length && !maj.photos) {
-    maj.photos = [PHOTO_PAR_DEFAUT]
+    maj.photos = [DEFAULT_PHOTO]
     changements.push({ champ: 'photos', avant: actuel.photos, apres: maj.photos })
   }
 
   // Un re-scrape peut produire un prix aberrant : on le retire de la mise à
   // jour plutôt que d'écraser un prix correct (même garde-fou que le cron).
-  if (typeof maj.prix === 'number' && !prixPlausible(actuel.prix, maj.prix as number)) {
+  if (typeof maj.prix === 'number' && !isPricePlausible(actuel.prix, maj.prix as number)) {
     console.warn('[refresh] prix aberrant ignoré', { id, ancien: actuel.prix, nouveau: maj.prix })
     delete maj.prix
     const i = changements.findIndex((c) => c.champ === 'prix')

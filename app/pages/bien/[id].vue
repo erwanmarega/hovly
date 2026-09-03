@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bien, Statut } from "~/types";
+import type { Property, Status } from "~/types";
 import { STATUTS } from "~/composables/useBiens";
 
 const route = useRoute();
@@ -9,7 +9,7 @@ const {
   data: bien,
   pending,
   error,
-} = await useAsyncData(`bien-${id}`, () => $fetch<Bien>(`/api/biens/${id}`), {
+} = await useAsyncData(`bien-${id}`, () => $fetch<Property>(`/api/biens/${id}`), {
   server: false,
 });
 
@@ -123,12 +123,12 @@ const dateAjout = computed(() =>
     : ""
 );
 
-function patcher(patch: Partial<Bien>) {
+function patcher(patch: Partial<Property>) {
   if (bien.value) bien.value = { ...bien.value, ...patch };
 }
 
 const menuStatut = ref(false);
-async function setStatut(s: Statut) {
+async function setStatut(s: Status) {
   menuStatut.value = false;
   if (!bien.value) return;
   const prev = bien.value.statut;
@@ -209,7 +209,7 @@ async function rafraichir() {
     const r = await $fetch<{
       indisponible: boolean;
       changements: { champ: string; avant: unknown; apres: unknown }[];
-      bien: Bien;
+      bien: Property;
     }>(`/api/biens/${id}/refresh`, { method: "POST" });
 
     bien.value = r.bien;
@@ -406,7 +406,7 @@ async function confirmerSuppression() {
                 :alt="bien.titre"
                 class="aspect-[4/3] w-full"
                 :class="
-                  estPhotoParDefaut(bien.photos[photoActive])
+                  isDefaultPhoto(bien.photos[photoActive])
                     ? 'object-contain'
                     : 'object-cover'
                 "
@@ -516,7 +516,7 @@ async function confirmerSuppression() {
           <div class="flex min-w-0 flex-col gap-4 sm:gap-6 lg:col-span-2">
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <p class="text-3xl font-bold tracking-tight">
-                {{ formaterNombre(prixMensuel) }} €<span
+                {{ formatNumber(prixMensuel) }} €<span
                   v-if="bien.transaction !== 'achat'"
                   class="text-base font-medium text-stone"
                 >
@@ -527,19 +527,19 @@ async function confirmerSuppression() {
                 <div class="flex justify-between">
                   <span class="text-steel">Prix au m²</span>
                   <span class="font-semibold"
-                    >{{ formaterNombre(prixM2) }} €</span
+                    >{{ formatNumber(prixM2) }} €</span
                   >
                 </div>
                 <div v-if="marche" class="flex justify-between">
                   <span class="text-steel">Marché (DVF)</span>
                   <span class="font-semibold"
-                    >{{ formaterNombre(marche.mediane) }} €/m²</span
+                    >{{ formatNumber(marche.mediane) }} €/m²</span
                   >
                 </div>
                 <div v-if="charges" class="flex justify-between">
                   <span class="text-steel">Charges</span>
                   <span class="font-semibold"
-                    >{{ formaterNombre(charges) }} €</span
+                    >{{ formatNumber(charges) }} €</span
                   >
                 </div>
               </div>
@@ -551,7 +551,7 @@ async function confirmerSuppression() {
 
             <ScoreBreakdown v-if="score" :score="score" />
 
-            <MarcheQuartier :marche="marche" :prix-m2="prixM2 || null" />
+            <NeighborhoodMarket :marche="marche" :prix-m2="prixM2 || null" />
 
             <div
               v-if="doublons.length"
@@ -588,7 +588,7 @@ async function confirmerSuppression() {
                       }}</span>
                     </span>
                     <span class="shrink-0 text-sm font-semibold tabular-nums">
-                      {{ formaterNombre(Math.round(d.prix / 100)) }} €
+                      {{ formatNumber(Math.round(d.prix / 100)) }} €
                       <span
                         v-if="d.prix < bien.prix"
                         class="ml-1 rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold text-[#0a4a42]"

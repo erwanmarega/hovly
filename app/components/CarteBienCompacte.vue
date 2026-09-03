@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Bien, Statut } from "~/types";
+import type { Property, Status } from "~/types";
 import type { Score } from "~/composables/useScore";
 
 defineProps<{
-  bien: Bien;
+  bien: Property;
   score: Score;
   prixMensuel: number;
   prixM2: number;
@@ -15,7 +15,7 @@ defineProps<{
 const emit = defineEmits<{
   basculer: [id: string];
   supprimer: [id: string];
-  statut: [id: string, statut: Statut];
+  statut: [id: string, statut: Status];
 }>();
 </script>
 
@@ -39,7 +39,7 @@ const emit = defineEmits<{
           :src="bien.photos[0]"
           :alt="bien.titre"
           class="size-14 shrink-0 rounded-lg bg-surface"
-          :class="estPhotoParDefaut(bien.photos[0]) ? 'object-contain' : 'object-cover'"
+          :class="isDefaultPhoto(bien.photos[0]) ? 'object-contain' : 'object-cover'"
           loading="lazy"
         />
         <div v-else class="size-14 shrink-0 rounded-lg bg-surface" />
@@ -62,7 +62,7 @@ const emit = defineEmits<{
             >
           </p>
           <p class="mt-1 text-base font-semibold tabular-nums">
-            {{ formaterNombre(prixMensuel) }} €<span
+            {{ formatNumber(prixMensuel) }} €<span
               v-if="!estAchat(bien)"
               class="text-xs font-normal text-stone"
               >/mois</span

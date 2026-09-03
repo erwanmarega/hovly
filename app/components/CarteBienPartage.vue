@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { BienPartage } from "~/types";
+import type { SharedProperty } from "~/types";
 
-const props = defineProps<{ bien: BienPartage; token: string }>();
+const props = defineProps<{ bien: SharedProperty; token: string }>();
 
 const estAchatPartage = computed(() => estAchat(props.bien));
 </script>
@@ -14,7 +14,7 @@ const estAchatPartage = computed(() => estAchat(props.bien));
         :src="bien.photos[0]"
         :alt="bien.titre ?? ''"
         class="h-40 w-full bg-surface"
-        :class="estPhotoParDefaut(bien.photos[0]) ? 'object-contain' : 'object-cover'"
+        :class="isDefaultPhoto(bien.photos[0]) ? 'object-contain' : 'object-cover'"
         loading="lazy"
       />
       <div v-else class="grid h-40 w-full place-items-center bg-surface text-stone">
@@ -35,7 +35,7 @@ const estAchatPartage = computed(() => estAchat(props.bien));
 
       <p class="mt-2 text-lg font-semibold tabular-nums">
         <template v-if="bien.prix != null">
-          {{ formaterNombre(Math.round(bien.prix / 100)) }} €<span
+          {{ formatNumber(Math.round(bien.prix / 100)) }} €<span
             v-if="!estAchatPartage"
             class="text-xs font-normal text-stone"
             >/mois</span

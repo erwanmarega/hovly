@@ -1,11 +1,11 @@
-import type { ResultatVeille } from '~/types'
+import type { WatchResult } from '~/types'
 import { scrapeUrl } from '../../utils/scrape'
 import { detecterSource } from '../../utils/scrape/source'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 import { assertTailleCorps } from '../../utils/validation'
 
 /** Ce que la carte de résultat nous a déjà appris, si la fiche est illisible. */
-function depuisResultat(r: ResultatVeille) {
+function depuisResultat(r: WatchResult) {
   return {
     url_source: r.url,
     site_source: detecterSource(r.url),
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
   if (error || !resultat) {
     throw createError({ statusCode: 404, statusMessage: 'Résultat introuvable' })
   }
-  const r = resultat as ResultatVeille
+  const r = resultat as WatchResult
 
   if (etat === 'ignore') {
     const { data, error: errMaj } = await client

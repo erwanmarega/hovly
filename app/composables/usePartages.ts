@@ -1,15 +1,15 @@
-import type { Partage } from "~/types";
+import type { Share } from "~/types";
 
 export function usePartages() {
-  const partages = useState<Partage[]>("partages", () => []);
+  const partages = useState<Share[]>("partages", () => []);
 
   async function refresh() {
-    partages.value = await $fetch<Partage[]>("/api/partages");
+    partages.value = await $fetch<Share[]>("/api/partages");
     return partages.value;
   }
 
-  async function creer(bienIds: string[], titre?: string): Promise<Partage> {
-    const partage = await $fetch<Partage>("/api/partages", {
+  async function creer(bienIds: string[], titre?: string): Promise<Share> {
+    const partage = await $fetch<Share>("/api/partages", {
       method: "POST",
       body: { bien_ids: bienIds, titre },
     });

@@ -1,40 +1,40 @@
-export type Statut = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_coeur'
+export type Status = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_coeur'
 
 export type Transaction = 'location' | 'achat'
 
-export type TypeBien = 'maison' | 'appartement'
+export type PropertyType = 'maison' | 'appartement'
 
 // Au-delà de ce prix, une annonce sans transaction connue est traitée comme
 // une vente (repli utilisé par la détection au scraping et par la carte DVF).
-export const SEUIL_PRIX_VENTE_EUROS = 50_000
+export const SALE_PRICE_THRESHOLD_EUROS = 50_000
 
 // Photo de repli quand le scraping n'a trouvé aucune image. Partagé
 // client/serveur : le serveur l'écrit dans `photos`, le client compare
-// `photo === PHOTO_PAR_DEFAUT` pour l'afficher en entier (object-contain)
+// `photo === DEFAULT_PHOTO` pour l'afficher en entier (object-contain)
 // plutôt qu'en cover comme une vraie photo.
-export const PHOTO_PAR_DEFAUT = '/Icon_no_photo.svg'
+export const DEFAULT_PHOTO = '/Icon_no_photo.svg'
 
 export type DPE = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
 
 export type GeoPrecision = 'exacte' | 'rue' | 'ville'
 
-export type ModeTrajet = 'voiture' | 'velo' | 'marche' | 'transport'
+export type TravelMode = 'voiture' | 'velo' | 'marche' | 'transport'
 
-export interface Ancre {
+export interface Anchor {
   id: string
   label: string
   adresse: string
   lat: number
   lon: number
-  mode: ModeTrajet
+  mode: TravelMode
   maxMinutes: number | null
 }
 
-export interface Trajet {
+export interface Commute {
   id: string
   bien_id: string
   ancre: string
-  mode: ModeTrajet
+  mode: TravelMode
   ancre_lat: number
   ancre_lon: number
   duree_s: number | null
@@ -56,7 +56,7 @@ export interface Preferences {
   apport: number | null
   tauxEmprunt: number | null // % annuel (ex. 3,5)
   dureeEmpruntAns: number | null
-  ancres: Ancre[]
+  ancres: Anchor[]
 }
 
 export type SiteSource =
@@ -68,14 +68,14 @@ export type SiteSource =
   | 'century21'
   | 'orpi'
 
-export type AvisVisite = 'bon' | 'moyen' | 'mauvais'
+export type VisitRating = 'bon' | 'moyen' | 'mauvais'
 
 export interface Checklist {
-  notes: Record<string, AvisVisite>
+  notes: Record<string, VisitRating>
   questions: string[]
 }
 
-export interface Bien {
+export interface Property {
   id: string
   user_id: string
   url_source: string
@@ -96,9 +96,9 @@ export interface Bien {
   geocode_le: string | null
   photos: string[]
   description: string | null
-  statut: Statut
+  statut: Status
   transaction: Transaction
-  type_bien: TypeBien | null
+  type_bien: PropertyType | null
   note_perso: string | null
   visite_le: string | null
   compte_rendu: string | null
@@ -108,9 +108,9 @@ export interface Bien {
   created_at: string
 }
 
-export type EtatResultat = 'nouveau' | 'garde' | 'ignore'
+export type ResultState = 'nouveau' | 'garde' | 'ignore'
 
-export interface Recherche {
+export interface SavedSearch {
   id: string
   user_id: string
   label: string
@@ -129,7 +129,7 @@ export interface Recherche {
   nouveaux?: number
 }
 
-export interface ResultatVeille {
+export interface WatchResult {
   id: string
   recherche_id: string
   url: string
@@ -140,12 +140,12 @@ export interface ResultatVeille {
   photo: string | null
   ville: string | null
   code_postal: string | null
-  etat: EtatResultat
+  etat: ResultState
   bien_id: string | null
   trouve_le: string
 }
 
-export interface MarcheQuartier {
+export interface NeighborhoodMarket {
   mediane: number // €/m² médian des ventes comparables
   q1: number
   q3: number
@@ -158,7 +158,7 @@ export interface MarcheQuartier {
   maj: string // statistiques calculées le
 }
 
-export interface Partage {
+export interface Share {
   id: string
   user_id: string
   token: string
@@ -168,9 +168,9 @@ export interface Partage {
   nb_biens: number
 }
 
-/** Champs d'un bien exposés sur la page de partage publique — jamais `Bien` en entier. */
-export type BienPartage = Pick<
-  Bien,
+/** Champs d'un bien exposés sur la page de partage publique — jamais `Property` en entier. */
+export type SharedProperty = Pick<
+  Property,
   | 'id'
   | 'titre'
   | 'prix'
@@ -187,21 +187,21 @@ export type BienPartage = Pick<
   | 'transaction'
 >
 
-export interface PartagePublic {
+export interface PublicShare {
   titre: string | null
   cree_le: string
-  biens: BienPartage[]
+  biens: SharedProperty[]
 }
 
-export type TypeAlerte = 'baisse_prix' | 'annonce_supprimee'
+export type AlertType = 'baisse_prix' | 'annonce_supprimee'
 
-export interface Alerte {
+export interface Alert {
   id: string
   bien_id: string
-  type: TypeAlerte
+  type: AlertType
   ancien_prix: number | null
   nouveau_prix: number | null
   envoyee_le: string
   vue: boolean
-  biens?: Pick<Bien, 'titre' | 'ville' | 'photos'> | null
+  biens?: Pick<Property, 'titre' | 'ville' | 'photos'> | null
 }

@@ -7,12 +7,12 @@ import type {
   LeafletMouseEvent,
   Map as LeafletMap,
 } from "leaflet";
-import type { Bien } from "~/types";
+import type { Property } from "~/types";
 import type { ZoneCarte } from "~/composables/useZoneCarte";
 
 const props = withDefaults(
   defineProps<{
-    biens: Bien[];
+    biens: Property[];
     selection?: string | null;
     survole?: string | null;
     hauteur?: string;
@@ -83,11 +83,11 @@ function echapper(s: string): string {
   );
 }
 
-function popup(b: Bien): string {
+function popup(b: Property): string {
   const prix = b.prix
-    ? `${formaterNombre(Math.round(b.prix / 100))} €${estAchat(b) ? "" : "/mois"}`
+    ? `${formatNumber(Math.round(b.prix / 100))} €${estAchat(b) ? "" : "/mois"}`
     : "Prix inconnu";
-  const m2 = prixAuM2(b) ? ` · ${formaterNombre(prixAuM2(b)!)} €/m²` : "";
+  const m2 = prixAuM2(b) ? ` · ${formatNumber(prixAuM2(b)!)} €/m²` : "";
   const approx =
     b.geo_precision === "ville"
       ? '<div class="mt-1 text-stone">Position approximative</div>'

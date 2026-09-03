@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 
 useHead({ title: 'Comparer — Hovly' })
 
@@ -36,7 +36,7 @@ function fermerPartage() {
 const choisis = computed(() =>
   selection.value
     .map((id) => biens.value.find((b) => b.id === id))
-    .filter((b): b is Bien => Boolean(b))
+    .filter((b): b is Property => Boolean(b))
 )
 
 const contexte = computed(() => representants(biens.value))
@@ -222,7 +222,7 @@ const sourceLabels: Record<string, string> = {
                         :alt="b.titre"
                         loading="lazy"
                         class="aspect-[4/3] w-full rounded-xl bg-surface"
-                        :class="estPhotoParDefaut(b.photos[0]) ? 'object-contain' : 'object-cover'"
+                        :class="isDefaultPhoto(b.photos[0]) ? 'object-contain' : 'object-cover'"
                       >
                       <div
                         v-else

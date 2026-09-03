@@ -1,7 +1,7 @@
-import type { Bien, Statut, SiteSource } from '~/types'
+import type { Property, Status, SiteSource } from '~/types'
 import { prixAuM2 } from './useMarche'
 
-export const STATUTS: { value: Statut; label: string }[] = [
+export const STATUTS: { value: Status; label: string }[] = [
   { value: 'a_visiter', label: 'À visiter' },
   { value: 'planifie', label: 'Visite planifiée' },
   { value: 'visite', label: 'Visité' },
@@ -9,27 +9,27 @@ export const STATUTS: { value: Statut; label: string }[] = [
   { value: 'elimine', label: 'Éliminé' }
 ]
 
-export function estAchat(b: Pick<Bien, 'transaction'>): boolean {
+export function estAchat(b: Pick<Property, 'transaction'>): boolean {
   return b.transaction === 'achat'
 }
 
 export function useBiens() {
-  const biens = useState<Bien[]>('biens', () => [])
+  const biens = useState<Property[]>('biens', () => [])
 
-  function prixMensuel(b: Bien): number {
+  function prixMensuel(b: Property): number {
     return Math.round(b.prix / 100)
   }
 
-  function prixM2(b: Bien): number {
+  function prixM2(b: Property): number {
     return prixAuM2(b) ?? 0
   }
 
   async function refresh() {
-    biens.value = await $fetch<Bien[]>('/api/biens')
+    biens.value = await $fetch<Property[]>('/api/biens')
   }
 
-  async function ajouter(payload: Partial<Bien>): Promise<Bien> {
-    const row = await $fetch<Bien>('/api/biens', {
+  async function ajouter(payload: Partial<Property>): Promise<Property> {
+    const row = await $fetch<Property>('/api/biens', {
       method: 'POST',
       body: payload
     })
@@ -37,7 +37,7 @@ export function useBiens() {
     return row
   }
 
-  async function setStatut(id: string, statut: Statut) {
+  async function setStatut(id: string, statut: Status) {
     const b = biens.value.find((x) => x.id === id)
     const prev = b?.statut
     if (b) b.statut = statut
@@ -48,7 +48,7 @@ export function useBiens() {
     }
   }
 
-  async function mettreAJour(id: string, patch: Partial<Bien>) {
+  async function mettreAJour(id: string, patch: Partial<Property>) {
     const b = biens.value.find((x) => x.id === id)
     const avant = b ? { ...b } : null
     if (b) Object.assign(b, patch)

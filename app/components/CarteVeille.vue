@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Recherche } from '~/types'
+import type { SavedSearch } from '~/types'
 
 const props = defineProps<{
-  recherche: Recherche
+  recherche: SavedSearch
   ouverte?: boolean
   scanEnCours?: boolean
 }>()
@@ -18,11 +18,11 @@ const criteres = computed(() => {
   const r = props.recherche
   return [
     r.prix_min && r.prix_max
-      ? `${formaterPrix(r.prix_min)}–${formaterPrix(r.prix_max)}`
+      ? `${formatPrice(r.prix_min)}–${formatPrice(r.prix_max)}`
       : r.prix_max
-        ? `≤ ${formaterPrix(r.prix_max)}`
+        ? `≤ ${formatPrice(r.prix_max)}`
         : r.prix_min
-          ? `≥ ${formaterPrix(r.prix_min)}`
+          ? `≥ ${formatPrice(r.prix_min)}`
           : '',
     r.surface_min ? `≥ ${r.surface_min} m²` : '',
     r.pieces_min ? `≥ ${r.pieces_min} p` : ''

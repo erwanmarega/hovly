@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Ancre, Trajet } from '../app/types'
+import type { Anchor, Commute } from '../app/types'
 import {
   cleTrajet,
   formatDistance,
@@ -17,7 +17,7 @@ import {
   prochainMardi8h30
 } from '../server/utils/routage'
 
-function ancre(over: Partial<Ancre> = {}): Ancre {
+function ancre(over: Partial<Anchor> = {}): Anchor {
   return {
     id: 'boulot',
     label: 'Boulot',
@@ -30,7 +30,7 @@ function ancre(over: Partial<Ancre> = {}): Ancre {
   }
 }
 
-function trajet(over: Partial<Trajet> = {}): Trajet {
+function trajet(over: Partial<Commute> = {}): Commute {
   return {
     id: 't1',
     bien_id: 'b1',

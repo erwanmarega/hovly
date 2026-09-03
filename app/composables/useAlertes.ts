@@ -1,13 +1,13 @@
-import type { Alerte } from '~/types'
-import type { CheckResume } from '~/types/check'
+import type { Alert } from '~/types'
+import type { CheckSummary } from '~/types/check'
 
 export function useAlertes() {
-  const alertes = useState<Alerte[]>('alertes', () => [])
+  const alertes = useState<Alert[]>('alertes', () => [])
 
   const nonVues = computed(() => alertes.value.filter((a) => !a.vue).length)
 
   async function refresh() {
-    alertes.value = await $fetch<Alerte[]>('/api/alertes')
+    alertes.value = await $fetch<Alert[]>('/api/alertes')
   }
 
   async function marquerLues() {
@@ -25,8 +25,8 @@ export function useAlertes() {
     })
   }
 
-  async function verifierMaintenant(): Promise<CheckResume> {
-    const resume = await $fetch<CheckResume>('/api/check', { method: 'POST' })
+  async function verifierMaintenant(): Promise<CheckSummary> {
+    const resume = await $fetch<CheckSummary>('/api/check', { method: 'POST' })
     await refresh()
     return resume
   }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Ancre, DPE, Preferences } from '~/types'
+import type { Anchor, DPE, Preferences } from '~/types'
 
 useHead({ title: 'Mon profil — Hovly' })
 
@@ -170,7 +170,7 @@ async function enregistrerPrefs() {
   annoncerToast(ok ? 'Critères enregistrés.' : 'Erreur. Réessaie.', ok ? 'succes' : 'erreur')
 }
 
-async function majAncres(ancres: Ancre[]) {
+async function majAncres(ancres: Anchor[]) {
   brouillon.ancres = ancres
   const ok = await enregistrer({ ...brouillon })
   annoncerToast(

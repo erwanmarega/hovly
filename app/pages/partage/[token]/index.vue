@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PartagePublic } from "~/types";
+import type { PublicShare } from "~/types";
 
 const route = useRoute();
 const token = route.params.token as string;
@@ -10,7 +10,7 @@ const {
   error,
 } = await useAsyncData(
   `partage-${token}`,
-  () => $fetch<PartagePublic>(`/api/partages/${token}`),
+  () => $fetch<PublicShare>(`/api/partages/${token}`),
   {
     server: false,
   }

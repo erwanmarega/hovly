@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 
 const scrapeUrl = vi.fn()
-const envoyerAlerteEmail = vi.fn()
+const sendAlertEmail = vi.fn()
 
 vi.mock('../server/utils/scrape', () => ({ scrapeUrl: (...a: any[]) => scrapeUrl(...a) }))
 vi.mock('../server/utils/email', () => ({
-  envoyerAlerteEmail: (...a: any[]) => envoyerAlerteEmail(...a)
+  sendAlertEmail: (...a: any[]) => sendAlertEmail(...a)
 }))
 
-const { verifierBiens, notifier } = await import('../server/utils/check')
+const { checkProperties, notify } = await import('../server/utils/check')
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',
@@ -71,18 +71,18 @@ function fakeClient() {
 
 beforeEach(() => {
   scrapeUrl.mockReset()
-  envoyerAlerteEmail.mockReset()
+  sendAlertEmail.mockReset()
 })
 
-describe('verifierBiens', () => {
+describe('checkProperties', () => {
   it('enregistre une baisse de prix : historique, alerte, mise à jour', async () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 90000 } })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, baisses: 1, supprimes: 0, erreurs: 0 })
-    expect(resume.alertes).toEqual([
+    expect(summary).toMatchObject({ checked: 1, priceDrops: 1, removed: 0, errors: 0 })
+    expect(summary.alerts).toEqual([
       {
         bien_id: 'b1',
         type: 'baisse_prix',
@@ -106,10 +106,10 @@ describe('verifierBiens', () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 120000 } })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, baisses: 0 })
-    expect(resume.alertes).toEqual([])
+    expect(summary).toMatchObject({ checked: 1, priceDrops: 0 })
+    expect(summary.alerts).toEqual([])
     expect(calls.filter((c) => c.table === 'alertes')).toEqual([])
     expect(calls).toContainEqual({
       table: 'biens',
@@ -123,9 +123,9 @@ describe('verifierBiens', () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 100000 } })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
+    expect(summary).toMatchObject({ checked: 1, priceDrops: 0, errors: 0 })
     expect(calls).toEqual([])
   })
 
@@ -133,10 +133,10 @@ describe('verifierBiens', () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 97199900 } })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
-    expect(resume.alertes).toEqual([])
+    expect(summary).toMatchObject({ checked: 1, priceDrops: 0, errors: 0 })
+    expect(summary.alerts).toEqual([])
     expect(calls).toEqual([])
   })
 
@@ -144,9 +144,9 @@ describe('verifierBiens', () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: { prix: 30000 } })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
+    expect(summary).toMatchObject({ checked: 1, priceDrops: 0, errors: 0 })
     expect(calls).toEqual([])
   })
 
@@ -154,10 +154,10 @@ describe('verifierBiens', () => {
     scrapeUrl.mockResolvedValue({ indisponible: true, data: {} })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, supprimes: 1, baisses: 0 })
-    expect(resume.alertes[0]).toMatchObject({ type: 'annonce_supprimee', nouveau_prix: null })
+    expect(summary).toMatchObject({ checked: 1, removed: 1, priceDrops: 0 })
+    expect(summary.alerts[0]).toMatchObject({ type: 'annonce_supprimee', nouveau_prix: null })
     expect(calls).toEqual([
       { table: 'biens', op: 'update', row: { actif: false }, eq: ['id', 'b1'] },
       {
@@ -177,9 +177,9 @@ describe('verifierBiens', () => {
     scrapeUrl.mockRejectedValue(new Error('timeout'))
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 0, erreurs: 1 })
+    expect(summary).toMatchObject({ checked: 0, errors: 1 })
     expect(calls).toEqual([])
   })
 
@@ -187,9 +187,9 @@ describe('verifierBiens', () => {
     scrapeUrl.mockResolvedValue({ indisponible: false, data: {} })
     const { client, calls } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien()])
+    const summary = await checkProperties(client, [bien()])
 
-    expect(resume).toMatchObject({ verifies: 1, baisses: 0, erreurs: 0 })
+    expect(summary).toMatchObject({ checked: 1, priceDrops: 0, errors: 0 })
     expect(calls).toEqual([])
   })
 
@@ -199,31 +199,31 @@ describe('verifierBiens', () => {
       .mockResolvedValueOnce({ indisponible: false, data: { prix: 80000 } })
     const { client } = fakeClient()
 
-    const resume = await verifierBiens(client, [bien({ id: 'ko' }), bien({ id: 'ok' })])
+    const summary = await checkProperties(client, [bien({ id: 'ko' }), bien({ id: 'ok' })])
 
-    expect(resume).toMatchObject({ verifies: 1, erreurs: 1, baisses: 1 })
-    expect(resume.alertes.map((a) => a.bien_id)).toEqual(['ok'])
+    expect(summary).toMatchObject({ checked: 1, errors: 1, priceDrops: 1 })
+    expect(summary.alerts.map((a) => a.bien_id)).toEqual(['ok'])
   })
 
   it('retourne un résumé vide sans bien', async () => {
     const { client } = fakeClient()
-    expect(await verifierBiens(client, [])).toEqual({
-      verifies: 0,
-      baisses: 0,
-      supprimes: 0,
-      erreurs: 0,
-      alertes: []
+    expect(await checkProperties(client, [])).toEqual({
+      checked: 0,
+      priceDrops: 0,
+      removed: 0,
+      errors: 0,
+      alerts: []
     })
   })
 })
 
-describe('notifier', () => {
-  const resume = {
-    verifies: 1,
-    baisses: 1,
-    supprimes: 0,
-    erreurs: 0,
-    alertes: [
+describe('notify', () => {
+  const summary = {
+    checked: 1,
+    priceDrops: 1,
+    removed: 0,
+    errors: 0,
+    alerts: [
       {
         bien_id: 'b1',
         type: 'baisse_prix' as const,
@@ -242,56 +242,56 @@ describe('notifier', () => {
   }
 
   it('envoie un email par alerte et compte les envois', async () => {
-    envoyerAlerteEmail.mockResolvedValue({ envoye: true })
-    const envois = await notifier('a@b.fr', resume)
+    sendAlertEmail.mockResolvedValue({ envoye: true })
+    const emails = await notify('a@b.fr', summary)
 
-    expect(envoyerAlerteEmail).toHaveBeenCalledTimes(2)
-    expect(envoyerAlerteEmail).toHaveBeenNthCalledWith(1, 'a@b.fr', resume.alertes[0])
-    expect(envoyerAlerteEmail).toHaveBeenNthCalledWith(2, 'a@b.fr', resume.alertes[1])
-    expect(envois).toEqual({ envoyes: 2, echecs: 0, raisons: [] })
+    expect(sendAlertEmail).toHaveBeenCalledTimes(2)
+    expect(sendAlertEmail).toHaveBeenNthCalledWith(1, 'a@b.fr', summary.alerts[0])
+    expect(sendAlertEmail).toHaveBeenNthCalledWith(2, 'a@b.fr', summary.alerts[1])
+    expect(emails).toEqual({ sent: 2, failed: 0, reasons: [] })
   })
 
   it('compte un échec quand il n’y a pas d’adresse email', async () => {
-    const envois = await notifier(null, resume)
-    expect(envoyerAlerteEmail).not.toHaveBeenCalled()
-    expect(envois).toEqual({ envoyes: 0, echecs: 2, raisons: ['aucune adresse email'] })
+    const emails = await notify(null, summary)
+    expect(sendAlertEmail).not.toHaveBeenCalled()
+    expect(emails).toEqual({ sent: 0, failed: 2, reasons: ['aucune adresse email'] })
   })
 
   it('n’envoie rien sans alerte', async () => {
-    const envois = await notifier('a@b.fr', { ...resume, alertes: [] })
-    expect(envoyerAlerteEmail).not.toHaveBeenCalled()
-    expect(envois).toEqual({ envoyes: 0, echecs: 0, raisons: [] })
+    const emails = await notify('a@b.fr', { ...summary, alerts: [] })
+    expect(sendAlertEmail).not.toHaveBeenCalled()
+    expect(emails).toEqual({ sent: 0, failed: 0, reasons: [] })
   })
 
   it('remonte la raison d’un refus sans lever', async () => {
-    envoyerAlerteEmail.mockResolvedValue({ envoye: false, raison: '403 domain not verified' })
-    const envois = await notifier('a@b.fr', resume)
+    sendAlertEmail.mockResolvedValue({ envoye: false, raison: '403 domain not verified' })
+    const emails = await notify('a@b.fr', summary)
 
-    expect(envois.envoyes).toBe(0)
-    expect(envois.echecs).toBe(2)
-    expect(envois.raisons).toEqual(['403 domain not verified'])
+    expect(emails.sent).toBe(0)
+    expect(emails.failed).toBe(2)
+    expect(emails.reasons).toEqual(['403 domain not verified'])
   })
 
   it('capture une exception d’envoi sans interrompre la boucle', async () => {
-    envoyerAlerteEmail
+    sendAlertEmail
       .mockImplementationOnce(() => Promise.reject(new Error('smtp down')))
       .mockResolvedValueOnce({ envoye: true })
 
-    const envois = await notifier('a@b.fr', resume)
+    const emails = await notify('a@b.fr', summary)
 
-    expect(envoyerAlerteEmail).toHaveBeenCalledTimes(2)
-    expect(envois).toMatchObject({ envoyes: 1, echecs: 1, raisons: ['smtp down'] })
+    expect(sendAlertEmail).toHaveBeenCalledTimes(2)
+    expect(emails).toMatchObject({ sent: 1, failed: 1, reasons: ['smtp down'] })
   })
 
   it('mélange succès et échecs', async () => {
-    envoyerAlerteEmail
+    sendAlertEmail
       .mockResolvedValueOnce({ envoye: true })
       .mockResolvedValueOnce({ envoye: false, raison: 'rate limited' })
 
-    expect(await notifier('a@b.fr', resume)).toEqual({
-      envoyes: 1,
-      echecs: 1,
-      raisons: ['rate limited']
+    expect(await notify('a@b.fr', summary)).toEqual({
+      sent: 1,
+      failed: 1,
+      reasons: ['rate limited']
     })
   })
 })

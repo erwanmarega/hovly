@@ -1,4 +1,4 @@
-import type { Bien } from "~/types";
+import type { Property } from "~/types";
 
 export interface ZoneCarte {
   lat: number;
@@ -25,7 +25,7 @@ export function distanceM(
 export function useZoneCarte() {
   const zone = useState<ZoneCarte | null>("zone-carte", () => null);
 
-  function dansZone(bien: Bien): boolean {
+  function dansZone(bien: Property): boolean {
     if (!zone.value || bien.lat == null || bien.lon == null) return !zone.value;
     return distanceM(zone.value, { lat: bien.lat, lon: bien.lon }) <= zone.value.rayonM;
   }

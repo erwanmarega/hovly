@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AlerteCreee } from '../app/types/check'
+import type { CreatedAlert } from '../app/types/check'
 
 const sendNotification = vi.fn()
 const setVapidDetails = vi.fn()
@@ -11,7 +11,7 @@ vi.mock('web-push', () => ({
   }
 }))
 
-const { payloadAlerte, envoyerPush, pushDisponible } = await import('../server/utils/push')
+const { alertPayload, sendPush, pushAvailable } = await import('../server/utils/push')
 
 interface Op {
   op: 'select' | 'delete' | 'update'
@@ -70,7 +70,7 @@ const abonnement = (id: string) => ({
   auth: 'secret'
 })
 
-const alerte = (over: Partial<AlerteCreee> = {}): AlerteCreee => ({
+const alerte = (over: Partial<CreatedAlert> = {}): CreatedAlert => ({
   bien_id: 'b1',
   type: 'baisse_prix',
   ancien_prix: 100000,
@@ -87,9 +87,9 @@ beforeEach(() => {
   process.env.VAPID_PRIVATE_KEY = 'privee'
 })
 
-describe('payloadAlerte', () => {
+describe('alertPayload', () => {
   it('affiche l’ancien et le nouveau prix en euros pour une baisse', () => {
-    const p = payloadAlerte(alerte())
+    const p = alertPayload(alerte())
     expect(p.titre).toContain('T2 lumineux')
     expect(p.corps.replace(/\s/g, ' ')).toBe('1 000 € → 920 €')
     expect(p.url).toBe('/bien/b1')
@@ -97,37 +97,37 @@ describe('payloadAlerte', () => {
   })
 
   it('reste lisible si un prix manque', () => {
-    const p = payloadAlerte(alerte({ nouveau_prix: null }))
+    const p = alertPayload(alerte({ nouveau_prix: null }))
     expect(p.corps).toBe('Le prix a baissé.')
   })
 
   it('gère une annonce supprimée', () => {
-    const p = payloadAlerte(alerte({ type: 'annonce_supprimee', nouveau_prix: null }))
+    const p = alertPayload(alerte({ type: 'annonce_supprimee', nouveau_prix: null }))
     expect(p.titre).toContain('Annonce supprimée')
     expect(p.url).toBe('/bien/b1')
   })
 })
 
-describe('pushDisponible', () => {
+describe('pushAvailable', () => {
   it('est faux sans clés VAPID', () => {
     delete process.env.VAPID_PUBLIC_KEY
-    expect(pushDisponible()).toBe(false)
+    expect(pushAvailable()).toBe(false)
   })
 
   it('est vrai avec les clés', () => {
-    expect(pushDisponible()).toBe(true)
+    expect(pushAvailable()).toBe(true)
   })
 })
 
-describe('envoyerPush', () => {
+describe('sendPush', () => {
   const payload = { titre: 'T', corps: 'C', url: '/alertes' }
 
   it('envoie à chaque appareil de l’utilisateur', async () => {
     const { client, ops } = fakeClient([abonnement('a1'), abonnement('a2')])
 
-    const res = await envoyerPush(client, 'u1', payload)
+    const res = await sendPush(client, 'u1', payload)
 
-    expect(res).toEqual({ envoyes: 2, echecs: 0, raisons: [] })
+    expect(res).toEqual({ sent: 2, failed: 0, reasons: [] })
     expect(sendNotification).toHaveBeenCalledTimes(2)
     expect(sendNotification.mock.calls[0]![0]).toEqual({
       endpoint: 'https://push.example/a1',
@@ -141,10 +141,10 @@ describe('envoyerPush', () => {
     const { client, ops } = fakeClient([abonnement('a1')])
     sendNotification.mockRejectedValue({ statusCode: 410, body: 'gone' })
 
-    const res = await envoyerPush(client, 'u1', payload)
+    const res = await sendPush(client, 'u1', payload)
 
-    expect(res.envoyes).toBe(0)
-    expect(res.echecs).toBe(1)
+    expect(res.sent).toBe(0)
+    expect(res.failed).toBe(1)
     const suppression = ops.find((o) => o.op === 'delete')
     expect(suppression?.eq).toEqual([['id', 'a1']])
   })
@@ -153,9 +153,9 @@ describe('envoyerPush', () => {
     const { client, ops } = fakeClient([abonnement('a1')])
     sendNotification.mockRejectedValue({ statusCode: 500, body: 'boom' })
 
-    const res = await envoyerPush(client, 'u1', payload)
+    const res = await sendPush(client, 'u1', payload)
 
-    expect(res.echecs).toBe(1)
+    expect(res.failed).toBe(1)
     expect(ops.some((o) => o.op === 'delete')).toBe(false)
     const maj = ops.find((o) => o.op === 'update')
     expect(maj?.row.derniere_erreur).toBe('500 boom')
@@ -165,18 +165,18 @@ describe('envoyerPush', () => {
     delete process.env.VAPID_PRIVATE_KEY
     const { client } = fakeClient([abonnement('a1')])
 
-    const res = await envoyerPush(client, 'u1', payload)
+    const res = await sendPush(client, 'u1', payload)
 
     expect(sendNotification).not.toHaveBeenCalled()
-    expect(res.raisons).toContain('clés VAPID absentes')
+    expect(res.reasons).toContain('clés VAPID absentes')
   })
 
   it('remonte une erreur de lecture des abonnements', async () => {
     const { client } = fakeClient([], 'table absente')
 
-    const res = await envoyerPush(client, 'u1', payload)
+    const res = await sendPush(client, 'u1', payload)
 
-    expect(res.echecs).toBe(1)
-    expect(res.raisons).toContain('table absente')
+    expect(res.failed).toBe(1)
+    expect(res.reasons).toContain('table absente')
   })
 })

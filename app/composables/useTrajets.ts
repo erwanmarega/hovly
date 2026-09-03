@@ -1,6 +1,6 @@
-import type { Ancre, ModeTrajet, Trajet } from '~/types'
+import type { Anchor, TravelMode, Commute } from '~/types'
 
-export const LIBELLES_MODE: Record<ModeTrajet, string> = {
+export const LIBELLES_MODE: Record<TravelMode, string> = {
   voiture: 'en voiture',
   velo: 'à vélo',
   marche: 'à pied',
@@ -8,7 +8,7 @@ export const LIBELLES_MODE: Record<ModeTrajet, string> = {
 }
 
 export interface TrajetAffiche {
-  ancre: Ancre
+  ancre: Anchor
   duree_s: number | null
   distance_m: number | null
   depasse: boolean
@@ -31,14 +31,14 @@ export function formatDistance(metres: number | null): string {
 export const cleTrajet = (bienId: string, ancreId: string, mode: string) =>
   `${bienId}|${ancreId}|${mode}`
 
-export function indexer(trajets: Trajet[]): Map<string, Trajet> {
+export function indexer(trajets: Commute[]): Map<string, Commute> {
   return new Map(trajets.map((t) => [cleTrajet(t.bien_id, t.ancre, t.mode), t]))
 }
 
 export function trajetsDuBien(
   bienId: string,
-  ancres: Ancre[],
-  index: Map<string, Trajet>
+  ancres: Anchor[],
+  index: Map<string, Commute>
 ): TrajetAffiche[] {
   return ancres.map((ancre) => {
     const t = index.get(cleTrajet(bienId, ancre.id, ancre.mode))
@@ -72,14 +72,14 @@ export function nbDepassements(liste: TrajetAffiche[]): number {
   return liste.filter((t) => t.depasse).length
 }
 
-export type EtatModes = Record<ModeTrajet, boolean>
+export type EtatModes = Record<TravelMode, boolean>
 
 const CLE_ANCRE_AFFICHEE = 'hovly:trajet-ancre'
 
 export function useTrajets() {
   const { preferences } = usePreferences()
 
-  const trajets = useState<Trajet[]>('trajets', () => [])
+  const trajets = useState<Commute[]>('trajets', () => [])
   const calcul = useState('trajets-calcul', () => false)
   const erreur = useState('trajets-erreur', () => '')
   const etat = useState<EtatModes | null>('trajets-etat', () => null)
@@ -107,7 +107,7 @@ export function useTrajets() {
     else localStorage.removeItem(CLE_ANCRE_AFFICHEE)
   }
 
-  const disponible = (mode: ModeTrajet) => etat.value?.[mode] !== false
+  const disponible = (mode: TravelMode) => etat.value?.[mode] !== false
 
   const calculable = computed(() => ancres.value.some((a) => disponible(a.mode)))
 
@@ -121,7 +121,7 @@ export function useTrajets() {
 
   async function refresh() {
     await chargerEtat()
-    trajets.value = await $fetch<Trajet[]>('/api/trajets')
+    trajets.value = await $fetch<Commute[]>('/api/trajets')
   }
 
   const pour = (bienId: string) => trajetsDuBien(bienId, ancres.value, index.value)

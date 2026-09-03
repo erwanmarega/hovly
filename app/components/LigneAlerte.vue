@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { Alerte } from "~/types";
+import type { Alert } from "~/types";
 
 const props = withDefaults(
   defineProps<{
-    alerte: Alerte;
+    alerte: Alert;
     compact?: boolean;
   }>(),
   { compact: false }
 );
 
-const eur = (c: number | null) => (c == null ? "—" : formaterPrix(c));
+const eur = (c: number | null) => (c == null ? "—" : formatPrice(c));
 
 const heure = (iso: string) =>
   new Date(iso).toLocaleTimeString("fr-FR", {
@@ -53,7 +53,7 @@ const { marquerLue } = useAlertes();
         class="rounded-xl bg-surface"
         :class="[
           compact ? 'size-10' : 'size-12',
-          estPhotoParDefaut(alerte.biens.photos[0]) ? 'object-contain' : 'object-cover',
+          isDefaultPhoto(alerte.biens.photos[0]) ? 'object-contain' : 'object-cover',
         ]"
       />
       <div

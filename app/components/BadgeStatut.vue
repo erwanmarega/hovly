@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Statut } from '~/types'
+import type { Status } from '~/types'
 
-defineProps<{ statut: Statut }>()
+defineProps<{ statut: Status }>()
 
-const map: Record<Statut, { label: string; cls: string }> = {
+const map: Record<Status, { label: string; cls: string }> = {
   a_visiter: { label: 'À visiter', cls: 'bg-surface-yellow text-[#746019]' },
   planifie: { label: 'Planifié', cls: 'bg-[#eef0ff] text-blue' },
   visite: { label: 'Visité', cls: 'bg-teal text-[#187574]' },

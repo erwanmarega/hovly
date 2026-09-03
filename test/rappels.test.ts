@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 
-const envoyerRappelEmail = vi.fn()
-const envoyerPush = vi.fn()
-const pushDisponible = vi.fn()
+const sendReminderEmail = vi.fn()
+const sendPush = vi.fn()
+const pushAvailable = vi.fn()
 
 vi.mock('../server/utils/email', () => ({
-  envoyerRappelEmail: (...a: any[]) => envoyerRappelEmail(...a)
+  sendReminderEmail: (...a: any[]) => sendReminderEmail(...a)
 }))
 vi.mock('../server/utils/push', () => ({
-  envoyerPush: (...a: any[]) => envoyerPush(...a),
-  pushDisponible: () => pushDisponible()
+  sendPush: (...a: any[]) => sendPush(...a),
+  pushAvailable: () => pushAvailable()
 }))
 
 const { aRappeler, envoyerRappels } = await import('../server/utils/rappels')
@@ -19,7 +19,7 @@ const MAINTENANT = new Date('2026-07-25T09:00:00.000Z')
 const dans = (heures: number) =>
   new Date(MAINTENANT.getTime() + heures * 3600_000).toISOString()
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',
@@ -73,12 +73,12 @@ function fakeClient() {
 }
 
 beforeEach(() => {
-  envoyerRappelEmail.mockReset()
-  envoyerRappelEmail.mockResolvedValue({ envoye: true })
-  envoyerPush.mockReset()
-  envoyerPush.mockResolvedValue({ envoyes: 1, echecs: 0, raisons: [] })
-  pushDisponible.mockReset()
-  pushDisponible.mockReturnValue(true)
+  sendReminderEmail.mockReset()
+  sendReminderEmail.mockResolvedValue({ envoye: true })
+  sendPush.mockReset()
+  sendPush.mockResolvedValue({ sent: 1, failed: 0, reasons: [] })
+  pushAvailable.mockReset()
+  pushAvailable.mockReturnValue(true)
 })
 
 describe('aRappeler', () => {
@@ -110,10 +110,10 @@ describe('envoyerRappels', () => {
     const resume = await envoyerRappels(client, [bien()], 'moi@example.com', MAINTENANT)
 
     expect(resume).toMatchObject({ candidats: 1, envoyes: 1, echecs: 0 })
-    expect(envoyerRappelEmail).toHaveBeenCalledOnce()
-    expect(envoyerPush).toHaveBeenCalledOnce()
-    expect(envoyerPush.mock.calls[0]![1]).toBe('u1')
-    expect(envoyerPush.mock.calls[0]![2].url).toBe('/bien/b1')
+    expect(sendReminderEmail).toHaveBeenCalledOnce()
+    expect(sendPush).toHaveBeenCalledOnce()
+    expect(sendPush.mock.calls[0]![1]).toBe('u1')
+    expect(sendPush.mock.calls[0]![2].url).toBe('/bien/b1')
     expect(majs).toEqual([
       { row: { rappel_envoye_le: MAINTENANT.toISOString() }, id: 'b1' }
     ])
@@ -130,13 +130,13 @@ describe('envoyerRappels', () => {
     )
 
     expect(resume.candidats).toBe(0)
-    expect(envoyerRappelEmail).not.toHaveBeenCalled()
+    expect(sendReminderEmail).not.toHaveBeenCalled()
     expect(majs).toEqual([])
   })
 
   it('suffit du push quand l’email échoue', async () => {
     const { client, majs } = fakeClient()
-    envoyerRappelEmail.mockResolvedValue({ envoye: false, raison: 'RESEND_API_KEY absente' })
+    sendReminderEmail.mockResolvedValue({ envoye: false, raison: 'RESEND_API_KEY absente' })
 
     const resume = await envoyerRappels(client, [bien()], null, MAINTENANT)
 
@@ -147,8 +147,8 @@ describe('envoyerRappels', () => {
 
   it('ne marque pas le bien si rien n’est parti — le prochain passage réessaiera', async () => {
     const { client, majs } = fakeClient()
-    envoyerRappelEmail.mockResolvedValue({ envoye: false, raison: 'aucune adresse email' })
-    envoyerPush.mockResolvedValue({ envoyes: 0, echecs: 1, raisons: ['410 gone'] })
+    sendReminderEmail.mockResolvedValue({ envoye: false, raison: 'aucune adresse email' })
+    sendPush.mockResolvedValue({ sent: 0, failed: 1, reasons: ['410 gone'] })
 
     const resume = await envoyerRappels(client, [bien()], null, MAINTENANT)
 
@@ -158,11 +158,11 @@ describe('envoyerRappels', () => {
 
   it('saute le push quand les clés VAPID manquent', async () => {
     const { client } = fakeClient()
-    pushDisponible.mockReturnValue(false)
+    pushAvailable.mockReturnValue(false)
 
     const resume = await envoyerRappels(client, [bien()], 'moi@example.com', MAINTENANT)
 
-    expect(envoyerPush).not.toHaveBeenCalled()
+    expect(sendPush).not.toHaveBeenCalled()
     expect(resume.envoyes).toBe(1)
   })
 })

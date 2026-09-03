@@ -9,7 +9,7 @@ import {
   cleCache
 } from '../server/utils/dvf'
 import { ressembleVente, prixAuM2, ecartPct } from '~/composables/useMarche'
-import type { MarcheQuartier } from '~/types'
+import type { NeighborhoodMarket } from '~/types'
 
 let fetchMock: MockInstance<typeof fetch>
 
@@ -236,7 +236,7 @@ describe('ressembleVente / prixAuM2 / ecartPct', () => {
   })
 
   it('mesure l’écart à la médiane en %, négatif sous le marché', () => {
-    const marche = { mediane: 5000 } as MarcheQuartier
+    const marche = { mediane: 5000 } as NeighborhoodMarket
     expect(ecartPct(4500, marche)).toBe(-10)
     expect(ecartPct(5600, marche)).toBe(12)
     expect(ecartPct(5000, marche)).toBe(0)

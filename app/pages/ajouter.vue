@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Bien, DPE, SiteSource, Statut, Transaction } from '~/types'
+import type { Property, DPE, SiteSource, Status, Transaction } from '~/types'
 import type { EntreeImport } from '~/composables/useImportMasse'
 import { detecterSource, STATUTS } from '~/composables/useBiens'
 
@@ -64,7 +64,7 @@ async function lancerImport() {
     indexCourant.value = entrees.value.indexOf(entree)
     entree.statut = 'analyse'
     try {
-      const b = await $fetch<Partial<Bien>>('/api/scrape', {
+      const b = await $fetch<Partial<Property>>('/api/scrape', {
         method: 'POST',
         body: { url: entree.url }
       })
@@ -122,7 +122,7 @@ const draft = reactive({
   ville: '',
   code_postal: '',
   photos: [] as string[],
-  statut: 'a_visiter' as Statut,
+  statut: 'a_visiter' as Status,
   note_perso: ''
 })
 
@@ -161,7 +161,7 @@ const scoreApercu = computed(() => {
     rappel_envoye_le: null,
     actif: true,
     created_at: new Date().toISOString()
-  } satisfies Bien
+  } satisfies Property
   return scoreBien(provisoire, representants(biens.value), preferences.value)
 })
 
@@ -195,7 +195,7 @@ async function analyser() {
   }, 1400)
 
   try {
-    const b = await $fetch<Partial<Bien>>('/api/scrape', {
+    const b = await $fetch<Partial<Property>>('/api/scrape', {
       method: 'POST',
       body: { url: url.value }
     })
@@ -654,7 +654,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     <div
                       class="grid h-11 place-items-center rounded-xl bg-surface text-sm font-semibold text-slate"
                     >
-                      {{ formaterNombre(prixM2) }} €
+                      {{ formatNumber(prixM2) }} €
                     </div>
                   </div>
                 </div>
@@ -746,7 +746,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     :src="draft.photos[0]"
                     alt=""
                     class="size-full"
-                    :class="estPhotoParDefaut(draft.photos[0]) ? 'object-contain' : 'object-cover'"
+                    :class="isDefaultPhoto(draft.photos[0]) ? 'object-contain' : 'object-cover'"
                   >
                   <div v-else class="grid size-full place-items-center text-sm text-stone">
                     Aucune photo
@@ -773,7 +773,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                   </p>
 
                   <p class="mt-4 text-3xl font-light tracking-tight">
-                    {{ formaterNombre(draft.prix) }} €<span v-if="draft.transaction !== 'achat'" class="text-base text-stone">/mois</span>
+                    {{ formatNumber(draft.prix) }} €<span v-if="draft.transaction !== 'achat'" class="text-base text-stone">/mois</span>
                   </p>
 
                   <div class="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -787,7 +787,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
                     </div>
                     <div class="rounded-xl bg-surface py-2.5">
                       <p class="text-xs text-stone">€/m²</p>
-                      <p class="mt-0.5 font-semibold">{{ formaterNombre(prixM2) }}</p>
+                      <p class="mt-0.5 font-semibold">{{ formatNumber(prixM2) }}</p>
                     </div>
                   </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Recherche } from '~/types'
+import type { SavedSearch } from '~/types'
 
 useHead({ title: 'Veilles — Hovly' })
 
@@ -51,7 +51,7 @@ async function basculer(id: string) {
   }
 }
 
-async function creerVeille(payload: Partial<Recherche>) {
+async function creerVeille(payload: Partial<SavedSearch>) {
   creation.value = true
   erreurCreation.value = ''
   try {
@@ -87,7 +87,7 @@ async function basculerPause(id: string, active: boolean) {
   await modifier(id, { active }).catch(() => annoncer('Modification impossible.', true))
 }
 
-const rechercheASupprimer = ref<Recherche | null>(null)
+const rechercheASupprimer = ref<SavedSearch | null>(null)
 const suppressionEnCours = ref(false)
 
 function demanderSuppression(id: string) {

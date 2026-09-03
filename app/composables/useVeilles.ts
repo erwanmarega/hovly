@@ -1,4 +1,4 @@
-import type { Bien, EtatResultat, Recherche, ResultatVeille } from '~/types'
+import type { Property, ResultState, SavedSearch, WatchResult } from '~/types'
 
 export interface ResumeScan {
   recherche_id: string
@@ -6,7 +6,7 @@ export interface ResumeScan {
   trouvees: number
   filtrees: number
   connues: number
-  nouvelles: ResultatVeille[]
+  nouvelles: WatchResult[]
   erreur: string | null
 }
 
@@ -18,8 +18,8 @@ export const enEuros = (centimes: number | null) =>
   centimes == null ? null : Math.round(centimes / 100)
 
 export function useVeilles() {
-  const recherches = useState<Recherche[]>('recherches', () => [])
-  const resultats = useState<Record<string, ResultatVeille[]>>('veille-resultats', () => ({}))
+  const recherches = useState<SavedSearch[]>('recherches', () => [])
+  const resultats = useState<Record<string, WatchResult[]>>('veille-resultats', () => ({}))
 
   const nouveaux = computed(() =>
     recherches.value.reduce((total, r) => total + (r.nouveaux ?? 0), 0)
@@ -31,17 +31,17 @@ export function useVeilles() {
   }
 
   async function refresh() {
-    recherches.value = await $fetch<Recherche[]>('/api/recherches')
+    recherches.value = await $fetch<SavedSearch[]>('/api/recherches')
     return recherches.value
   }
 
-  async function creer(payload: Partial<Recherche>): Promise<Recherche> {
-    const row = await $fetch<Recherche>('/api/recherches', { method: 'POST', body: payload })
+  async function creer(payload: Partial<SavedSearch>): Promise<SavedSearch> {
+    const row = await $fetch<SavedSearch>('/api/recherches', { method: 'POST', body: payload })
     recherches.value = [{ ...row, nouveaux: 0 }, ...recherches.value]
     return row
   }
 
-  async function modifier(id: string, patch: Partial<Recherche>) {
+  async function modifier(id: string, patch: Partial<SavedSearch>) {
     const r = recherches.value.find((x) => x.id === id)
     const avant = r ? { ...r } : null
     if (r) Object.assign(r, patch)
@@ -82,8 +82,8 @@ export function useVeilles() {
     return resume
   }
 
-  async function chargerResultats(id: string, etat?: EtatResultat) {
-    const liste = await $fetch<ResultatVeille[]>(`/api/recherches/${id}/resultats`, {
+  async function chargerResultats(id: string, etat?: ResultState) {
+    const liste = await $fetch<WatchResult[]>(`/api/recherches/${id}/resultats`, {
       query: etat ? { etat } : undefined
     })
     resultats.value[id] = liste
@@ -102,8 +102,8 @@ export function useVeilles() {
   }
 
   /** Scrape la fiche complète et crée le bien. Plus lent qu'« ignorer » : prévoir un état de chargement. */
-  async function garder(rechercheId: string, resultatId: string): Promise<Bien> {
-    const { bien } = await $fetch<{ bien: Bien }>(`/api/resultats/${resultatId}`, {
+  async function garder(rechercheId: string, resultatId: string): Promise<Property> {
+    const { bien } = await $fetch<{ bien: Property }>(`/api/resultats/${resultatId}`, {
       method: 'PATCH',
       body: { etat: 'garde' }
     })

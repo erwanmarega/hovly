@@ -3,7 +3,7 @@
 // loyer réel n'atteint 50 000 €/mois). Le champ reste éditable à la main.
 
 import type { Transaction } from '~/types'
-import { SEUIL_PRIX_VENTE_EUROS } from '~/types'
+import { SALE_PRICE_THRESHOLD_EUROS } from '~/types'
 
 const MOTIFS_ACHAT = [
   /\/ad\/ventes_immobilieres\//i, // leboncoin
@@ -26,7 +26,7 @@ const MOTIFS_LOCATION = [
 export function detecterTransaction(url: string, prixCentimes: number | null): Transaction {
   if (MOTIFS_ACHAT.some((m) => m.test(url))) return 'achat'
   if (MOTIFS_LOCATION.some((m) => m.test(url))) return 'location'
-  return prixCentimes != null && prixCentimes / 100 >= SEUIL_PRIX_VENTE_EUROS
+  return prixCentimes != null && prixCentimes / 100 >= SALE_PRICE_THRESHOLD_EUROS
     ? 'achat'
     : 'location'
 }

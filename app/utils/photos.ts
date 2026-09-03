@@ -1,5 +1,5 @@
-import { PHOTO_PAR_DEFAUT } from '~/types'
+import { DEFAULT_PHOTO } from '~/types'
 
-export function estPhotoParDefaut(photo: string | null | undefined): boolean {
-  return photo === PHOTO_PAR_DEFAUT
+export function isDefaultPhoto(photo: string | null | undefined): boolean {
+  return photo === DEFAULT_PHOTO
 }

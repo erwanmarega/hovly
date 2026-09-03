@@ -1,4 +1,4 @@
-import type { Bien, DPE, Preferences } from '~/types'
+import type { Property, DPE, Preferences } from '~/types'
 
 export const KWH_EP_PAR_DPE: Record<DPE, number> = {
   A: 50,
@@ -55,7 +55,7 @@ export function mensualiteCredit(capitalCentimes: number, tauxPct: number, duree
 }
 
 export function coutEnergieMensuel(
-  bien: Bien,
+  bien: Property,
   prixKwh = PRIX_KWH_DEFAUT
 ): number | null {
   if (!bien.dpe || !bien.surface) return null
@@ -63,11 +63,11 @@ export function coutEnergieMensuel(
   return Math.round((kwhFinalParM2 * bien.surface * prixKwh) / 12)
 }
 
-export function coutAssuranceMensuel(bien: Bien): number {
+export function coutAssuranceMensuel(bien: Property): number {
   return Math.round((ASSURANCE_FIXE_AN + ASSURANCE_PAR_M2_AN * (bien.surface || 0)) / 12)
 }
 
-export function coutReel(bien: Bien, options: OptionsCout = {}): CoutReel {
+export function coutReel(bien: Property, options: OptionsCout = {}): CoutReel {
   const prixKwh = options.prixKwh && options.prixKwh > 0 ? options.prixKwh : PRIX_KWH_DEFAUT
   const chauffageDansCharges = options.chauffageDansCharges ?? false
 
@@ -182,7 +182,7 @@ export function useCoutReel() {
   const { preferences } = usePreferences()
 
   const options = computed(() => optionsDepuisPreferences(preferences.value))
-  const calculer = (bien: Bien) => coutReel(bien, options.value)
+  const calculer = (bien: Property) => coutReel(bien, options.value)
 
   return { options, calculer }
 }

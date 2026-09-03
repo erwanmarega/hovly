@@ -1,17 +1,17 @@
-import type { Ancre, ModeTrajet, Preferences } from '~/types'
+import type { Anchor, TravelMode, Preferences } from '~/types'
 
-const MODES: ModeTrajet[] = ['voiture', 'velo', 'marche', 'transport']
+const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
 
 export const MAX_ANCRES = 5
 
 const idPropre = (v: unknown) =>
   typeof v === 'string' ? v.replace(/[^a-z0-9-]/gi, '').slice(0, 32) : ''
 
-function ancresValides(brut: unknown): Ancre[] {
+function ancresValides(brut: unknown): Anchor[] {
   if (!Array.isArray(brut)) return []
 
   const vues = new Set<string>()
-  const out: Ancre[] = []
+  const out: Anchor[] = []
 
   for (const a of brut) {
     const id = idPropre(a?.id)

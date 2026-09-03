@@ -6,12 +6,12 @@
 // (`type_local`) ; villa comme maison. Terrain/immeuble/inconnu → null, on
 // ne devine pas.
 
-import type { TypeBien } from '~/types'
+import type { PropertyType } from '~/types'
 
 const MOTS_MAISON = ['maison', 'villa']
 const MOTS_APPARTEMENT = ['appartement', 'appart', 'studio', 'duplex', 'loft']
 
-export function detecterTypeBien(titre: string): TypeBien | null {
+export function detecterTypeBien(titre: string): PropertyType | null {
   const t = titre.toLowerCase()
   if (MOTS_MAISON.some((m) => t.includes(m))) return 'maison'
   if (MOTS_APPARTEMENT.some((m) => t.includes(m))) return 'appartement'

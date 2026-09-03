@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { Bien } from "~/types";
+import type { Property } from "~/types";
 import type { Score } from "~/composables/useScore";
 
 const props = withDefaults(
   defineProps<{
-    biens: Bien[];
-    score: (b: Bien) => Score;
-    prixMensuel: (b: Bien) => number;
-    prixM2: (b: Bien) => number;
+    biens: Property[];
+    score: (b: Property) => Score;
+    prixMensuel: (b: Property) => number;
+    prixM2: (b: Property) => number;
     page: number;
     total: number;
     parPage: number;

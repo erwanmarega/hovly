@@ -1,4 +1,4 @@
-import type { MarcheQuartier } from '~/types'
+import type { NeighborhoodMarket } from '~/types'
 import type { TypeLocalDvf } from '../utils/dvf'
 
 const JOUR_MS = 24 * 3600 * 1000
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   if (cache) {
     const age = Date.now() - +new Date(cache.calcule_le)
     const ttl = cache.donnees ? TTL_DONNEES : TTL_VIDE
-    if (age < ttl) return { marche: cache.donnees as MarcheQuartier | null }
+    if (age < ttl) return { marche: cache.donnees as NeighborhoodMarket | null }
   }
 
   const ventes = await ventesProches(lat, lon, typeLocal)

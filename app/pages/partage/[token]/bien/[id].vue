@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PartagePublic } from "~/types";
+import type { PublicShare } from "~/types";
 
 const route = useRoute();
 const token = route.params.token as string;
@@ -11,7 +11,7 @@ const {
   error,
 } = await useAsyncData(
   `partage-${token}`,
-  () => $fetch<PartagePublic>(`/api/partages/${token}`),
+  () => $fetch<PublicShare>(`/api/partages/${token}`),
   {
     server: false,
   }
@@ -80,7 +80,7 @@ useHead({
             :src="photo"
             :alt="bien.titre ?? ''"
             class="aspect-[4/3] w-full rounded-xl bg-surface"
-            :class="estPhotoParDefaut(photo) ? 'object-contain' : 'object-cover'"
+            :class="isDefaultPhoto(photo) ? 'object-contain' : 'object-cover'"
             loading="lazy"
           />
         </div>
@@ -103,7 +103,7 @@ useHead({
         <div class="mt-6 rounded-2xl border border-hairline bg-white p-5">
           <p class="text-2xl font-semibold tabular-nums">
             <template v-if="bien.prix != null">
-              {{ formaterNombre(Math.round(bien.prix / 100)) }} €<span
+              {{ formatNumber(Math.round(bien.prix / 100)) }} €<span
                 v-if="!achat"
                 class="text-sm font-normal text-stone"
                 >/mois</span

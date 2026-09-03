@@ -1,4 +1,4 @@
-import type { Ancre, Bien, BienPartage, DPE, Trajet } from '~/types'
+import type { Anchor, Property, SharedProperty, DPE, Commute } from '~/types'
 import type { Score } from '~/composables/useScore'
 import type { OptionsCout } from '~/composables/useCoutReel'
 import { coutReel } from '~/composables/useCoutReel'
@@ -47,12 +47,12 @@ function ligne(
 }
 
 export interface ContexteTrajets {
-  ancres: Ancre[]
-  index: Map<string, Trajet>
+  ancres: Anchor[]
+  index: Map<string, Commute>
 }
 
 export function comparer(
-  biens: Bien[],
+  biens: Property[],
   scores: Score[],
   optionsCout: OptionsCout = {},
   trajets?: ContexteTrajets,
@@ -120,10 +120,10 @@ export function comparer(
 
 /**
  * Comparaison pour la page de partage publique : seuls les champs de
- * `BienPartage` sont dispo (pas de charges, préférences, trajets ni score,
+ * `SharedProperty` sont dispo (pas de charges, préférences, trajets ni score,
  * tous privés — voir `CHAMPS_PUBLICS_BIEN` côté serveur).
  */
-export function comparerPublic(biens: BienPartage[]): LigneComparaison[] {
+export function comparerPublic(biens: SharedProperty[]): LigneComparaison[] {
   const loyers = biens.map((b) => (b.prix ? Math.round(b.prix / 100) : null))
   const surfaces = biens.map((b) => b.surface || null)
   const auM2 = biens.map((b) => prixAuM2(b))

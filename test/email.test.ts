@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { AlerteCreee } from '../app/types/check'
+import type { CreatedAlert } from '../app/types/check'
 
 const fetchMock = vi.fn()
 vi.stubGlobal('$fetch', fetchMock)
 
-const { envoyerAlerteEmail } = await import('../server/utils/email')
+const { sendAlertEmail } = await import('../server/utils/email')
 
-const supprimee: AlerteCreee = {
+const supprimee: CreatedAlert = {
   bien_id: 'b1',
   type: 'annonce_supprimee',
   ancien_prix: 157000,
@@ -14,7 +14,7 @@ const supprimee: AlerteCreee = {
   titre: 'T3 Cachan'
 }
 
-const baisse: AlerteCreee = {
+const baisse: CreatedAlert = {
   bien_id: 'b2',
   type: 'baisse_prix',
   ancien_prix: 157000,
@@ -36,9 +36,9 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-describe('envoyerAlerteEmail — annonce supprimée', () => {
+describe('sendAlertEmail — annonce supprimée', () => {
   it('envoie un email et signale le succès', async () => {
-    const res = await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    const res = await sendAlertEmail('moi@exemple.fr', supprimee)
 
     expect(res).toEqual({ envoye: true })
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -47,7 +47,7 @@ describe('envoyerAlerteEmail — annonce supprimée', () => {
   })
 
   it('compose un sujet et un corps explicites', async () => {
-    await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    await sendAlertEmail('moi@exemple.fr', supprimee)
     const b = corps()
 
     expect(b.to).toBe('moi@exemple.fr')
@@ -57,20 +57,20 @@ describe('envoyerAlerteEmail — annonce supprimée', () => {
   })
 
   it('utilise l’expéditeur par défaut sans RESEND_FROM', async () => {
-    await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    await sendAlertEmail('moi@exemple.fr', supprimee)
     expect(corps().from).toBe('Hovly <onboarding@resend.dev>')
   })
 
   it('respecte RESEND_FROM quand il est défini', async () => {
     process.env.RESEND_FROM = 'Hovly <alertes@hovly.fr>'
-    await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    await sendAlertEmail('moi@exemple.fr', supprimee)
     expect(corps().from).toBe('Hovly <alertes@hovly.fr>')
   })
 })
 
-describe('envoyerAlerteEmail — baisse de prix', () => {
+describe('sendAlertEmail — baisse de prix', () => {
   it('affiche l’ancien et le nouveau prix en euros', async () => {
-    await envoyerAlerteEmail('moi@exemple.fr', baisse)
+    await sendAlertEmail('moi@exemple.fr', baisse)
     const b = corps()
 
     expect(b.subject).toBe('Baisse de prix — T2 Lyon')
@@ -79,10 +79,10 @@ describe('envoyerAlerteEmail — baisse de prix', () => {
   })
 })
 
-describe('envoyerAlerteEmail — échecs', () => {
+describe('sendAlertEmail — échecs', () => {
   it('ne tente rien et explique quand la clé API manque', async () => {
     delete process.env.RESEND_API_KEY
-    const res = await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    const res = await sendAlertEmail('moi@exemple.fr', supprimee)
 
     expect(fetchMock).not.toHaveBeenCalled()
     expect(res).toEqual({ envoye: false, raison: 'RESEND_API_KEY absente' })
@@ -98,7 +98,7 @@ describe('envoyerAlerteEmail — échecs', () => {
       )
     )
 
-    const res = await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    const res = await sendAlertEmail('moi@exemple.fr', supprimee)
 
     expect(res.envoye).toBe(false)
     expect(res.raison).toBe('403 The hovly.fr domain is not verified')
@@ -106,7 +106,7 @@ describe('envoyerAlerteEmail — échecs', () => {
 
   it('retombe sur le message d’erreur brut', async () => {
     fetchMock.mockImplementation(() => Promise.reject(new Error('ECONNRESET')))
-    const res = await envoyerAlerteEmail('moi@exemple.fr', supprimee)
+    const res = await sendAlertEmail('moi@exemple.fr', supprimee)
 
     expect(res.envoye).toBe(false)
     expect(res.raison).toBe('ECONNRESET')

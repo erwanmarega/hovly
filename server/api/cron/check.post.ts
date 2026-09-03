@@ -1,6 +1,6 @@
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
-import { verifierBiens, notifier, notifierPush } from '../../utils/check'
+import { checkProperties, notify, notifyPush } from '../../utils/check'
 
 export default defineEventHandler(async (event) => {
   const secret = process.env.CRON_SECRET
@@ -18,8 +18,8 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const parUser = new Map<string, Bien[]>()
-  for (const b of (biens ?? []) as Bien[]) {
+  const parUser = new Map<string, Property[]>()
+  for (const b of (biens ?? []) as Property[]) {
     const list = parUser.get(b.user_id) ?? []
     list.push(b)
     parUser.set(b.user_id, list)
@@ -31,17 +31,17 @@ export default defineEventHandler(async (event) => {
   let pushEnvoyes = 0
   let pushEchoues = 0
   for (const [userId, liste] of parUser) {
-    const resume = await verifierBiens(service, liste)
-    totalAlertes += resume.alertes.length
-    if (resume.alertes.length) {
+    const resume = await checkProperties(service, liste)
+    totalAlertes += resume.alerts.length
+    if (resume.alerts.length) {
       const { data } = await service.auth.admin.getUserById(userId)
-      const envois = await notifier(data?.user?.email ?? null, resume)
-      emailsEnvoyes += envois.envoyes
-      emailsEchoues += envois.echecs
+      const envois = await notify(data?.user?.email ?? null, resume)
+      emailsEnvoyes += envois.sent
+      emailsEchoues += envois.failed
 
-      const push = await notifierPush(service, userId, resume)
-      pushEnvoyes += push.envoyes
-      pushEchoues += push.echecs
+      const push = await notifyPush(service, userId, resume)
+      pushEnvoyes += push.sent
+      pushEchoues += push.failed
     }
   }
 

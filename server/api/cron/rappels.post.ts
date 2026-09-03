@@ -1,4 +1,4 @@
-import type { Bien } from '~/types'
+import type { Property } from '~/types'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { envoyerRappels } from '../../utils/rappels'
 
@@ -23,8 +23,8 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const parUser = new Map<string, Bien[]>()
-  for (const b of (data ?? []) as Bien[]) {
+  const parUser = new Map<string, Property[]>()
+  for (const b of (data ?? []) as Property[]) {
     const liste = parUser.get(b.user_id) ?? []
     liste.push(b)
     parUser.set(b.user_id, liste)

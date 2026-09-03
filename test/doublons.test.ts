@@ -7,10 +7,10 @@ import {
   doublonsDe,
   representants
 } from '../app/composables/useDoublons'
-import type { Bien } from '../app/types'
+import type { Property } from '../app/types'
 
 let compteur = 0
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   compteur++
   return {
     id: `b${compteur}`,

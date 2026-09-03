@@ -1,4 +1,4 @@
-import type { Bien, Recherche } from '~/types'
+import type { Property, SavedSearch } from '~/types'
 import { assertRateLimitForUser, QUOTAS } from '../../../utils/rate-limit'
 
 export default defineEventHandler(async (event) => {
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: biens } = await client.from('biens').select('*')
 
-  const resume = await verifierRecherche(client, recherche as Recherche, (biens ?? []) as Bien[])
+  const resume = await verifierRecherche(client, recherche as SavedSearch, (biens ?? []) as Property[])
 
   // Scan manuel : l'utilisateur regarde déjà l'écran, pas de notification.
   if (resume.erreur) {

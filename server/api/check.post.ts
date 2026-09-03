@@ -1,5 +1,5 @@
-import type { Bien } from '~/types'
-import { verifierBiens, notifier, notifierPush } from '../utils/check'
+import type { Property } from '~/types'
+import { checkProperties, notify, notifyPush } from '../utils/check'
 import { assertRateLimitForUser, QUOTAS } from '../utils/rate-limit'
 
 export default defineEventHandler(async (event) => {
@@ -15,9 +15,9 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  const resume = await verifierBiens(service, (biens ?? []) as Bien[])
-  const envois = await notifier(user.email ?? null, resume)
-  const push = await notifierPush(service, user.id, resume)
+  const resume = await checkProperties(service, (biens ?? []) as Property[])
+  const emails = await notify(user.email ?? null, resume)
+  const push = await notifyPush(service, user.id, resume)
 
-  return { ...resume, envois, push }
+  return { ...resume, emails, push }
 })
