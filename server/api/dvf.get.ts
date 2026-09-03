@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const localType: TypeLocalDvf = q.type === 'maison' ? 'Maison' : 'Appartement'
 
   const client = serviceDb(event)
-  const key = cleCache(lat, lon, localType)
+  const key = cacheKey(lat, lon, localType)
 
   const { data: cache } = await client
     .from('marche_quartier')
@@ -31,8 +31,8 @@ export default defineEventHandler(async (event) => {
     if (age < ttl) return { market: cache.donnees as NeighborhoodMarket | null }
   }
 
-  const ventes = await ventesProches(lat, lon, localType)
-  const market = statistiquesMarche(ventes)
+  const ventes = await nearbySales(lat, lon, localType)
+  const market = marketStatistics(ventes)
 
   await client
     .from('marche_quartier')

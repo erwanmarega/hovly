@@ -5,7 +5,7 @@
 
 import type { NeighborhoodMarket } from '~/types'
 
-export interface VenteMarche {
+export interface MarketSale {
   prixM2: number
   date: string
 }
@@ -13,7 +13,7 @@ export interface VenteMarche {
 const API = 'https://api.cquest.org/dvf'
 
 export const DIST_M = 500
-export const SEUIL_VENTES = 3 // en dessous, parler de « marché » serait trompeur
+export const SALES_THRESHOLD = 3 // en dessous, parler de « marché » serait trompeur
 
 const NB_BARRES = 8
 
@@ -23,7 +23,7 @@ const M2_MIN = 300
 const M2_MAX = 60000
 
 /** DVF livre les nombres en string avec virgule, en nombre, ou pas du tout. */
-export function nombreDvf(v: unknown): number | null {
+export function dvfNumber(v: unknown): number | null {
   if (typeof v === 'number') return Number.isFinite(v) ? v : null
   if (typeof v !== 'string') return null
   const nettoye = v.replace(/\s/g, '').replace(',', '.')
@@ -35,7 +35,7 @@ export function nombreDvf(v: unknown): number | null {
 export type TypeLocalDvf = 'Appartement' | 'Maison'
 
 /** Transforme une feature GeoJSON en vente exploitable, ou null. */
-export function venteDepuisFeature(f: any, typeLocal: TypeLocalDvf = 'Appartement'): VenteMarche | null {
+export function saleFromFeature(f: any, typeLocal: TypeLocalDvf = 'Appartement'): MarketSale | null {
   const p = f?.properties
   if (!p) return null
   // Ventes fermes uniquement : exclut échanges, adjudications, expropriations.
@@ -44,9 +44,9 @@ export function venteDepuisFeature(f: any, typeLocal: TypeLocalDvf = 'Appartemen
   // On ne compare qu'au même type de bien que celui suivi (maison ou appartement).
   if (p.type_local !== typeLocal) return null
 
-  const valeur = nombreDvf(p.valeur_fonciere)
+  const valeur = dvfNumber(p.valeur_fonciere)
   // Le millésime a corrigé la coquille historique du nom de champ.
-  const surface = nombreDvf(p.surface_reelle_bati ?? p.surface_relle_batiment)
+  const surface = dvfNumber(p.surface_reelle_bati ?? p.surface_relle_batiment)
   if (!valeur || !surface || surface < 9 || surface > 500) return null
 
   const prixM2 = Math.round(valeur / surface)
@@ -56,19 +56,19 @@ export function venteDepuisFeature(f: any, typeLocal: TypeLocalDvf = 'Appartemen
   return { prixM2, date }
 }
 
-export function extraireVentes(json: any, typeLocal: TypeLocalDvf = 'Appartement'): VenteMarche[] {
+export function extractSales(json: any, typeLocal: TypeLocalDvf = 'Appartement'): MarketSale[] {
   if (!Array.isArray(json?.features)) return []
   return json.features
-    .map((f: any) => venteDepuisFeature(f, typeLocal))
-    .filter((v: VenteMarche | null): v is VenteMarche => v != null)
+    .map((f: any) => saleFromFeature(f, typeLocal))
+    .filter((v: MarketSale | null): v is MarketSale => v != null)
 }
 
-export async function ventesProches(
+export async function nearbySales(
   lat: number,
   lon: number,
   typeLocal: TypeLocalDvf = 'Appartement',
   dist = DIST_M
-): Promise<VenteMarche[]> {
+): Promise<MarketSale[]> {
   const url = new URL(API)
   url.searchParams.set('lat', String(lat))
   url.searchParams.set('lon', String(lon))
@@ -84,7 +84,7 @@ export async function ventesProches(
   } catch {
     return []
   }
-  return extraireVentes(json, typeLocal)
+  return extractSales(json, typeLocal)
 }
 
 function percentile(tries: number[], p: number): number {
@@ -96,8 +96,8 @@ function percentile(tries: number[], p: number): number {
 }
 
 /** Statistiques sur les prix au m², ou null si l'échantillon est trop faible. */
-export function statistiquesMarche(ventes: VenteMarche[]): NeighborhoodMarket | null {
-  if (ventes.length < SEUIL_VENTES) return null
+export function marketStatistics(ventes: MarketSale[]): NeighborhoodMarket | null {
+  if (ventes.length < SALES_THRESHOLD) return null
 
   const prix = ventes.map((v) => v.prixM2).sort((a, b) => a - b)
   const min = prix[0]!
@@ -128,6 +128,6 @@ export function statistiquesMarche(ventes: VenteMarche[]): NeighborhoodMarket | 
 /** Clé de cache : maille d'environ 1 km (le marché ne varie pas à l'échelle de
  * la rue), plus le type — maison et appartement ne partagent pas le même
  * marché même aux mêmes coordonnées. */
-export function cleCache(lat: number, lon: number, typeLocal: TypeLocalDvf = 'Appartement'): string {
+export function cacheKey(lat: number, lon: number, typeLocal: TypeLocalDvf = 'Appartement'): string {
   return `${lat.toFixed(2)},${lon.toFixed(2)},${typeLocal}`
 }
