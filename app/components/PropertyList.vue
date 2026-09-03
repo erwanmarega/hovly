@@ -2,7 +2,7 @@
 import type { Property, Status } from '~/types'
 import type { Score } from '~/composables/useScore'
 
-type Clef =
+type SortKey =
   | 'date'
   | 'prix'
   | 'surface'
@@ -16,15 +16,15 @@ const props = defineProps<{
   biens: Property[]
   score: (bien: Property) => Score
   doublons: Map<string, number>
-  triClef: Clef
-  triAsc: boolean
+  sortKey: SortKey
+  sortAsc: boolean
   page: number
   total: number
   perPage: number
 }>()
 
 const emit = defineEmits<{
-  tri: [clef: Clef]
+  sort: [key: SortKey]
   'update:page': [page: number]
   supprimer: [id: string]
   statut: [id: string, statut: Status]
@@ -32,34 +32,34 @@ const emit = defineEmits<{
 
 const { monthlyPrice, pricePerSqm } = useProperties()
 const { calculate: costOf } = useActualCost()
-const { active: trajetsActifs, selectedAnchor: ancreChoisie } = useCommutes()
+const { active: hasActiveCommutes, selectedAnchor } = useCommutes()
 
 const costs = computed(() => new Map(props.biens.map((b) => [b.id, costOf(b)])))
 
-const { full: selectionComplete, isSelected: estSelectionne, toggle: basculer } = useComparator()
+const { full: selectionComplete, isSelected, toggle } = useComparator()
 
-const TRIS = computed<{ value: Clef, label: string }[]>(() => {
-  const tris: { value: Clef, label: string }[] = [
+const SORTS = computed<{ value: SortKey, label: string }[]>(() => {
+  const sorts: { value: SortKey, label: string }[] = [
     { value: 'date' as const, label: 'Date d’ajout' },
     { value: 'prix' as const, label: 'Prix' },
     { value: 'surface' as const, label: 'Surface' },
     { value: 'prix_m2' as const, label: '€/m²' },
     { value: 'cout_reel' as const, label: 'Coût réel' }
   ]
-  if (trajetsActifs.value) {
-    tris.push({
+  if (hasActiveCommutes.value) {
+    sorts.push({
       value: 'trajet' as const,
-      label: ancreChoisie.value ? `Trajet — ${ancreChoisie.value.label}` : 'Trajet le plus long'
+      label: selectedAnchor.value ? `Trajet — ${selectedAnchor.value.label}` : 'Trajet le plus long'
     })
   }
-  tris.push(
+  sorts.push(
     { value: 'score' as const, label: 'Score' },
     { value: 'visite' as const, label: 'Date de visite' }
   )
-  return tris
+  return sorts
 })
 
-const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.length - 2
+const upward = (i: number) => props.biens.length > 3 && i >= props.biens.length - 2
 </script>
 
 <template>
@@ -73,17 +73,17 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
         <select
           id="tri-liste"
           class="min-w-0 flex-1 rounded-full border border-hairline bg-surface-soft px-3 py-1.5 text-sm outline-none focus:border-blue"
-          :value="triClef"
-          @change="emit('tri', ($event.target as HTMLSelectElement).value as Clef)"
+          :value="sortKey"
+          @change="emit('sort', ($event.target as HTMLSelectElement).value as SortKey)"
         >
-          <option v-for="t in TRIS" :key="t.value" :value="t.value">{{ t.label }}</option>
+          <option v-for="t in SORTS" :key="t.value" :value="t.value">{{ t.label }}</option>
         </select>
         <button
           class="grid size-9 shrink-0 place-items-center rounded-lg border border-hairline text-steel transition hover:bg-surface"
-          :aria-label="triAsc ? 'Ordre croissant' : 'Ordre décroissant'"
-          @click="emit('tri', triClef)"
+          :aria-label="sortAsc ? 'Ordre croissant' : 'Ordre décroissant'"
+          @click="emit('sort', sortKey)"
         >
-          {{ triAsc ? '↑' : '↓' }}
+          {{ sortAsc ? "↑" : "↓" }}
         </button>
       </div>
 
@@ -96,9 +96,9 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
           :monthly-price="monthlyPrice(b)"
           :price-per-sqm="pricePerSqm(b)"
           :doublons="doublons.get(b.id)"
-          :selectionne="estSelectionne(b.id)"
+          :selectionne="isSelected(b.id)"
           :selection-bloquee="selectionComplete"
-          @basculer="basculer"
+          @basculer="toggle"
           @supprimer="emit('supprimer', $event)"
           @statut="(id, s) => emit('statut', id, s)"
         />
@@ -112,18 +112,18 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
           class="shrink-0 pl-1 text-[11px] font-semibold uppercase tracking-wider text-stone"
         >Trier</span>
         <button
-          v-for="t in TRIS"
+          v-for="t in SORTS"
           :key="t.value"
           class="filtre flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
           :class="
-            triClef === t.value
+            sortKey === t.value
               ? 'bg-ink text-white'
               : 'border border-hairline bg-white text-steel hover:bg-surface'
           "
-          @click="emit('tri', t.value)"
+          @click="emit('sort', t.value)"
         >
           {{ t.label }}
-          <span v-if="triClef === t.value" class="text-[11px]">{{ triAsc ? '↑' : '↓' }}</span>
+          <span v-if="sortKey === t.value" class="text-[11px]">{{ sortAsc ? "↑" : "↓" }}</span>
         </button>
       </div>
 
@@ -137,10 +137,10 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
           <input
             type="checkbox"
             class="size-4 shrink-0 cursor-pointer accent-ink"
-            :checked="estSelectionne(b.id)"
-            :disabled="!estSelectionne(b.id) && selectionComplete"
+            :checked="isSelected(b.id)"
+            :disabled="!isSelected(b.id) && selectionComplete"
             :aria-label="`Comparer ${b.titre}`"
-            @change="basculer(b.id)"
+            @change="toggle(b.id)"
           >
 
           <NuxtLink :to="`/bien/${b.id}`" class="group flex min-w-0 flex-1 items-center gap-3.5">
@@ -200,7 +200,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="w-20 shrink-0"><ScoreBadge :score="score(b)" /></div>
 
-          <div v-if="trajetsActifs" class="hidden w-16 shrink-0 lg:block">
+          <div v-if="hasActiveCommutes" class="hidden w-16 shrink-0 lg:block">
             <CommutesPopover :bien-id="b.id" />
           </div>
 
@@ -212,7 +212,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
           <div class="hidden shrink-0 sm:block">
             <StatusSelector
               :status="b.statut"
-              :upward="versLeHaut(i)"
+              :upward="upward(i)"
               @change="emit('statut', b.id, $event)"
             />
           </div>
