@@ -17,7 +17,7 @@ const guarantees = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
 <template>
   <section class="mx-auto max-w-6xl px-6 py-24">
     <div
-      v-reveal.groupe
+      v-reveal.group
       class="panneau relative isolate overflow-hidden rounded-feature bg-brand px-8 py-16 text-center md:py-24"
     >
       <span class="halo pointer-events-none absolute -inset-1/2" />

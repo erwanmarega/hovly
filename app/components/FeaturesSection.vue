@@ -57,7 +57,7 @@ const columns = [
       </p>
     </div>
 
-    <div v-reveal.groupe class="bento grid gap-5 md:grid-cols-5">
+    <div v-reveal.group class="bento grid gap-5 md:grid-cols-5">
       <article
         v-for="(f, i) in features"
         :key="f.cle"

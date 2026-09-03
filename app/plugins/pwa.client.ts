@@ -1,22 +1,22 @@
 export default defineNuxtPlugin(() => {
   if (!import.meta.client || !('serviceWorker' in navigator)) return
 
-  async function enregistrer() {
+  async function register() {
     try {
-      const enregistrement = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
 
-      let rechargement = false
+      let reloading = false
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (rechargement) return
-        rechargement = true
+        if (reloading) return
+        reloading = true
         window.location.reload()
       })
 
-      enregistrement.addEventListener('updatefound', () => {
-        const nouveau = enregistrement.installing
-        nouveau?.addEventListener('statechange', () => {
-          if (nouveau.state === 'installed' && navigator.serviceWorker.controller) {
-            nouveau.postMessage({ type: 'SKIP_WAITING' })
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        newWorker?.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.postMessage({ type: 'SKIP_WAITING' })
           }
         })
       })
@@ -24,6 +24,6 @@ export default defineNuxtPlugin(() => {
     }
   }
 
-  if (document.readyState === 'complete') enregistrer()
-  else window.addEventListener('load', enregistrer)
+  if (document.readyState === 'complete') register()
+  else window.addEventListener('load', register)
 })

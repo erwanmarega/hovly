@@ -60,7 +60,7 @@ const rows = [
       </div>
 
       <ol
-        v-reveal.groupe
+        v-reveal.group
         class="parcours relative mt-16 grid gap-8 md:grid-cols-3"
       >
         <div
