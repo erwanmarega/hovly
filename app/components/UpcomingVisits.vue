@@ -5,18 +5,18 @@ const props = withDefaults(defineProps<{ biens: Property[]; max?: number }>(), {
 
 const now = useNow()
 
-const visites = computed(() =>
+const visits = computed(() =>
   upcomingVisits(props.biens, now.value).slice(0, props.max)
 )
 
-const restantes = computed(
+const remaining = computed(
   () => Math.max(0, upcomingVisits(props.biens, now.value).length - props.max)
 )
 </script>
 
 <template>
   <section
-    v-if="visites.length"
+    v-if="visits.length"
     class="flex flex-wrap items-center gap-3 rounded-2xl border border-hairline-soft bg-white px-4 py-3"
   >
     <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-light text-[#8a6d1c]">
@@ -34,11 +34,11 @@ const restantes = computed(
     </span>
 
     <p class="text-sm font-semibold text-ink">
-      {{ visites.length }} visite{{ visites.length > 1 ? 's' : '' }} à venir
+      {{ visits.length }} visite{{ visits.length > 1 ? 's' : '' }} à venir
     </p>
 
     <ul class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-      <li v-for="b in visites" :key="b.id" class="min-w-0">
+      <li v-for="b in visits" :key="b.id" class="min-w-0">
         <NuxtLink
           :to="`/bien/${b.id}`"
           class="flex max-w-full items-center gap-2 rounded-full border border-hairline px-3 py-1.5 text-xs transition hover:bg-surface"
@@ -47,7 +47,7 @@ const restantes = computed(
           <VisitBadge :visite-le="b.visite_le" compact />
         </NuxtLink>
       </li>
-      <li v-if="restantes" class="text-xs text-stone">+{{ restantes }} autre{{ restantes > 1 ? 's' : '' }}</li>
+      <li v-if="remaining" class="text-xs text-stone">+{{ remaining }} autre{{ remaining > 1 ? 's' : '' }}</li>
     </ul>
   </section>
 </template>

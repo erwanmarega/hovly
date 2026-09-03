@@ -9,24 +9,24 @@ const props = withDefaults(
 
 const now = useNow()
 
-const passee = computed(
+const isPast = computed(
   () => !!props.visiteLe && new Date(props.visiteLe).getTime() < now.value.getTime()
 )
 
-const aujourdhui = computed(
+const isToday = computed(
   () =>
     !!props.visiteLe &&
-    !passee.value &&
+    !isPast.value &&
     daysUntil(props.visiteLe, now.value) === 0
 )
 
-const libelle = computed(() =>
+const label = computed(() =>
   props.visiteLe ? visitLabel(props.visiteLe, now.value) : ''
 )
 
-const teinte = computed(() => {
-  if (passee.value) return 'bg-surface text-steel'
-  if (aujourdhui.value) return 'bg-brand text-ink'
+const tint = computed(() => {
+  if (isPast.value) return 'bg-surface text-steel'
+  if (isToday.value) return 'bg-brand text-ink'
   return 'bg-brand-light text-[#8a6d1c]'
 })
 </script>
@@ -35,7 +35,7 @@ const teinte = computed(() => {
   <span
     v-if="visiteLe"
     class="inline-flex items-center gap-1.5 rounded-full font-semibold"
-    :class="[teinte, compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs']"
+    :class="[tint, compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs']"
     :title="longVisitDate(visiteLe)"
   >
     <svg
@@ -49,6 +49,6 @@ const teinte = computed(() => {
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M8 3v4M16 3v4M3 11h18" />
     </svg>
-    {{ libelle }}
+    {{ label }}
   </span>
 </template>

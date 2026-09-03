@@ -15,17 +15,17 @@ export interface CommuteDisplay {
   calcule: boolean
 }
 
-export function formatDuration(secondes: number | null): string {
-  if (secondes == null) return '—'
-  const minutes = Math.round(secondes / 60)
+export function formatDuration(seconds: number | null): string {
+  if (seconds == null) return '—'
+  const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `${minutes} min`
   const h = Math.floor(minutes / 60)
   return `${h} h ${String(minutes % 60).padStart(2, '0')}`
 }
 
-export function formatDistance(metres: number | null): string {
-  if (metres == null) return '—'
-  return metres < 1000 ? `${metres} m` : `${(metres / 1000).toFixed(1).replace('.', ',')} km`
+export function formatDistance(meters: number | null): string {
+  if (meters == null) return '—'
+  return meters < 1000 ? `${meters} m` : `${(meters / 1000).toFixed(1).replace('.', ',')} km`
 }
 
 export const commuteKey = (bienId: string, ancreId: string, mode: string) =>
@@ -42,34 +42,34 @@ export function propertyCommutes(
 ): CommuteDisplay[] {
   return ancres.map((ancre) => {
     const t = index.get(commuteKey(bienId, ancre.id, ancre.mode))
-    const duree = t?.duree_s ?? null
+    const duration = t?.duree_s ?? null
     return {
       ancre,
-      duree_s: duree,
+      duree_s: duration,
       distance_m: t?.distance_m ?? null,
-      depasse: duree != null && ancre.maxMinutes != null && duree > ancre.maxMinutes * 60,
+      depasse: duration != null && ancre.maxMinutes != null && duration > ancre.maxMinutes * 60,
       calcule: !!t
     }
   })
 }
 
-export function longestCommute(liste: CommuteDisplay[]): CommuteDisplay | null {
-  const calcules = liste.filter((t) => t.duree_s != null)
-  if (!calcules.length) return null
-  return calcules.reduce((pire, t) => (t.duree_s! > pire.duree_s! ? t : pire))
+export function longestCommute(list: CommuteDisplay[]): CommuteDisplay | null {
+  const completed = list.filter((t) => t.duree_s != null)
+  if (!completed.length) return null
+  return completed.reduce((worst, t) => (t.duree_s! > worst.duree_s! ? t : worst))
 }
 
-export function commuteForAnchor(liste: CommuteDisplay[], ancreId: string): CommuteDisplay | null {
-  const t = liste.find((x) => x.ancre.id === ancreId)
+export function commuteForAnchor(list: CommuteDisplay[], ancreId: string): CommuteDisplay | null {
+  const t = list.find((x) => x.ancre.id === ancreId)
   return t && t.duree_s != null ? t : null
 }
 
-export function selectedCommute(liste: CommuteDisplay[], ancreId: string | null): CommuteDisplay | null {
-  return ancreId ? commuteForAnchor(liste, ancreId) : longestCommute(liste)
+export function selectedCommute(list: CommuteDisplay[], ancreId: string | null): CommuteDisplay | null {
+  return ancreId ? commuteForAnchor(list, ancreId) : longestCommute(list)
 }
 
-export function exceededCount(liste: CommuteDisplay[]): number {
-  return liste.filter((t) => t.depasse).length
+export function exceededCount(list: CommuteDisplay[]): number {
+  return list.filter((t) => t.depasse).length
 }
 
 export type ModesState = Record<TravelMode, boolean>
