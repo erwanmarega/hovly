@@ -1,60 +1,60 @@
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
-    ouvert: boolean;
-    nbBiens: number;
-    enCours?: boolean;
-    erreur?: string;
-    lien?: string | null;
+    open: boolean;
+    propertyCount: number;
+    loading?: boolean;
+    error?: string;
+    link?: string | null;
   }>(),
-  { enCours: false, erreur: "", lien: null }
+  { loading: false, error: "", link: null }
 );
 
-const emit = defineEmits<{ creer: [titre: string]; fermer: [] }>();
+const emit = defineEmits<{ create: [titre: string]; close: [] }>();
 
 const titre = ref("");
-const copie = ref(false);
+const copied = ref(false);
 
 watch(
-  () => props.ouvert,
+  () => props.open,
   (o) => {
     if (o) {
       titre.value = "";
-      copie.value = false;
+      copied.value = false;
     }
   }
 );
 
-async function copier() {
-  if (!props.lien) return;
-  await navigator.clipboard.writeText(props.lien);
-  copie.value = true;
+async function copy() {
+  if (!props.link) return;
+  await navigator.clipboard.writeText(props.link);
+  copied.value = true;
 }
 
-function surTouche(e: KeyboardEvent) {
-  if (e.key === "Escape" && !props.enCours) emit("fermer");
+function onKey(e: KeyboardEvent) {
+  if (e.key === "Escape" && !props.loading) emit("close");
 }
 
 watch(
-  () => props.ouvert,
+  () => props.open,
   (o) => {
-    if (o) window.addEventListener("keydown", surTouche);
-    else window.removeEventListener("keydown", surTouche);
+    if (o) window.addEventListener("keydown", onKey);
+    else window.removeEventListener("keydown", onKey);
   }
 );
-onBeforeUnmount(() => window.removeEventListener("keydown", surTouche));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modale">
       <div
-        v-if="ouvert"
+        v-if="open"
         class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
         aria-labelledby="titre-partage"
-        @click.self="!enCours && emit('fermer')"
+        @click.self="!loading && emit('close')"
       >
         <div
           class="w-full max-w-md rounded-feature border border-hairline-soft bg-white p-8 shadow-[0_16px_48px_-8px_rgba(5,0,56,0.12)]"
@@ -66,12 +66,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", surTouche));
             id="titre-partage"
             class="mt-2 text-[22px] font-medium leading-snug tracking-tight text-ink-deep"
           >
-            {{ lien ? "Lien créé" : "Partager cette sélection" }}
+            {{ link ? "Lien créé" : "Partager cette sélection" }}
           </h2>
 
-          <template v-if="!lien">
+          <template v-if="!link">
             <p class="mt-3 text-sm text-slate">
-              {{ nbBiens }} bien{{ nbBiens > 1 ? "s" : "" }} — n'importe qui
+              {{ propertyCount }} bien{{ propertyCount > 1 ? "s" : "" }} — n'importe qui
               avec le lien pourra les consulter, sans avoir besoin de compte.
             </p>
 
@@ -86,28 +86,28 @@ onBeforeUnmount(() => window.removeEventListener("keydown", surTouche));
               />
             </label>
 
-            <p v-if="erreur" class="mt-3 rounded-xl bg-coral/20 px-3 py-2 text-sm text-[#600000]">
-              {{ erreur }}
+            <p v-if="error" class="mt-3 rounded-xl bg-coral/20 px-3 py-2 text-sm text-[#600000]">
+              {{ error }}
             </p>
 
             <div class="mt-6 flex items-center justify-end gap-3">
               <button
-                :disabled="enCours"
+                :disabled="loading"
                 class="rounded-full border border-hairline-strong bg-white px-6 py-3 text-sm font-medium text-ink transition hover:bg-surface disabled:opacity-60"
-                @click="emit('fermer')"
+                @click="emit('close')"
               >
                 Annuler
               </button>
               <button
-                :disabled="enCours"
+                :disabled="loading"
                 class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-sm font-medium text-ink transition hover:bg-brand-deep disabled:opacity-60"
-                @click="emit('creer', titre.trim())"
+                @click="emit('create', titre.trim())"
               >
                 <span
-                  v-if="enCours"
+                  v-if="loading"
                   class="size-4 animate-spin rounded-full border-2 border-ink/30 border-t-ink"
                 />
-                {{ enCours ? "Création…" : "Créer le lien" }}
+                {{ loading ? "Création…" : "Créer le lien" }}
               </button>
             </div>
           </template>
@@ -122,23 +122,23 @@ onBeforeUnmount(() => window.removeEventListener("keydown", surTouche));
               class="mt-4 flex items-center gap-2 rounded-2xl bg-surface px-4 py-3"
             >
               <input
-                :value="lien"
+                :value="link"
                 readonly
                 class="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none"
                 @focus="($event.target as HTMLInputElement).select()"
               />
               <button
                 class="shrink-0 rounded-full bg-ink px-4 py-1.5 text-xs font-medium text-white transition hover:bg-black"
-                @click="copier"
+                @click="copy"
               >
-                {{ copie ? "Copié !" : "Copier" }}
+                {{ copied ? "Copié !" : "Copier" }}
               </button>
             </div>
 
             <div class="mt-6 flex justify-end">
               <button
                 class="rounded-full bg-brand px-6 py-3 text-sm font-medium text-ink transition hover:bg-brand-deep"
-                @click="emit('fermer')"
+                @click="emit('close')"
               >
                 Fermer
               </button>

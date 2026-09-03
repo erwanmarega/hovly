@@ -135,13 +135,13 @@ const sourceLabels: Record<string, string> = {
       </section>
 
       <ShareModal
-        :ouvert="partageOuvert"
-        :nb-biens="choisis.length"
-        :en-cours="partageEnCours"
-        :erreur="partageErreur"
-        :lien="partageLien"
-        @creer="creerLienPartage"
-        @fermer="fermerPartage"
+        :open="partageOuvert"
+        :property-count="choisis.length"
+        :loading="partageEnCours"
+        :error="partageErreur"
+        :link="partageLien"
+        @create="creerLienPartage"
+        @close="fermerPartage"
       />
 
       <div v-if="pending" class="mt-6 h-96 animate-pulse rounded-feature border border-hairline-soft bg-white" />

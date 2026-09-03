@@ -251,7 +251,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       class="mt-4"
       :page="page"
       :total="total"
-      :par-page="parPage"
+      :per-page="parPage"
       @update:page="emit('update:page', $event)"
     />
   </div>

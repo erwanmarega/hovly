@@ -682,24 +682,24 @@ function toggleTri(clef: typeof triClef.value) {
       </Transition>
 
       <DeleteConfirmationModal
-        :ouvert="bienASupprimer !== null"
-        titre="Supprimer ce bien ?"
-        :nom="bienASupprimer?.titre"
-        :sous-ligne="bienASupprimer?.ville"
+        :open="bienASupprimer !== null"
+        title="Supprimer ce bien ?"
+        :name="bienASupprimer?.titre"
+        :subline="bienASupprimer?.ville"
         message="Le bien et son historique seront définitivement supprimés."
-        :en-cours="suppressionEnCours"
-        @annuler="bienASupprimer = null"
-        @confirmer="confirmerSuppression"
+        :loading="suppressionEnCours"
+        @cancel="bienASupprimer = null"
+        @confirm="confirmerSuppression"
       />
 
       <ShareModal
-        :ouvert="partageOuvert"
-        :nb-biens="nbCompares"
-        :en-cours="partageEnCours"
-        :erreur="partageErreur"
-        :lien="partageLien"
-        @creer="creerLienPartage"
-        @fermer="fermerPartage"
+        :open="partageOuvert"
+        :property-count="nbCompares"
+        :loading="partageEnCours"
+        :error="partageErreur"
+        :link="partageLien"
+        @create="creerLienPartage"
+        @close="fermerPartage"
       />
     </main>
   </div>

@@ -688,14 +688,14 @@ async function confirmerSuppression() {
       </template>
 
       <DeleteConfirmationModal
-        :ouvert="confirmationSuppression"
-        titre="Supprimer ce bien ?"
-        :nom="bien?.titre"
-        :sous-ligne="bien?.ville"
+        :open="confirmationSuppression"
+        title="Supprimer ce bien ?"
+        :name="bien?.titre"
+        :subline="bien?.ville"
         message="Le bien et son historique seront définitivement supprimés."
-        :en-cours="deleting"
-        @annuler="confirmationSuppression = false"
-        @confirmer="confirmerSuppression"
+        :loading="deleting"
+        @cancel="confirmationSuppression = false"
+        @confirm="confirmerSuppression"
       />
     </main>
   </div>

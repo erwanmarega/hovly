@@ -47,7 +47,7 @@ const emit = defineEmits<{
       class="mt-5 rounded-2xl border border-hairline-soft bg-white"
       :page="page"
       :total="total"
-      :par-page="parPage"
+      :per-page="parPage"
       @update:page="emit('update:page', $event)"
     />
   </div>

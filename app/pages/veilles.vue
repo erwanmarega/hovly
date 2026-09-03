@@ -244,13 +244,13 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
       </div>
 
       <DeleteConfirmationModal
-        :ouvert="rechercheASupprimer !== null"
-        titre="Supprimer cette veille ?"
-        :nom="rechercheASupprimer?.label"
+        :open="rechercheASupprimer !== null"
+        title="Supprimer cette veille ?"
+        :name="rechercheASupprimer?.label"
         message="La veille et ses résultats en attente seront définitivement supprimés."
-        :en-cours="suppressionEnCours"
-        @annuler="rechercheASupprimer = null"
-        @confirmer="confirmerSuppression"
+        :loading="suppressionEnCours"
+        @cancel="rechercheASupprimer = null"
+        @confirm="confirmerSuppression"
       />
     </main>
   </div>

@@ -1,39 +1,39 @@
 <script setup lang="ts">
 const props = defineProps<{
-  ouvert: boolean
-  titre: string
-  nom: string | null | undefined
-  sousLigne?: string | null
+  open: boolean
+  title: string
+  name: string | null | undefined
+  subline?: string | null
   message: string
-  enCours?: boolean
+  loading?: boolean
 }>()
 
-const emit = defineEmits<{ annuler: []; confirmer: [] }>()
+const emit = defineEmits<{ cancel: []; confirm: [] }>()
 
-function surTouche(e: KeyboardEvent) {
-  if (e.key === 'Escape' && !props.enCours) emit('annuler')
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && !props.loading) emit('cancel')
 }
 
 watch(
-  () => props.ouvert,
+  () => props.open,
   (o) => {
-    if (o) window.addEventListener('keydown', surTouche)
-    else window.removeEventListener('keydown', surTouche)
+    if (o) window.addEventListener('keydown', onKey)
+    else window.removeEventListener('keydown', onKey)
   }
 )
-onBeforeUnmount(() => window.removeEventListener('keydown', surTouche))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modale">
       <div
-        v-if="ouvert"
+        v-if="open"
         class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
         aria-labelledby="titre-suppression"
-        @click.self="!enCours && emit('annuler')"
+        @click.self="!loading && emit('cancel')"
       >
         <div
           class="w-full max-w-md rounded-feature border border-hairline-soft bg-white p-8 shadow-[0_16px_48px_-8px_rgba(5,0,56,0.12)]"
@@ -61,34 +61,34 @@ onBeforeUnmount(() => window.removeEventListener('keydown', surTouche))
             id="titre-suppression"
             class="mt-4 text-[22px] font-medium leading-snug tracking-tight text-ink-deep"
           >
-            {{ titre }}
+            {{ title }}
           </h2>
 
           <div class="mt-4 rounded-2xl bg-surface px-4 py-3">
-            <p class="break-words text-sm font-medium text-ink">{{ nom }}</p>
-            <p v-if="sousLigne" class="mt-0.5 text-xs text-stone">{{ sousLigne }}</p>
+            <p class="break-words text-sm font-medium text-ink">{{ name }}</p>
+            <p v-if="subline" class="mt-0.5 text-xs text-stone">{{ subline }}</p>
           </div>
 
           <p class="mt-4 text-sm text-slate">{{ message }}</p>
 
           <div class="mt-6 flex items-center justify-end gap-3">
             <button
-              :disabled="enCours"
+              :disabled="loading"
               class="rounded-full border border-hairline-strong bg-white px-6 py-3 text-sm font-medium text-ink transition hover:bg-surface disabled:opacity-60"
-              @click="emit('annuler')"
+              @click="emit('cancel')"
             >
               Annuler
             </button>
             <button
-              :disabled="enCours"
+              :disabled="loading"
               class="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-sm font-medium text-ink transition hover:bg-brand-deep disabled:opacity-60"
-              @click="emit('confirmer')"
+              @click="emit('confirm')"
             >
               <span
-                v-if="enCours"
+                v-if="loading"
                 class="size-4 animate-spin rounded-full border-2 border-ink/30 border-t-ink"
               />
-              {{ enCours ? 'Suppression…' : 'Supprimer' }}
+              {{ loading ? 'Suppression…' : 'Supprimer' }}
             </button>
           </div>
         </div>
