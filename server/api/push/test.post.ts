@@ -12,12 +12,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const client = await db(event)
-  const envois = await sendPush(client, user.id, {
+  const result = await sendPush(client, user.id, {
     titre: 'Hovly',
     corps: 'Les notifications fonctionnent. Tu seras prévenu dès qu’un prix baisse.',
     url: '/alertes',
     tag: 'test'
   })
 
-  return { ok: envois.sent > 0, ...envois }
+  return { ok: result.sent > 0, ...result }
 })
