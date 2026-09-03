@@ -118,8 +118,8 @@ useHead({
             <PropertyStats
               taille="md"
               :surface="bien.surface"
-              :nb-pieces="bien.nb_pieces"
-              :pieces-label="bien.nb_pieces && bien.nb_pieces > 1 ? 'pièces' : 'pièce'"
+              :rooms="bien.nb_pieces"
+              :rooms-label="bien.nb_pieces && bien.nb_pieces > 1 ? 'pièces' : 'pièce'"
               :etage="bien.etage"
               :dpe="bien.dpe"
             />

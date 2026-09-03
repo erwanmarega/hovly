@@ -50,7 +50,7 @@ const emit = defineEmits<{ supprimer: [id: string] }>()
       </p>
 
       <div class="mt-4 flex flex-wrap items-center gap-1.5 text-xs">
-        <PropertyStats :surface="bien.surface" :nb-pieces="bien.nb_pieces" :price-per-sqm="pricePerSqm" :dpe="bien.dpe">
+        <PropertyStats :surface="bien.surface" :rooms="bien.nb_pieces" :price-per-sqm="pricePerSqm" :dpe="bien.dpe">
           <VisitBadge :visite-le="bien.visite_le" compact />
         </PropertyStats>
       </div>

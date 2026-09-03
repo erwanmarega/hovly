@@ -47,8 +47,8 @@ const estAchatPartage = computed(() => isPurchase(props.bien));
       <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
         <PropertyStats
           :surface="bien.surface"
-          :nb-pieces="bien.nb_pieces"
-          pieces-label="p"
+          :rooms="bien.nb_pieces"
+          rooms-label="p"
           :etage="bien.etage"
           :dpe="bien.dpe"
         />

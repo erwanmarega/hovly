@@ -3,82 +3,82 @@ import type { Status } from "~/types";
 import { STATUSES } from "~/composables/useProperties";
 
 const props = defineProps<{
-  statut: Status;
-  versLeHaut?: boolean;
+  status: Status;
+  upward?: boolean;
 }>();
 
-const emit = defineEmits<{ change: [statut: Status] }>();
+const emit = defineEmits<{ change: [status: Status] }>();
 
-const LARGEUR = 176; // w-44
-const MARGE = 8;
-const ECART = 4;
+const WIDTH = 176; // w-44
+const MARGIN = 8;
+const GAP = 4;
 
-const ouvert = ref(false);
-const place = ref(false);
-const declencheur = ref<HTMLElement | null>(null);
+const open = ref(false);
+const placed = ref(false);
+const trigger = ref<HTMLElement | null>(null);
 const menu = ref<HTMLElement | null>(null);
 const position = ref({ top: 0, left: 0 });
 
-function placer() {
-  const el = declencheur.value;
+function updatePosition() {
+  const el = trigger.value;
   if (!el) return;
   const r = el.getBoundingClientRect();
-  const hauteur = menu.value?.offsetHeight ?? 0;
+  const height = menu.value?.offsetHeight ?? 0;
   position.value = {
-    top: props.versLeHaut ? r.top - hauteur - ECART : r.bottom + ECART,
+    top: props.upward ? r.top - height - GAP : r.bottom + GAP,
     left: Math.max(
-      MARGE,
-      Math.min(r.left, window.innerWidth - LARGEUR - MARGE)
+      MARGIN,
+      Math.min(r.left, window.innerWidth - WIDTH - MARGIN)
     ),
   };
-  place.value = true;
+  placed.value = true;
 }
 
-async function basculer() {
-  if (ouvert.value) return fermer();
-  ouvert.value = true;
+async function toggle() {
+  if (open.value) return close();
+  open.value = true;
   await nextTick();
-  placer();
+  updatePosition();
 }
 
-function fermer() {
-  ouvert.value = false;
-  place.value = false;
+function close() {
+  open.value = false;
+  placed.value = false;
 }
 
-function choisir(s: Status) {
-  fermer();
-  if (s !== props.statut) emit("change", s);
+function select(s: Status) {
+  close();
+  if (s !== props.status) emit("change", s);
 }
 
-function ecouter(actif: boolean) {
-  const methode = actif ? "addEventListener" : "removeEventListener";
-  window[methode]("scroll", placer, true);
-  window[methode]("resize", placer);
+function listen(active: boolean) {
+  const method = active ? "addEventListener" : "removeEventListener";
+  window[method]("scroll", updatePosition, true);
+  window[method]("resize", updatePosition);
 }
 
-watch(ouvert, ecouter);
-onBeforeUnmount(() => ecouter(false));
+watch(open, listen);
+onBeforeUnmount(() => listen(false));
 </script>
 <template>
   <div class="relative">
     <button
-      ref="declencheur"
+      ref="trigger"
       type="button"
-      :aria-expanded="ouvert"
+      :aria-expanded="open"
       aria-label="Changer le statut"
-      @click="basculer"
+      @click="toggle"
     >
-      <StatusBadge :status="statut" />
+      <StatusBadge :status="status" />
     </button>
 
     <Teleport to="body">
-      <template v-if="ouvert">
+      <template v-if="open">
         <button
           class="fixed inset-0 z-20 cursor-default"
           tabindex="-1"
           aria-label="Fermer le menu"
-          @click="fermer"
+          @click="close"
         />
         <div
           ref="menu"
@@ -86,7 +86,7 @@ onBeforeUnmount(() => ecouter(false));
           :style="{
             top: `${position.top}px`,
             left: `${position.left}px`,
-            visibility: place ? 'visible' : 'hidden',
+            visibility: placed ? 'visible' : 'hidden',
           }"
         >
           <button
@@ -94,9 +94,9 @@ onBeforeUnmount(() => ecouter(false));
             :key="s.value"
             class="block w-full rounded-lg px-3 py-1.5 text-left text-sm hover:bg-surface"
             :class="
-              statut === s.value ? 'font-semibold text-ink' : 'text-slate'
+              status === s.value ? 'font-semibold text-ink' : 'text-slate'
             "
-            @click="choisir(s.value)"
+            @click="select(s.value)"
           >
             {{ s.label }}
           </button>

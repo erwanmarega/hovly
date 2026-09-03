@@ -20,7 +20,7 @@ const props = defineProps<{
   triAsc: boolean
   page: number
   total: number
-  parPage: number
+  perPage: number
 }>()
 
 const emit = defineEmits<{
@@ -211,8 +211,8 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
 
           <div class="hidden shrink-0 sm:block">
             <StatusSelector
-              :statut="b.statut"
-              :vers-le-haut="versLeHaut(i)"
+              :status="b.statut"
+              :upward="versLeHaut(i)"
               @change="emit('statut', b.id, $event)"
             />
           </div>
@@ -251,7 +251,7 @@ const versLeHaut = (i: number) => props.biens.length > 3 && i >= props.biens.len
       class="mt-4"
       :page="page"
       :total="total"
-      :per-page="parPage"
+      :per-page="perPage"
       @update:page="emit('update:page', $event)"
     />
   </div>

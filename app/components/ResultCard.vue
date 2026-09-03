@@ -67,11 +67,11 @@ const quand = computed(() =>
       <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
         <PropertyStats
           :surface="result.surface"
-          :nb-pieces="result.nb_pieces"
-          pieces-label="p"
+          :rooms="result.nb_pieces"
+          rooms-label="p"
           :price-per-sqm="pricePerSqm"
         >
-          <template #avant>
+          <template #before>
             <span
               v-if="formatPrice(result.prix)"
               class="rounded-full bg-ink px-2 py-0.5 font-semibold tabular-nums text-white"

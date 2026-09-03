@@ -76,8 +76,8 @@ const emit = defineEmits<{
       <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
         <PropertyStats
           :surface="bien.surface"
-          :nb-pieces="bien.nb_pieces"
-          pieces-label="p"
+          :rooms="bien.nb_pieces"
+          rooms-label="p"
           :price-per-sqm="pricePerSqm"
           :dpe="bien.dpe"
         >
@@ -87,7 +87,7 @@ const emit = defineEmits<{
 
       <div class="mt-2.5 flex items-center gap-2">
         <StatusSelector
-          :statut="bien.statut"
+          :status="bien.statut"
           @change="emit('statut', bien.id, $event)"
         />
 

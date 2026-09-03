@@ -552,7 +552,7 @@ async function confirmerSuppression() {
 
             <ScoreBreakdown v-if="score" :score="score" />
 
-            <NeighborhoodMarket :marche="marche" :price-per-sqm="pricePerSqm || null" />
+            <NeighborhoodMarket :market="marche" :price-per-sqm="pricePerSqm || null" />
 
             <div
               v-if="doublons.length"

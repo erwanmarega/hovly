@@ -10,7 +10,7 @@ const props = withDefaults(
     pricePerSqm: (b: Property) => number;
     page: number;
     total: number;
-    parPage: number;
+    perPage: number;
     compact?: boolean;
   }>(),
   { compact: false }
@@ -47,7 +47,7 @@ const emit = defineEmits<{
       class="mt-5 rounded-2xl border border-hairline-soft bg-white"
       :page="page"
       :total="total"
-      :per-page="parPage"
+      :per-page="perPage"
       @update:page="emit('update:page', $event)"
     />
   </div>
