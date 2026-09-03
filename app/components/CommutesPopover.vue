@@ -1,113 +1,113 @@
 <script setup lang="ts">
 const props = defineProps<{ bienId: string }>()
 
-const { forProperty: pour, selected: retenu, selectedAnchor: ancreChoisie, selectAnchor: choisirAncre } = useCommutes()
+const { forProperty, selected, selectedAnchor, selectAnchor } = useCommutes()
 
-const ouvert = ref(false)
-const declencheur = ref<HTMLElement | null>(null)
-const coord = ref<{ left: number, top?: number, bottom?: number }>({ left: 0, top: 0 })
+const open = ref(false)
+const trigger = ref<HTMLElement | null>(null)
+const position = ref<{ left: number, top?: number, bottom?: number }>({ left: 0, top: 0 })
 
-const liste = computed(() => pour(props.bienId))
-const affiche = computed(() => retenu(props.bienId))
+const list = computed(() => forProperty(props.bienId))
+const displayed = computed(() => selected(props.bienId))
 
-const LARGEUR = 256
-const HAUTEUR_ESTIMEE = 280
-const MARGE = 8
+const WIDTH = 256
+const ESTIMATED_HEIGHT = 280
+const MARGIN = 8
 
-function basculer() {
-  if (ouvert.value) {
-    ouvert.value = false
+function toggle() {
+  if (open.value) {
+    open.value = false
     return
   }
 
-  const r = declencheur.value?.getBoundingClientRect()
+  const r = trigger.value?.getBoundingClientRect()
   if (!r) return
 
-  const placeEnBas = window.innerHeight - r.bottom
-  const versLeHaut = placeEnBas < HAUTEUR_ESTIMEE && r.top > placeEnBas
+  const spaceBelow = window.innerHeight - r.bottom
+  const upward = spaceBelow < ESTIMATED_HEIGHT && r.top > spaceBelow
 
-  coord.value = {
-    left: Math.max(MARGE, Math.min(r.left, window.innerWidth - LARGEUR - MARGE)),
-    top: versLeHaut ? undefined : r.bottom + 4,
-    bottom: versLeHaut ? window.innerHeight - r.top + 4 : undefined
+  position.value = {
+    left: Math.max(MARGIN, Math.min(r.left, window.innerWidth - WIDTH - MARGIN)),
+    top: upward ? undefined : r.bottom + 4,
+    bottom: upward ? window.innerHeight - r.top + 4 : undefined
   }
-  ouvert.value = true
+  open.value = true
 }
 
 const style = computed(() => ({
-  left: `${coord.value.left}px`,
-  top: coord.value.top != null ? `${coord.value.top}px` : undefined,
-  bottom: coord.value.bottom != null ? `${coord.value.bottom}px` : undefined
+  left: `${position.value.left}px`,
+  top: position.value.top != null ? `${position.value.top}px` : undefined,
+  bottom: position.value.bottom != null ? `${position.value.bottom}px` : undefined
 }))
 
-function fermer() {
-  ouvert.value = false
+function close() {
+  open.value = false
 }
 
-watch(ouvert, (o) => {
-  if (o) window.addEventListener('scroll', fermer, { passive: true, capture: true })
-  else window.removeEventListener('scroll', fermer, { capture: true })
+watch(open, (o) => {
+  if (o) window.addEventListener('scroll', close, { passive: true, capture: true })
+  else window.removeEventListener('scroll', close, { capture: true })
 })
 
-onScopeDispose(() => window.removeEventListener('scroll', fermer, { capture: true }))
+onScopeDispose(() => window.removeEventListener('scroll', close, { capture: true }))
 
-function afficherDansLaColonne(ancreId: string | null) {
-  ouvert.value = false
-  choisirAncre(ancreId)
+function showInColumn(ancreId: string | null) {
+  open.value = false
+  selectAnchor(ancreId)
 }
 </script>
 
 <template>
-  <div class="relative" @keydown.escape="fermer">
+  <div class="relative" @keydown.escape="close">
     <button
-      ref="declencheur"
+      ref="trigger"
       type="button"
       class="rounded-full transition hover:opacity-80"
-      :aria-expanded="ouvert"
+      :aria-expanded="open"
       aria-label="Voir tous les trajets de ce bien"
-      @click="basculer"
+      @click="toggle"
     >
       <span
-        v-if="affiche"
+        v-if="displayed"
         class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-        :class="affiche.depasse ? 'bg-coral text-[#600000]' : 'bg-teal text-[#0a4a42]'"
-        :title="`${affiche.ancre.label} ${MODE_LABELS[affiche.ancre.mode]}`"
+        :class="displayed.depasse ? 'bg-coral text-[#600000]' : 'bg-teal text-[#0a4a42]'"
+        :title="`${displayed.ancre.label} ${MODE_LABELS[displayed.ancre.mode]}`"
       >
-        <ModeIcon :mode="affiche.ancre.mode" class="size-3" />
-        {{ formatDuration(affiche.duree_s) }}
+        <ModeIcon :mode="displayed.ancre.mode" class="size-3" />
+        {{ formatDuration(displayed.duree_s) }}
       </span>
       <span v-else class="text-stone">—</span>
     </button>
 
     <Teleport to="body">
-      <template v-if="ouvert">
+      <template v-if="open">
         <button
           class="fixed inset-0 z-40 cursor-default"
           tabindex="-1"
           aria-label="Fermer"
-          @click="fermer"
+          @click="close"
         />
         <div
           class="fixed z-50 w-64 rounded-xl border border-hairline bg-white p-1 text-left shadow-lg"
           :style="style"
-          @keydown.escape="fermer"
+          @keydown.escape="close"
         >
           <p class="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-stone">
             Afficher dans la colonne
           </p>
 
           <button
-            v-for="t in liste"
+            v-for="t in list"
             :key="t.ancre.id"
             class="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition hover:bg-surface"
-            :class="ancreChoisie?.id === t.ancre.id ? 'bg-surface-soft' : ''"
-            @click="afficherDansLaColonne(t.ancre.id)"
+            :class="selectedAnchor?.id === t.ancre.id ? 'bg-surface-soft' : ''"
+            @click="showInColumn(t.ancre.id)"
           >
             <ModeIcon :mode="t.ancre.mode" class="size-3.5 shrink-0 text-stone" />
             <span class="min-w-0 flex-1">
               <span
                 class="block truncate text-left"
-                :class="ancreChoisie?.id === t.ancre.id ? 'font-semibold text-ink' : 'text-slate'"
+                :class="selectedAnchor?.id === t.ancre.id ? 'font-semibold text-ink' : 'text-slate'"
               >{{ t.ancre.label }}</span>
               <span class="block truncate text-left text-[11px] text-stone">
                 {{ MODE_LABELS[t.ancre.mode] }}
@@ -125,8 +125,8 @@ function afficherDansLaColonne(ancreId: string | null) {
 
           <button
             class="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-sm transition hover:bg-surface"
-            :class="ancreChoisie ? 'text-slate' : 'bg-surface-soft font-semibold text-ink'"
-            @click="afficherDansLaColonne(null)"
+            :class="selectedAnchor ? 'text-slate' : 'bg-surface-soft font-semibold text-ink'"
+            @click="showInColumn(null)"
           >
             Le plus long
             <span class="text-[11px] font-normal text-stone">par défaut</span>

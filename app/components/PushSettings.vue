@@ -1,9 +1,9 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    variante?: 'carte' | 'ligne'
+    variant?: 'card' | 'line'
   }>(),
-  { variante: 'carte' }
+  { variant: 'card' }
 )
 
 const { state, active, busy, error, init, enable, disable, test } = usePushNotifications()
@@ -12,7 +12,7 @@ const message = ref('')
 
 onMounted(init)
 
-async function basculer() {
+async function toggle() {
   message.value = ''
   if (active.value) {
     await disable()
@@ -22,29 +22,29 @@ async function basculer() {
   if (ok) message.value = 'Notifications activées sur cet appareil.'
 }
 
-async function envoyerTest() {
+async function sendTest() {
   message.value = ''
   const ok = await test()
   message.value = ok ? 'Notification de test envoyée.' : ''
 }
 
-const explication = computed(() => {
+const explanation = computed(() => {
   switch (state.value) {
-    case 'non_supporte':
+    case 'unsupported':
       return 'Ce navigateur ne gère pas les notifications push. Sur iPhone, ajoute Hovly à l’écran d’accueil.'
-    case 'non_configure':
+    case 'not_configured':
       return 'Push non configuré sur le serveur (clés VAPID absentes).'
-    case 'refuse':
+    case 'denied':
       return 'Notifications bloquées pour ce site. Autorise-les dans les réglages du navigateur.'
-    case 'actif':
+    case 'active':
       return 'Baisses de prix et annonces disparues arrivent directement sur cet appareil.'
     default:
       return 'Reçois les baisses de prix sans attendre l’email quotidien.'
   }
 })
 
-const bloque = computed(
-  () => state.value === 'non_supporte' || state.value === 'non_configure' || state.value === 'refuse'
+const blocked = computed(
+  () => state.value === 'unsupported' || state.value === 'not_configured' || state.value === 'denied'
 )
 </script>
 
@@ -52,7 +52,7 @@ const bloque = computed(
   <div
     class="flex flex-wrap items-center gap-3"
     :class="
-      variante === 'carte'
+      variant === 'card'
         ? 'rounded-2xl border border-hairline-soft bg-white p-4'
         : 'border-b border-hairline-soft px-3 py-3'
     "
@@ -80,17 +80,17 @@ const bloque = computed(
         Notifications push
         <span v-if="active" class="ml-1 text-xs font-semibold text-[#0a4a42]">actives</span>
       </p>
-      <p class="mt-0.5 text-xs text-stone">{{ explication }}</p>
+      <p class="mt-0.5 text-xs text-stone">{{ explanation }}</p>
       <p v-if="error" class="mt-1 text-xs text-[#600000]">{{ error }}</p>
       <p v-else-if="message" class="mt-1 text-xs text-[#0a4a42]">{{ message }}</p>
     </div>
 
-    <div v-if="!bloque" class="flex shrink-0 items-center gap-2">
+    <div v-if="!blocked" class="flex shrink-0 items-center gap-2">
       <button
         v-if="active"
         :disabled="busy"
         class="rounded-full border border-hairline px-3 py-1.5 text-xs font-medium text-steel transition hover:bg-surface disabled:opacity-50"
-        @click="envoyerTest"
+        @click="sendTest"
       >
         Tester
       </button>
@@ -98,7 +98,7 @@ const bloque = computed(
         :disabled="busy"
         class="rounded-full px-3.5 py-1.5 text-xs font-medium transition disabled:opacity-50"
         :class="active ? 'border border-hairline text-steel hover:bg-surface' : 'bg-ink text-white hover:bg-black'"
-        @click="basculer"
+        @click="toggle"
       >
         {{ busy ? '…' : active ? 'Désactiver' : 'Activer' }}
       </button>

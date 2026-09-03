@@ -4,7 +4,7 @@ import { comparePublic } from "~/composables/useComparator";
 
 const props = defineProps<{ biens: SharedProperty[]; token: string }>();
 
-const lignes = computed(() => comparePublic(props.biens));
+const rows = computed(() => comparePublic(props.biens));
 </script>
 
 <template>
@@ -52,7 +52,7 @@ const lignes = computed(() => comparePublic(props.biens));
 
       <tbody>
         <tr
-          v-for="l in lignes"
+          v-for="l in rows"
           :key="l.key"
           class="border-t border-hairline-soft transition hover:bg-surface-soft"
         >
@@ -65,7 +65,7 @@ const lignes = computed(() => comparePublic(props.biens));
             </span>
           </th>
           <td
-            v-for="(valeur, i) in l.display"
+            v-for="(value, i) in l.display"
             :key="i"
             class="border-l border-hairline-soft p-4 align-middle tabular-nums"
             :class="l.best.includes(i) ? 'font-semibold text-[#0a4a42]' : 'text-slate'"
@@ -74,7 +74,7 @@ const lignes = computed(() => comparePublic(props.biens));
               v-if="l.best.includes(i)"
               class="mr-1.5 inline-block rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold"
             >★</span>
-            {{ valeur }}
+            {{ value }}
           </td>
         </tr>
 

@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <PushSettings variante="ligne" />
+        <PushSettings variant="line" />
 
         <div v-if="loading && !alertes.length" class="space-y-2 p-3">
           <span

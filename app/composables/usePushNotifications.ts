@@ -1,23 +1,23 @@
-export type PushState = 'inconnu' | 'non_supporte' | 'non_configure' | 'refuse' | 'inactif' | 'actif'
+export type PushState = 'unknown' | 'unsupported' | 'not_configured' | 'denied' | 'inactive' | 'active'
 
 export function base64UrlToBytes(base64: string): Uint8Array {
-  const remplissage = '='.repeat((4 - (base64.length % 4)) % 4)
-  const brut = atob((base64 + remplissage).replace(/-/g, '+').replace(/_/g, '/'))
-  const octets = new Uint8Array(brut.length)
-  for (let i = 0; i < brut.length; i++) octets[i] = brut.charCodeAt(i)
-  return octets
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+  const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'))
+  const bytes = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
+  return bytes
 }
 
 export function usePushNotifications() {
   const key = useRuntimeConfig().public.vapidPublicKey as string
 
-  const state = useState<PushState>('push-etat', () => 'inconnu')
+  const state = useState<PushState>('push-etat', () => 'unknown')
   const busy = useState('push-occupe', () => false)
   const error = useState<string>('push-erreur', () => '')
   const initialized = useState('push-initialise', () => false)
 
-  const supported = computed(() => state.value !== 'non_supporte' && state.value !== 'non_configure')
-  const active = computed(() => state.value === 'actif')
+  const supported = computed(() => state.value !== 'unsupported' && state.value !== 'not_configured')
+  const active = computed(() => state.value === 'active')
 
   function isAvailable(): boolean {
     return (
@@ -38,22 +38,22 @@ export function usePushNotifications() {
     initialized.value = true
 
     if (!isAvailable()) {
-      state.value = 'non_supporte'
+      state.value = 'unsupported'
       return
     }
     if (!key) {
-      state.value = 'non_configure'
+      state.value = 'not_configured'
       return
     }
     if (Notification.permission === 'denied') {
-      state.value = 'refuse'
+      state.value = 'denied'
       return
     }
 
     try {
-      state.value = (await currentSubscription()) ? 'actif' : 'inactif'
+      state.value = (await currentSubscription()) ? 'active' : 'inactive'
     } catch {
-      state.value = 'inactif'
+      state.value = 'inactive'
     }
   }
 
@@ -65,20 +65,20 @@ export function usePushNotifications() {
     try {
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') {
-        state.value = permission === 'denied' ? 'refuse' : 'inactif'
+        state.value = permission === 'denied' ? 'denied' : 'inactive'
         return false
       }
 
       const sw = await navigator.serviceWorker.ready
-      const abonnement =
+      const subscription =
         (await sw.pushManager.getSubscription()) ??
         (await sw.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: base64UrlToBytes(key)
         }))
 
-      await $fetch('/api/push/abonner', { method: 'POST', body: abonnement.toJSON() })
-      state.value = 'actif'
+      await $fetch('/api/push/abonner', { method: 'POST', body: subscription.toJSON() })
+      state.value = 'active'
       return true
     } catch (e: unknown) {
       error.value = (e as Error)?.message || 'Activation impossible'
@@ -94,15 +94,15 @@ export function usePushNotifications() {
     busy.value = true
     error.value = ''
     try {
-      const abonnement = await currentSubscription()
-      if (abonnement) {
+      const subscription = await currentSubscription()
+      if (subscription) {
         await $fetch('/api/push/desabonner', {
           method: 'POST',
-          body: { endpoint: abonnement.endpoint }
+          body: { endpoint: subscription.endpoint }
         })
-        await abonnement.unsubscribe()
+        await subscription.unsubscribe()
       }
-      state.value = 'inactif'
+      state.value = 'inactive'
       return true
     } catch (e: unknown) {
       error.value = (e as Error)?.message || 'Désactivation impossible'
