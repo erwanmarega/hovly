@@ -3,7 +3,7 @@ import type { SharedProperty } from "~/types";
 
 const props = defineProps<{ bien: SharedProperty; token: string }>();
 
-const estAchatPartage = computed(() => isPurchase(props.bien));
+const purchase = computed(() => isPurchase(props.bien));
 </script>
 
 <template>
@@ -36,7 +36,7 @@ const estAchatPartage = computed(() => isPurchase(props.bien));
       <p class="mt-2 text-lg font-semibold tabular-nums">
         <template v-if="bien.prix != null">
           {{ formatNumber(Math.round(bien.prix / 100)) }} €<span
-            v-if="!estAchatPartage"
+            v-if="!purchase"
             class="text-xs font-normal text-stone"
             >/mois</span
           >
