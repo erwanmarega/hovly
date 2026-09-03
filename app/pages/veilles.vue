@@ -7,16 +7,16 @@ const route = useRoute()
 const {
   recherches,
   resultats,
-  nouveaux,
+  newCount: nouveaux,
   refresh,
-  creer,
-  modifier,
-  supprimer,
-  scanner,
-  chargerResultats,
-  garder,
-  ignorer
-} = useVeilles()
+  create: creer,
+  update: modifier,
+  remove: supprimer,
+  scan: scanner,
+  loadResults: chargerResultats,
+  keep: garder,
+  ignore: ignorer
+} = useWatches()
 
 const { pending } = useAsyncData('veilles', () => refresh(), { server: false })
 

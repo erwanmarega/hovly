@@ -1,6 +1,6 @@
 import type { Share } from "~/types";
 
-export function usePartages() {
+export function useShares() {
   const partages = useState<Share[]>("partages", () => []);
 
   async function refresh() {
@@ -8,7 +8,7 @@ export function usePartages() {
     return partages.value;
   }
 
-  async function creer(bienIds: string[], titre?: string): Promise<Share> {
+  async function create(bienIds: string[], titre?: string): Promise<Share> {
     const partage = await $fetch<Share>("/api/partages", {
       method: "POST",
       body: { bien_ids: bienIds, titre },
@@ -17,7 +17,7 @@ export function usePartages() {
     return partage;
   }
 
-  async function revoquer(id: string) {
+  async function revoke(id: string) {
     const snapshot = partages.value;
     partages.value = partages.value.filter((p) => p.id !== id);
     try {
@@ -28,5 +28,5 @@ export function usePartages() {
     }
   }
 
-  return { partages, refresh, creer, revoquer };
+  return { partages, refresh, create, revoke };
 }

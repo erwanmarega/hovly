@@ -47,8 +47,8 @@ function soumettre() {
   emit('soumettre', {
     url: url.value.trim(),
     label: label.value.trim(),
-    prix_max: enCentimes(prixMax.value),
-    prix_min: enCentimes(prixMin.value),
+    prix_max: toCents(prixMax.value),
+    prix_min: toCents(prixMin.value),
     surface_min: surfaceMin.value,
     pieces_min: piecesMin.value,
     frequence_min: frequence.value

@@ -29,7 +29,7 @@ const libelle = computed(() =>
   baisse.value ? "Baisse de prix" : "Annonce supprimée"
 );
 
-const { marquerLue } = useAlertes();
+const { markRead: marquerLue } = useAlerts();
 </script>
 
 <template>

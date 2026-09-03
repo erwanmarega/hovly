@@ -1,6 +1,6 @@
 import type { Property, ResultState, SavedSearch, WatchResult } from '~/types'
 
-export interface ResumeScan {
+export interface ScanSummary {
   recherche_id: string
   label: string
   trouvees: number
@@ -11,21 +11,21 @@ export interface ResumeScan {
 }
 
 /** Le champ `prix` d'un bien est en centimes ; les filtres d'une veille suivent la même unité. */
-export const enCentimes = (euros: number | null) =>
+export const toCents = (euros: number | null) =>
   euros == null || !Number.isFinite(euros) ? null : Math.round(euros * 100)
 
-export const enEuros = (centimes: number | null) =>
+export const toEuros = (centimes: number | null) =>
   centimes == null ? null : Math.round(centimes / 100)
 
-export function useVeilles() {
+export function useWatches() {
   const recherches = useState<SavedSearch[]>('recherches', () => [])
   const resultats = useState<Record<string, WatchResult[]>>('veille-resultats', () => ({}))
 
-  const nouveaux = computed(() =>
+  const newCount = computed(() =>
     recherches.value.reduce((total, r) => total + (r.nouveaux ?? 0), 0)
   )
 
-  function majCompteur(rechercheId: string, delta: number) {
+  function updateCounter(rechercheId: string, delta: number) {
     const r = recherches.value.find((x) => x.id === rechercheId)
     if (r) r.nouveaux = Math.max(0, (r.nouveaux ?? 0) + delta)
   }
@@ -35,13 +35,13 @@ export function useVeilles() {
     return recherches.value
   }
 
-  async function creer(payload: Partial<SavedSearch>): Promise<SavedSearch> {
+  async function create(payload: Partial<SavedSearch>): Promise<SavedSearch> {
     const row = await $fetch<SavedSearch>('/api/recherches', { method: 'POST', body: payload })
     recherches.value = [{ ...row, nouveaux: 0 }, ...recherches.value]
     return row
   }
 
-  async function modifier(id: string, patch: Partial<SavedSearch>) {
+  async function update(id: string, patch: Partial<SavedSearch>) {
     const r = recherches.value.find((x) => x.id === id)
     const avant = r ? { ...r } : null
     if (r) Object.assign(r, patch)
@@ -53,7 +53,7 @@ export function useVeilles() {
     }
   }
 
-  async function supprimer(id: string) {
+  async function remove(id: string) {
     const snapshot = recherches.value
     recherches.value = recherches.value.filter((x) => x.id !== id)
     try {
@@ -66,8 +66,8 @@ export function useVeilles() {
     }
   }
 
-  async function scanner(id: string): Promise<ResumeScan> {
-    const resume = await $fetch<ResumeScan>(`/api/recherches/${id}/scan`, { method: 'POST' })
+  async function scan(id: string): Promise<ScanSummary> {
+    const resume = await $fetch<ScanSummary>(`/api/recherches/${id}/scan`, { method: 'POST' })
 
     const r = recherches.value.find((x) => x.id === id)
     if (r) {
@@ -82,7 +82,7 @@ export function useVeilles() {
     return resume
   }
 
-  async function chargerResultats(id: string, etat?: ResultState) {
+  async function loadResults(id: string, etat?: ResultState) {
     const liste = await $fetch<WatchResult[]>(`/api/recherches/${id}/resultats`, {
       query: etat ? { etat } : undefined
     })
@@ -90,39 +90,39 @@ export function useVeilles() {
     return liste
   }
 
-  function retirer(rechercheId: string, resultatId: string) {
+  function removeResult(rechercheId: string, resultatId: string) {
     const liste = resultats.value[rechercheId]
     if (liste) resultats.value[rechercheId] = liste.filter((r) => r.id !== resultatId)
   }
 
-  async function ignorer(rechercheId: string, resultatId: string) {
+  async function ignore(rechercheId: string, resultatId: string) {
     await $fetch(`/api/resultats/${resultatId}`, { method: 'PATCH', body: { etat: 'ignore' } })
-    retirer(rechercheId, resultatId)
-    majCompteur(rechercheId, -1)
+    removeResult(rechercheId, resultatId)
+    updateCounter(rechercheId, -1)
   }
 
   /** Scrape la fiche complète et crée le bien. Plus lent qu'« ignorer » : prévoir un état de chargement. */
-  async function garder(rechercheId: string, resultatId: string): Promise<Property> {
+  async function keep(rechercheId: string, resultatId: string): Promise<Property> {
     const { bien } = await $fetch<{ bien: Property }>(`/api/resultats/${resultatId}`, {
       method: 'PATCH',
       body: { etat: 'garde' }
     })
-    retirer(rechercheId, resultatId)
-    majCompteur(rechercheId, -1)
+    removeResult(rechercheId, resultatId)
+    updateCounter(rechercheId, -1)
     return bien
   }
 
   return {
     recherches,
     resultats,
-    nouveaux,
+    newCount,
     refresh,
-    creer,
-    modifier,
-    supprimer,
-    scanner,
-    chargerResultats,
-    garder,
-    ignorer
+    create,
+    update,
+    remove,
+    scan,
+    loadResults,
+    keep,
+    ignore
   }
 }

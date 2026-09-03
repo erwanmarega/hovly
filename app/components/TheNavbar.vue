@@ -13,13 +13,13 @@ const route = useRoute();
 
 const userEmail = computed(() => user.value?.email ?? "");
 
-const { nonVues, refresh: refreshAlertes } = useAlertes();
+const { unread: nonVues, refresh: refreshAlertes } = useAlerts();
 useAsyncData("nav-alertes", () => refreshAlertes(), {
   server: false,
   immediate: !!user.value,
 });
 
-const { nouveaux: nouveauxVeilles, refresh: refreshVeilles } = useVeilles();
+const { newCount: nouveauxVeilles, refresh: refreshVeilles } = useWatches();
 useAsyncData("nav-veilles", () => refreshVeilles(), {
   server: false,
   immediate: !!user.value,

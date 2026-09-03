@@ -82,7 +82,7 @@ const {
   clear: viderComparaison,
 } = useComparator();
 
-const { creer: creerPartage } = usePartages();
+const { create: creerPartage } = useShares();
 const partageOuvert = ref(false);
 const partageEnCours = ref(false);
 const partageErreur = ref("");

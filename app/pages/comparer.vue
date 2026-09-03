@@ -9,7 +9,7 @@ const { pending } = useAsyncData('biens-comparer', () => refresh(), { server: fa
 const { selection, remove: retirer, clear: vider } = useComparator()
 const { preferences } = usePreferences()
 
-const { creer: creerPartage } = usePartages()
+const { create: creerPartage } = useShares()
 const partageOuvert = ref(false)
 const partageEnCours = ref(false)
 const partageErreur = ref('')

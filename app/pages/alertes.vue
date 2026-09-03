@@ -3,8 +3,8 @@ import type { Alert } from "~/types";
 
 useHead({ title: "Alertes — Hovly" });
 
-const { alertes, nonVues, refresh, marquerLues, verifierMaintenant } =
-  useAlertes();
+const { alertes, unread: nonVues, refresh, markAllRead: marquerLues, checkNow: verifierMaintenant } =
+  useAlerts();
 
 const { pending } = useAsyncData("alertes", () => refresh(), { server: false });
 

@@ -48,7 +48,7 @@ const SECTIONS = [
   { id: 'compte', label: 'Compte & sécurité' }
 ]
 
-const { partages, refresh: refreshPartages, revoquer: revoquerPartageApi } = usePartages()
+const { partages, refresh: refreshPartages, revoke: revoquerPartageApi } = useShares()
 useAsyncData('partages-profil', () => refreshPartages(), { server: false })
 
 function formatDateCourte(iso: string) {

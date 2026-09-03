@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const MAX_APERCU = 5
 
-const { alertes, nonVues, refresh, marquerLues } = useAlertes()
+const { alertes, unread: nonVues, refresh, markAllRead: marquerLues } = useAlerts()
 
 const ouvert = ref(false)
 const chargement = ref(false)

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
-const { nonVues } = useAlertes()
-const { nouveaux } = useVeilles()
+const { unread: nonVues } = useAlerts()
+const { newCount: nouveaux } = useWatches()
 
 const onglets = [
   { to: '/dashboard', label: 'Mes biens' },
