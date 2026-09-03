@@ -256,7 +256,7 @@ async function confirmDeletion() {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-      <Breadcrumbs class="mb-5" :items="breadcrumbs" />
+      <BreadcrumbTrail class="mb-5" :items="breadcrumbs" />
 
       <div v-if="pending" class="py-24 text-center">
         <div

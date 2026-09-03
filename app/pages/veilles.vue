@@ -126,7 +126,7 @@ async function ignoreResult(searchId: string, resultId: string) {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
-      <Breadcrumbs
+      <BreadcrumbTrail
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Veilles' }]"
       />

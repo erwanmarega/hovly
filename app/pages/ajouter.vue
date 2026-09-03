@@ -290,7 +290,7 @@ const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-6 py-10">
-      <Breadcrumbs
+      <BreadcrumbTrail
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Ajouter un bien' }]"
       />
