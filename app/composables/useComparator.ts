@@ -1,8 +1,8 @@
-import type { Anchor, Property, SharedProperty, DPE, Commute } from '~/types'
+import type { Anchor, Property, SharedProperty, DPE, Commute, Transaction } from '~/types'
 import type { Score } from '~/composables/useScore'
 import type { CostOptions } from '~/composables/useActualCost'
 import { actualCost } from '~/composables/useActualCost'
-import { isPurchase } from '~/composables/useProperties'
+import { isPurchase, useProperties } from '~/composables/useProperties'
 import { pricePerSqm } from '~/composables/useMarket'
 import { commuteKey, formatDuration } from '~/composables/useCommutes'
 
@@ -144,21 +144,27 @@ export function comparePublic(properties: SharedProperty[]): ComparisonRow[] {
 }
 
 export function useComparator() {
+  const { biens } = useProperties()
   const selection = useState<string[]>('comparateur', () => [])
 
   const full = computed(() => selection.value.length >= MAX_COMPARISON)
   const count = computed(() => selection.value.length)
   const comparable = computed(() => selection.value.length >= 2)
+  const activeTransaction = computed<Transaction | null>(
+    () => biens.value.find((b) => b.id === selection.value[0])?.transaction ?? null
+  )
 
   const isSelected = (id: string) => selection.value.includes(id)
+  const incompatible = (bien: Pick<Property, 'transaction'>) =>
+    activeTransaction.value != null && bien.transaction !== activeTransaction.value
 
-  function toggle(id: string) {
-    if (isSelected(id)) {
-      selection.value = selection.value.filter((x) => x !== id)
+  function toggle(bien: Pick<Property, 'id' | 'transaction'>) {
+    if (isSelected(bien.id)) {
+      selection.value = selection.value.filter((x) => x !== bien.id)
       return true
     }
-    if (full.value) return false
-    selection.value = [...selection.value, id]
+    if (full.value || incompatible(bien)) return false
+    selection.value = [...selection.value, bien.id]
     return true
   }
 
@@ -170,5 +176,16 @@ export function useComparator() {
     selection.value = []
   }
 
-  return { selection, count, full, comparable, isSelected, toggle, remove, clear }
+  return {
+    selection,
+    count,
+    full,
+    comparable,
+    activeTransaction,
+    isSelected,
+    incompatible,
+    toggle,
+    remove,
+    clear
+  }
 }

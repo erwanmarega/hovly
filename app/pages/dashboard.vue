@@ -79,6 +79,7 @@ const {
   count: compareCount,
   full: selectionComplete,
   comparable,
+  activeTransaction,
   clear: clearComparison,
 } = useComparator();
 
@@ -653,6 +654,9 @@ function toggleSort(key: typeof sortKey.value) {
             }}
             <span v-if="selectionComplete" class="text-stone"
               >(max atteint)</span
+            >
+            <span v-else-if="activeTransaction" class="text-stone"
+              >({{ activeTransaction === "achat" ? "achat" : "location" }} uniquement)</span
             >
           </span>
           <button

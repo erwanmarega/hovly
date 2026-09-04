@@ -10,10 +10,11 @@ defineProps<{
   doublons?: number;
   selectionne?: boolean;
   selectionBloquee?: boolean;
+  selectionIncompatible?: boolean;
 }>();
 
 const emit = defineEmits<{
-  basculer: [id: string];
+  basculer: [bien: Property];
   supprimer: [id: string];
   statut: [id: string, statut: Status];
 }>();
@@ -26,9 +27,9 @@ const emit = defineEmits<{
         type="checkbox"
         class="size-5 cursor-pointer accent-ink"
         :checked="selectionne"
-        :disabled="!selectionne && selectionBloquee"
+        :disabled="!selectionne && (selectionBloquee || selectionIncompatible)"
         :aria-label="`Comparer ${bien.titre}`"
-        @change="emit('basculer', bien.id)"
+        @change="emit('basculer', bien)"
       />
     </label>
 

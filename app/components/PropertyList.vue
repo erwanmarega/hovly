@@ -36,7 +36,7 @@ const { active: hasActiveCommutes, selectedAnchor } = useCommutes()
 
 const costs = computed(() => new Map(props.biens.map((b) => [b.id, costOf(b)])))
 
-const { full: selectionComplete, isSelected, toggle } = useComparator()
+const { full: selectionComplete, isSelected, toggle, incompatible } = useComparator()
 
 const SORTS = computed<{ value: SortKey, label: string }[]>(() => {
   const sorts: { value: SortKey, label: string }[] = [
@@ -98,6 +98,7 @@ const upward = (i: number) => props.biens.length > 3 && i >= props.biens.length 
           :doublons="doublons.get(b.id)"
           :selectionne="isSelected(b.id)"
           :selection-bloquee="selectionComplete"
+          :selection-incompatible="incompatible(b)"
           @basculer="toggle"
           @supprimer="emit('supprimer', $event)"
           @statut="(id, s) => emit('statut', id, s)"
@@ -138,9 +139,10 @@ const upward = (i: number) => props.biens.length > 3 && i >= props.biens.length 
             type="checkbox"
             class="size-4 shrink-0 cursor-pointer accent-ink"
             :checked="isSelected(b.id)"
-            :disabled="!isSelected(b.id) && selectionComplete"
+            :disabled="!isSelected(b.id) && (selectionComplete || incompatible(b))"
+            :title="!isSelected(b.id) && incompatible(b) ? 'Comparaison possible uniquement entre biens de même type (location ou achat)' : undefined"
             :aria-label="`Comparer ${b.titre}`"
-            @change="toggle(b.id)"
+            @change="toggle(b)"
           >
 
           <NuxtLink :to="`/bien/${b.id}`" class="group flex min-w-0 flex-1 items-center gap-3.5">
