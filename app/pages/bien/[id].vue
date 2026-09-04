@@ -10,9 +10,13 @@ const {
   data: bien,
   pending,
   error,
-} = await useAsyncData(`bien-${id}`, () => $fetch<Property>(`/api/biens/${id}`), {
-  server: false,
-});
+} = await useAsyncData(
+  `bien-${id}`,
+  () => $fetch<Property>(`/api/biens/${id}`),
+  {
+    server: false,
+  }
+);
 
 const { data: history } = await useAsyncData(
   `historique-${id}`,
@@ -68,51 +72,15 @@ const breadcrumbs = computed(() => [
   { label: bien.value?.titre ?? "Bien" },
 ]);
 
-const activePhoto = ref(0);
-
-const SLIDESHOW_INTERVAL_MS = 2000;
-let slideshowTimer: ReturnType<typeof setInterval> | null = null;
-
-function stopSlideshow() {
-  if (slideshowTimer) {
-    clearInterval(slideshowTimer);
-    slideshowTimer = null;
-  }
-}
-
-function startSlideshow() {
-  stopSlideshow();
-  const photos = bien.value?.photos;
-  if (!photos || photos.length <= 1) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  slideshowTimer = setInterval(() => {
-    const n = bien.value?.photos.length ?? 0;
-    if (n) activePhoto.value = (activePhoto.value + 1) % n;
-  }, SLIDESHOW_INTERVAL_MS);
-}
-
-function selectPhoto(i: number) {
-  activePhoto.value = i;
-  startSlideshow();
-}
-
-watch(
-  () => bien.value?.photos.length,
-  () => {
-    activePhoto.value = 0;
-    startSlideshow();
-  }
-);
-
-onBeforeUnmount(stopSlideshow);
-
 const monthlyPrice = computed(() =>
   bien.value ? Math.round(bien.value.prix / 100) : 0
 );
 const charges = computed(() =>
   bien.value?.charges ? Math.round(bien.value.charges / 100) : 0
 );
-const pricePerSqm = computed(() => (bien.value ? rawPricePerSqm(bien.value) ?? 0 : 0));
+const pricePerSqm = computed(() =>
+  bien.value ? rawPricePerSqm(bien.value) ?? 0 : 0
+);
 
 const addedDate = computed(() =>
   bien.value
@@ -159,7 +127,8 @@ const checklistBlock = ref<HTMLElement | null>(null);
 watch(showChecklist, (visible, previous) => {
   if (!visible || previous) return;
   nextTick(() => {
-    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches;
     checklistBlock.value?.scrollIntoView({
       behavior: smooth ? "smooth" : "auto",
       block: "start",
@@ -220,9 +189,7 @@ async function refreshListing() {
     } else if (!r.changements.length) {
       messageRefresh.value = "Aucun changement : les données étaient à jour.";
     } else {
-      const names = r.changements.map(
-        (c) => FIELD_LABELS[c.field] ?? c.field
-      );
+      const names = r.changements.map((c) => FIELD_LABELS[c.field] ?? c.field);
       messageRefresh.value = `Mis à jour : ${names.join(", ")}.`;
     }
   } catch (e: unknown) {
@@ -283,8 +250,6 @@ async function confirmDeletion() {
                 {{ sourceLabels[bien.site_source] }} · ajouté le {{ addedDate }}
               </span>
             </div>
-            <!-- Les titres viennent du scraping et dépassent souvent 70 caractères :
-                 à 30 px ils mangent tout le premier écran sur mobile. -->
             <h1
               class="mt-2 text-xl font-bold leading-snug tracking-tight text-ink-deep break-words sm:text-2xl sm:leading-tight lg:text-3xl"
             >
@@ -298,9 +263,6 @@ async function confirmDeletion() {
               }}
             </p>
           </div>
-          <!-- Mobile : l'action principale prend toute la largeur, les deux
-               secondaires se partagent la ligne suivante. En flex simple les
-               trois libellés dépassaient 343 px et retombaient en escalier. -->
           <div
             class="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3"
           >
@@ -382,7 +344,7 @@ async function confirmDeletion() {
             v-if="messageRefresh"
             class="mt-4 rounded-2xl border px-4 py-3 text-sm"
             :class="
-                refreshError
+              refreshError
                 ? 'border-coral bg-coral/20 text-[#600000]'
                 : 'border-teal-deep/30 bg-teal/30 text-[#0a4a42]'
             "
@@ -396,41 +358,12 @@ async function confirmDeletion() {
              piste au-delà du viewport → scroll horizontal sur mobile. -->
         <div class="mt-6 grid items-stretch gap-4 sm:gap-6 lg:grid-cols-5">
           <div class="flex min-w-0 flex-col lg:col-span-3">
-            <div
+            <PhotoSlider
               v-if="bien.photos.length"
-              class="overflow-hidden rounded-2xl border border-hairline bg-[#FFD02F]"
-              @mouseenter="stopSlideshow"
-              @mouseleave="startSlideshow"
-            >
-              <img
-                :src="bien.photos[activePhoto]"
-                :alt="bien.titre"
-                class="aspect-[4/3] w-full"
-                :class="
-                  isDefaultPhoto(bien.photos[activePhoto])
-                    ? 'object-contain'
-                    : 'object-cover'
-                "
-              />
-              <div
-                v-if="bien.photos.length > 1"
-                class="flex gap-2 overflow-x-auto p-3"
-              >
-                <button
-                  v-for="(p, i) in bien.photos"
-                  :key="i"
-                  class="size-16 shrink-0 overflow-hidden rounded-lg border-2 transition"
-                  :class="
-                    i === activePhoto
-                      ? 'border-ink'
-                      : 'border-transparent opacity-70 hover:opacity-100'
-                  "
-                  @click="selectPhoto(i)"
-                >
-                  <img :src="p" alt="" class="size-full object-cover" />
-                </button>
-              </div>
-            </div>
+              :photos="bien.photos"
+              :alt="bien.titre"
+              background="bg-[#FFD02F]"
+            />
             <div
               v-else
               class="grid aspect-[4/3] place-items-center rounded-2xl border border-hairline bg-white text-stone"
@@ -552,7 +485,10 @@ async function confirmDeletion() {
 
             <ScoreBreakdown v-if="score" :score="score" />
 
-            <NeighborhoodMarket :market="market" :price-per-sqm="pricePerSqm || null" />
+            <NeighborhoodMarket
+              :market="market"
+              :price-per-sqm="pricePerSqm || null"
+            />
 
             <div
               v-if="duplicates.length"
@@ -673,11 +609,7 @@ async function confirmDeletion() {
         <PriceHistory :points="history" class="mt-4 sm:mt-6" />
 
         <Transition name="bloc">
-          <div
-            v-if="showChecklist"
-            ref="checklistBlock"
-            class="scroll-mt-24"
-          >
+          <div v-if="showChecklist" ref="checklistBlock" class="scroll-mt-24">
             <VisitChecklist
               :bien="bien"
               class="mt-4 sm:mt-6"

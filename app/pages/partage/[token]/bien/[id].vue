@@ -70,20 +70,12 @@ useHead({
           }}
         </p>
 
-        <div
+        <PhotoSlider
           v-if="bien.photos?.length"
-          class="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3"
-        >
-          <img
-            v-for="(photo, i) in bien.photos"
-            :key="i"
-            :src="photo"
-            :alt="bien.titre ?? ''"
-            class="aspect-[4/3] w-full rounded-xl bg-surface"
-            :class="isDefaultPhoto(photo) ? 'object-contain' : 'object-cover'"
-            loading="lazy"
-          />
-        </div>
+          class="mt-6"
+          :photos="bien.photos"
+          :alt="bien.titre ?? ''"
+        />
         <div
           v-else
           class="mt-6 grid h-48 w-full place-items-center rounded-2xl bg-white text-stone"
