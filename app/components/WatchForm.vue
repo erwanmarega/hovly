@@ -38,7 +38,7 @@ const FREQUENCIES = [
   { value: 1440, label: 'Une fois par jour' }
 ]
 
-const source = computed(() => (url.value ? detecterSource(url.value) : null))
+const source = computed(() => (url.value ? detectSource(url.value) : null))
 const validUrl = computed(() => !url.value || !!source.value)
 
 function submit() {

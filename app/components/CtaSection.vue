@@ -7,11 +7,12 @@ const SOURCES: SiteSource[] = [
   "pap",
   "logic-immo",
   "bienici",
+  "orpi",
 ];
 
 const words = ["Arrête", "de", "jongler.", "Commence", "à", "comparer."];
 
-const guarantees = ["Gratuit", "Sans carte bancaire", "5 sites supportés"];
+const guarantees = ["Gratuit", "Sans carte bancaire", "6 sites supportés"];
 </script>
 
 <template>

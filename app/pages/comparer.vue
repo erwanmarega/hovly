@@ -127,30 +127,34 @@ const winner = computed(() => {
           <div class="flex items-center gap-2.5">
             <NuxtLink
               to="/dashboard"
-              class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
+              class="action flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
             >
+              <Icon name="lucide:list" size="16" />
               Choisir des biens
             </NuxtLink>
             <button
               v-if="selected.length"
-              class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
+              class="action flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
               @click="shareOpen = true"
             >
+              <Icon name="lucide:share-2" size="16" />
               Partager
             </button>
             <button
               v-if="selected.length >= 2"
-              class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink disabled:opacity-60"
+              class="action flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink disabled:opacity-60"
               :disabled="downloadingPdf"
               @click="downloadPdf"
             >
+              <Icon :name="downloadingPdf ? 'lucide:loader-2' : 'lucide:download'" size="16" :class="downloadingPdf && 'animate-spin'" />
               {{ downloadingPdf ? "Génération…" : "Télécharger en PDF" }}
             </button>
             <button
               v-if="selected.length"
-              class="action rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white"
+              class="action flex items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white"
               @click="clear"
             >
+              <Icon name="lucide:x" size="16" />
               Tout retirer
             </button>
           </div>

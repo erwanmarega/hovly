@@ -11,7 +11,7 @@ const emit = defineEmits<{
   ignore: [id: string]
 }>()
 
-const source = computed(() => detecterSource(props.result.url))
+const source = computed(() => detectSource(props.result.url))
 
 const pricePerSqm = computed(() => {
   const { prix, surface } = props.result

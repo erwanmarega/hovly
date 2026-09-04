@@ -46,9 +46,7 @@ async function toggle(id: string) {
     return
   }
   open.value = id
-  if (!results.value[id]) {
-    await loadResults(id, 'nouveau').catch(() => announce('Chargement impossible.', true))
-  }
+  await loadResults(id, 'nouveau').catch(() => announce('Chargement impossible.', true))
 }
 
 async function createWatch(payload: Partial<SavedSearch>) {
