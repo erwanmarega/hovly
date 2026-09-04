@@ -1,29 +1,29 @@
 import { describe, it, expect } from 'vitest'
 import {
-  entier,
+  toInteger,
   decimal,
-  imgValide,
-  cleNormalisee,
-  collecterPhotos,
-  extraire,
-  extraireLeboncoin,
+  isValidImage,
+  normalizedKey,
+  collectPhotos,
+  extract,
+  extractLeboncoin,
   type PageData
 } from '../server/utils/scrape/extract'
 
-describe('entier', () => {
+describe('toInteger', () => {
   it('parse un entier simple', () => {
-    expect(entier('1570')).toBe(1570)
+    expect(toInteger('1570')).toBe(1570)
   })
 
   it('strip le séparateur de milliers FR (point)', () => {
-    expect(entier('1.570 €')).toBe(1570)
-    expect(entier('1 200 000 €')).toBe(1200000)
+    expect(toInteger('1.570 €')).toBe(1570)
+    expect(toInteger('1 200 000 €')).toBe(1200000)
   })
 
   it('retourne null si pas de chiffre', () => {
-    expect(entier('abc')).toBeNull()
-    expect(entier('')).toBeNull()
-    expect(entier(undefined)).toBeNull()
+    expect(toInteger('abc')).toBeNull()
+    expect(toInteger('')).toBeNull()
+    expect(toInteger(undefined)).toBeNull()
   })
 })
 
@@ -40,41 +40,41 @@ describe('decimal', () => {
   })
 })
 
-describe('imgValide', () => {
+describe('isValidImage', () => {
   it('accepte une vraie photo CDN', () => {
-    expect(imgValide('https://cdn.pap.fr/photos/pap/05/0-p1.jpg')).toBe(true)
-    expect(imgValide('https://mms.seloger.com/a/b.jpg?ci_seal=xyz')).toBe(true)
+    expect(isValidImage('https://cdn.pap.fr/photos/pap/05/0-p1.jpg')).toBe(true)
+    expect(isValidImage('https://mms.seloger.com/a/b.jpg?ci_seal=xyz')).toBe(true)
   })
 
   it('rejette le bruit UI', () => {
-    expect(imgValide('https://x.com/logo.png')).toBe(false)
-    expect(imgValide('https://x.com/sprite-icons.svg')).toBe(false)
-    expect(imgValide('https://www.seloger.com/shared/images/media/selection_property_house.png')).toBe(false)
-    expect(imgValide('https://maps.google.com/staticmap.png')).toBe(false)
+    expect(isValidImage('https://x.com/logo.png')).toBe(false)
+    expect(isValidImage('https://x.com/sprite-icons.svg')).toBe(false)
+    expect(isValidImage('https://www.seloger.com/shared/images/media/selection_property_house.png')).toBe(false)
+    expect(isValidImage('https://maps.google.com/staticmap.png')).toBe(false)
   })
 
   it('rejette data URI et non-http', () => {
-    expect(imgValide('data:image/png;base64,AAAA')).toBe(false)
-    expect(imgValide('//cdn/x.jpg')).toBe(false)
-    expect(imgValide('')).toBe(false)
+    expect(isValidImage('data:image/png;base64,AAAA')).toBe(false)
+    expect(isValidImage('//cdn/x.jpg')).toBe(false)
+    expect(isValidImage('')).toBe(false)
   })
 })
 
-describe('cleNormalisee', () => {
+describe('normalizedKey', () => {
   it('ignore la query string', () => {
-    expect(cleNormalisee('https://h.com/a/b.jpg?seal=1')).toBe(
-      cleNormalisee('https://h.com/a/b.jpg?seal=2')
+    expect(normalizedKey('https://h.com/a/b.jpg?seal=1')).toBe(
+      normalizedKey('https://h.com/a/b.jpg?seal=2')
     )
   })
 
   it('ignore les tokens de taille dans le path', () => {
-    expect(cleNormalisee('https://h.com/360x240/photo.jpg')).toBe(
-      cleNormalisee('https://h.com/800x600/photo.jpg')
+    expect(normalizedKey('https://h.com/360x240/photo.jpg')).toBe(
+      normalizedKey('https://h.com/800x600/photo.jpg')
     )
   })
 })
 
-describe('collecterPhotos', () => {
+describe('collectPhotos', () => {
   const base = (over: Partial<PageData>): PageData => ({
     title: '',
     ogTitle: '',
@@ -91,25 +91,25 @@ describe('collecterPhotos', () => {
       domImages: ['https://cdn.x.fr/photos/1.jpg?v=2', 'https://cdn.x.fr/photos/2.jpg'],
       scriptImages: ['https://cdn.x.fr/photos/3.webp']
     })
-    const out = collecterPhotos(data, null)
+    const out = collectPhotos(data, null)
     expect(out).toHaveLength(3)
   })
 
   it('inclut node.image (string ou objet)', () => {
-    const out = collecterPhotos(base({}), { image: { url: 'https://cdn.x.fr/photos/9.jpg' } })
+    const out = collectPhotos(base({}), { image: { url: 'https://cdn.x.fr/photos/9.jpg' } })
     expect(out).toEqual(['https://cdn.x.fr/photos/9.jpg'])
   })
 
   it('filtre le bruit et cap à 20', () => {
     const many = Array.from({ length: 30 }, (_, i) => `https://cdn.x.fr/photos/${i}.jpg`)
     const data = base({ domImages: ['https://x.fr/logo.png', ...many] })
-    const out = collecterPhotos(data, null)
+    const out = collectPhotos(data, null)
     expect(out).toHaveLength(20)
     expect(out.some((u) => u.includes('logo'))).toBe(false)
   })
 })
 
-describe('extraire', () => {
+describe('extract', () => {
   it('extrait prix en centimes, surface arrondie, dpe, cp', () => {
     const data: PageData = {
       title: 'Annonce',
@@ -119,7 +119,7 @@ describe('extraire', () => {
       h1: '',
       bodyText: 'Loyer 1.570 € charges comprises. Surface 42,3 m². 3 pièces. 2ème étage. DPE : D. 75011 Paris',
     }
-    const r = extraire(data)
+    const r = extract(data)
     expect(r.titre).toBe('Appartement T2 Paris')
     expect(r.prix).toBe(157000)
     expect(r.surface).toBe(42)
@@ -139,7 +139,7 @@ describe('extraire', () => {
       h1: '',
       bodyText: 'Ref : 28123\n207 000 €\nHonoraires charge vendeur'
     }
-    expect(extraire(data).prix).toBe(20700000)
+    expect(extract(data).prix).toBe(20700000)
   })
 
   it('ne recolle pas la référence au prix sur une ligne unique', () => {
@@ -151,7 +151,7 @@ describe('extraire', () => {
       h1: '',
       bodyText: 'Ref : 3997 199 900 € Honoraires charge vendeur'
     }
-    expect(extraire(data).prix).toBe(19990000)
+    expect(extract(data).prix).toBe(19990000)
   })
 
   it('priorise le prix JSON-LD sur le regex body', () => {
@@ -163,7 +163,7 @@ describe('extraire', () => {
       h1: '',
       bodyText: 'autour de 999 € ailleurs'
     }
-    const r = extraire(data)
+    const r = extract(data)
     expect(r.prix).toBe(65000)
   })
 
@@ -182,7 +182,7 @@ describe('extraire', () => {
       h1: '',
       bodyText: '3 pièces 52 m² 77100 Meaux'
     }
-    const r = extraire(data)
+    const r = extract(data)
     expect(r.prix).toBe(79500)
     expect(r.surface).toBe(52)
     expect(r.code_postal).toBe('77100')
@@ -192,14 +192,14 @@ describe('extraire', () => {
     const data: PageData = {
       title: '', ogTitle: '', ogImages: [], jsonLd: [], h1: '', bodyText: ''
     }
-    const r = extraire(data)
+    const r = extract(data)
     expect(r.prix).toBeNull()
     expect(r.surface).toBeNull()
     expect(r.photos).toEqual([])
   })
 })
 
-describe('extraireLeboncoin', () => {
+describe('extractLeboncoin', () => {
   const nextData = JSON.stringify({
     props: {
       pageProps: {
@@ -222,7 +222,7 @@ describe('extraireLeboncoin', () => {
   })
 
   it('parse les champs structurés du __NEXT_DATA__', () => {
-    const r = extraireLeboncoin(nextData)
+    const r = extractLeboncoin(nextData)
     expect(r.titre).toBe('Appartement 3 pièces 76 m²')
     expect(r.prix).toBe(152800)
     expect(r.surface).toBe(76)
@@ -237,13 +237,13 @@ describe('extraireLeboncoin', () => {
   it('retombe sur price[0] si price_cents absent', () => {
     const sansCents = JSON.parse(nextData)
     delete sansCents.props.pageProps.ad.price_cents
-    const r = extraireLeboncoin(JSON.stringify(sansCents))
+    const r = extractLeboncoin(JSON.stringify(sansCents))
     expect(r.prix).toBe(152800)
   })
 
   it('retourne {} si JSON invalide ou ad absent', () => {
-    expect(extraireLeboncoin('pas du json')).toEqual({})
-    expect(extraireLeboncoin('{}')).toEqual({})
-    expect(extraireLeboncoin(undefined)).toEqual({})
+    expect(extractLeboncoin('pas du json')).toEqual({})
+    expect(extractLeboncoin('{}')).toEqual({})
+    expect(extractLeboncoin(undefined)).toEqual({})
   })
 })

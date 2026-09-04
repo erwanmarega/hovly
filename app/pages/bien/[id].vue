@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { Bien, Statut } from "~/types";
-import { STATUTS } from "~/composables/useBiens";
+import type { Property, Status } from "~/types";
+import { STATUSES } from "~/composables/useProperties";
+import { pricePerSqm as rawPricePerSqm } from "~/composables/useMarket";
 
 const route = useRoute();
 const id = route.params.id as string;
@@ -9,11 +10,11 @@ const {
   data: bien,
   pending,
   error,
-} = await useAsyncData(`bien-${id}`, () => $fetch<Bien>(`/api/biens/${id}`), {
+} = await useAsyncData(`bien-${id}`, () => $fetch<Property>(`/api/biens/${id}`), {
   server: false,
 });
 
-const { data: historique } = await useAsyncData(
+const { data: history } = await useAsyncData(
   `historique-${id}`,
   () =>
     $fetch<{ prix: number; controle_le: string }[]>(
@@ -35,85 +36,85 @@ const sourceLabels: Record<string, string> = {
   century21: "Century 21",
 };
 
-const { biens, refresh: refreshBiens } = useBiens();
+const { biens, refresh: refreshProperties } = useProperties();
 const { preferences } = usePreferences();
-useAsyncData("biens-ctx", () => refreshBiens(), { server: false });
+useAsyncData("biens-ctx", () => refreshProperties(), { server: false });
 
-const { refresh: refreshTrajets } = useTrajets();
-useAsyncData("trajets-bien", () => refreshTrajets(), { server: false });
+const { refresh: refreshCommutes } = useCommutes();
+useAsyncData("trajets-bien", () => refreshCommutes(), { server: false });
 
-const { charger: chargerMarche, pour: marchePour } = useMarche();
+const { load: loadMarket, get: marketFor } = useMarket();
 watch(
   bien,
   (b) => {
-    if (b) void chargerMarche(b);
+    if (b) void loadMarket(b);
   },
   { immediate: true }
 );
-const marche = computed(() => (bien.value ? marchePour(bien.value.id) : null));
+const market = computed(() => (bien.value ? marketFor(bien.value.id) : null));
 
 const score = computed(() =>
   bien.value
-    ? scoreBien(bien.value, representants(biens.value), preferences.value)
+    ? scoreProperty(bien.value, representatives(biens.value), preferences.value)
     : null
 );
 
-const doublons = computed(() =>
-  bien.value ? doublonsDe(bien.value, biens.value) : []
+const duplicates = computed(() =>
+  bien.value ? duplicatesOf(bien.value, biens.value) : []
 );
 
-const filAriane = computed(() => [
+const breadcrumbs = computed(() => [
   { label: "Mes biens", to: "/dashboard" },
   { label: bien.value?.titre ?? "Bien" },
 ]);
 
-const photoActive = ref(0);
+const activePhoto = ref(0);
 
-const INTERVALLE_DEFILEMENT_MS = 2000;
-let minuteurDefilement: ReturnType<typeof setInterval> | null = null;
+const SLIDESHOW_INTERVAL_MS = 2000;
+let slideshowTimer: ReturnType<typeof setInterval> | null = null;
 
-function arreterDefilement() {
-  if (minuteurDefilement) {
-    clearInterval(minuteurDefilement);
-    minuteurDefilement = null;
+function stopSlideshow() {
+  if (slideshowTimer) {
+    clearInterval(slideshowTimer);
+    slideshowTimer = null;
   }
 }
 
-function demarrerDefilement() {
-  arreterDefilement();
+function startSlideshow() {
+  stopSlideshow();
   const photos = bien.value?.photos;
   if (!photos || photos.length <= 1) return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  minuteurDefilement = setInterval(() => {
+  slideshowTimer = setInterval(() => {
     const n = bien.value?.photos.length ?? 0;
-    if (n) photoActive.value = (photoActive.value + 1) % n;
-  }, INTERVALLE_DEFILEMENT_MS);
+    if (n) activePhoto.value = (activePhoto.value + 1) % n;
+  }, SLIDESHOW_INTERVAL_MS);
 }
 
-function selectionnerPhoto(i: number) {
-  photoActive.value = i;
-  demarrerDefilement();
+function selectPhoto(i: number) {
+  activePhoto.value = i;
+  startSlideshow();
 }
 
 watch(
   () => bien.value?.photos.length,
   () => {
-    photoActive.value = 0;
-    demarrerDefilement();
+    activePhoto.value = 0;
+    startSlideshow();
   }
 );
 
-onBeforeUnmount(arreterDefilement);
+onBeforeUnmount(stopSlideshow);
 
-const prixMensuel = computed(() =>
+const monthlyPrice = computed(() =>
   bien.value ? Math.round(bien.value.prix / 100) : 0
 );
 const charges = computed(() =>
   bien.value?.charges ? Math.round(bien.value.charges / 100) : 0
 );
-const prixM2 = computed(() => (bien.value ? prixAuM2(bien.value) ?? 0 : 0));
+const pricePerSqm = computed(() => (bien.value ? rawPricePerSqm(bien.value) ?? 0 : 0));
 
-const dateAjout = computed(() =>
+const addedDate = computed(() =>
   bien.value
     ? new Date(bien.value.created_at).toLocaleDateString("fr-FR", {
         day: "numeric",
@@ -123,26 +124,26 @@ const dateAjout = computed(() =>
     : ""
 );
 
-function patcher(patch: Partial<Bien>) {
+function applyPatch(patch: Partial<Property>) {
   if (bien.value) bien.value = { ...bien.value, ...patch };
 }
 
-const menuStatut = ref(false);
-async function setStatut(s: Statut) {
-  menuStatut.value = false;
+const statusMenuOpen = ref(false);
+async function setStatus(s: Status) {
+  statusMenuOpen.value = false;
   if (!bien.value) return;
   const prev = bien.value.statut;
-  patcher({ statut: s });
+  applyPatch({ statut: s });
   try {
     await $fetch(`/api/biens/${id}`, { method: "PATCH", body: { statut: s } });
   } catch {
-    patcher({ statut: prev });
+    applyPatch({ statut: prev });
   }
 }
 
-const appliquerVisite = patcher;
+const applyVisit = applyPatch;
 
-const afficherChecklist = computed(() => {
+const showChecklist = computed(() => {
   const b = bien.value;
   if (!b) return false;
   return (
@@ -150,17 +151,17 @@ const afficherChecklist = computed(() => {
     b.statut === "visite" ||
     b.statut === "planifie" ||
     !!b.compte_rendu ||
-    bilanVisite(b.checklist).remplis > 0
+    visitSummary(b.checklist).filled > 0
   );
 });
 
-const blocChecklist = ref<HTMLElement | null>(null);
-watch(afficherChecklist, (visible, avant) => {
-  if (!visible || avant) return;
+const checklistBlock = ref<HTMLElement | null>(null);
+watch(showChecklist, (visible, previous) => {
+  if (!visible || previous) return;
   nextTick(() => {
-    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    blocChecklist.value?.scrollIntoView({
-      behavior: doux ? "smooth" : "auto",
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    checklistBlock.value?.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
       block: "start",
     });
   });
@@ -177,12 +178,12 @@ async function saveNote() {
     method: "PATCH",
     body: { note_perso: noteDraft.value },
   });
-  patcher({ note_perso: noteDraft.value });
+  applyPatch({ note_perso: noteDraft.value });
   noteSaved.value = true;
   setTimeout(() => (noteSaved.value = false), 1500);
 }
 
-const LIBELLES_CHAMPS: Record<string, string> = {
+const FIELD_LABELS: Record<string, string> = {
   titre: "titre",
   prix: "loyer",
   surface: "surface",
@@ -197,55 +198,55 @@ const LIBELLES_CHAMPS: Record<string, string> = {
   description: "description",
 };
 
-const rafraichissement = ref(false);
+const refreshing = ref(false);
 const messageRefresh = ref("");
-const refreshErreur = ref(false);
+const refreshError = ref(false);
 
-async function rafraichir() {
-  rafraichissement.value = true;
+async function refreshListing() {
+  refreshing.value = true;
   messageRefresh.value = "";
-  refreshErreur.value = false;
+  refreshError.value = false;
   try {
     const r = await $fetch<{
       indisponible: boolean;
-      changements: { champ: string; avant: unknown; apres: unknown }[];
-      bien: Bien;
+      changements: { field: string; before: unknown; after: unknown }[];
+      bien: Property;
     }>(`/api/biens/${id}/refresh`, { method: "POST" });
 
     bien.value = r.bien;
     if (r.indisponible) {
-      refreshErreur.value = true;
+      refreshError.value = true;
       messageRefresh.value = "L’annonce n’est plus en ligne — bien archivé.";
     } else if (!r.changements.length) {
       messageRefresh.value = "Aucun changement : les données étaient à jour.";
     } else {
-      const noms = r.changements.map(
-        (c) => LIBELLES_CHAMPS[c.champ] ?? c.champ
+      const names = r.changements.map(
+        (c) => FIELD_LABELS[c.field] ?? c.field
       );
-      messageRefresh.value = `Mis à jour : ${noms.join(", ")}.`;
+      messageRefresh.value = `Mis à jour : ${names.join(", ")}.`;
     }
   } catch (e: unknown) {
-    refreshErreur.value = true;
-    messageRefresh.value = messageErreur(e, "Rafraîchissement impossible.");
+    refreshError.value = true;
+    messageRefresh.value = errorMessage(e, "Rafraîchissement impossible.");
   } finally {
-    rafraichissement.value = false;
+    refreshing.value = false;
   }
 }
 
-const confirmationSuppression = ref(false);
+const deleteConfirmOpen = ref(false);
 const deleting = ref(false);
-const { annoncer: annoncerToast } = useToast();
-async function confirmerSuppression() {
+const { announce } = useToast();
+async function confirmDeletion() {
   deleting.value = true;
   try {
     await $fetch(`/api/biens/${id}`, { method: "DELETE" });
   } catch {
     deleting.value = false;
-    confirmationSuppression.value = false;
-    annoncerToast("Suppression impossible. Réessaie.", "erreur");
+    deleteConfirmOpen.value = false;
+    announce("Suppression impossible. Réessaie.", "erreur");
     return;
   }
-  annoncerToast(`« ${bien.value?.titre} » supprimé.`);
+  announce(`« ${bien.value?.titre} » supprimé.`);
   await navigateTo("/dashboard");
 }
 </script>
@@ -255,7 +256,7 @@ async function confirmerSuppression() {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-      <FilAriane class="mb-5" :items="filAriane" />
+      <BreadcrumbTrail class="mb-5" :items="breadcrumbs" />
 
       <div v-if="pending" class="py-24 text-center">
         <div
@@ -277,9 +278,9 @@ async function confirmerSuppression() {
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <BadgeStatut :statut="bien.statut" />
+              <StatusBadge :status="bien.statut" />
               <span class="text-xs font-medium text-stone">
-                {{ sourceLabels[bien.site_source] }} · ajouté le {{ dateAjout }}
+                {{ sourceLabels[bien.site_source] }} · ajouté le {{ addedDate }}
               </span>
             </div>
             <!-- Les titres viennent du scraping et dépassent souvent 70 caractères :
@@ -325,13 +326,13 @@ async function confirmerSuppression() {
               </svg>
             </a>
             <button
-              :disabled="rafraichissement"
+              :disabled="refreshing"
               class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-4 py-2.5 text-sm font-medium text-steel hover:bg-surface hover:text-ink transition disabled:opacity-60 sm:px-5"
               title="Relancer l’extraction depuis l’annonce"
-              @click="rafraichir"
+              @click="refreshListing"
             >
               <span
-                v-if="rafraichissement"
+                v-if="refreshing"
                 class="size-4 animate-spin rounded-full border-2 border-hairline border-t-ink"
               />
               <svg
@@ -346,7 +347,7 @@ async function confirmerSuppression() {
                 <path d="M21 12a9 9 0 1 1-3-6.7" />
                 <path d="M21 3v6h-6" />
               </svg>
-              <template v-if="rafraichissement">
+              <template v-if="refreshing">
                 <span class="sm:hidden">Maj…</span>
                 <span class="hidden sm:inline">Rafraîchissement…</span>
               </template>
@@ -355,7 +356,7 @@ async function confirmerSuppression() {
             <button
               :disabled="deleting"
               class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-white px-4 py-2.5 text-sm font-medium text-steel hover:bg-coral hover:text-[#600000] transition disabled:opacity-60 sm:px-5"
-              @click="confirmationSuppression = true"
+              @click="deleteConfirmOpen = true"
             >
               <svg
                 class="size-4"
@@ -381,7 +382,7 @@ async function confirmerSuppression() {
             v-if="messageRefresh"
             class="mt-4 rounded-2xl border px-4 py-3 text-sm"
             :class="
-              refreshErreur
+                refreshError
                 ? 'border-coral bg-coral/20 text-[#600000]'
                 : 'border-teal-deep/30 bg-teal/30 text-[#0a4a42]'
             "
@@ -398,15 +399,15 @@ async function confirmerSuppression() {
             <div
               v-if="bien.photos.length"
               class="overflow-hidden rounded-2xl border border-hairline bg-[#FFD02F]"
-              @mouseenter="arreterDefilement"
-              @mouseleave="demarrerDefilement"
+              @mouseenter="stopSlideshow"
+              @mouseleave="startSlideshow"
             >
               <img
-                :src="bien.photos[photoActive]"
+                :src="bien.photos[activePhoto]"
                 :alt="bien.titre"
                 class="aspect-[4/3] w-full"
                 :class="
-                  estPhotoParDefaut(bien.photos[photoActive])
+                  isDefaultPhoto(bien.photos[activePhoto])
                     ? 'object-contain'
                     : 'object-cover'
                 "
@@ -420,11 +421,11 @@ async function confirmerSuppression() {
                   :key="i"
                   class="size-16 shrink-0 overflow-hidden rounded-lg border-2 transition"
                   :class="
-                    i === photoActive
+                    i === activePhoto
                       ? 'border-ink'
                       : 'border-transparent opacity-70 hover:opacity-100'
                   "
-                  @click="selectionnerPhoto(i)"
+                  @click="selectPhoto(i)"
                 >
                   <img :src="p" alt="" class="size-full object-cover" />
                 </button>
@@ -490,7 +491,7 @@ async function confirmerSuppression() {
               </div>
               <ClientOnly>
                 <div class="mt-3 min-h-64 flex-1">
-                  <CarteBiens class="h-full" :biens="[bien]" hauteur="100%" />
+                  <PropertyMap class="h-full" :biens="[bien]" height="100%" />
                 </div>
                 <template #fallback>
                   <div
@@ -516,7 +517,7 @@ async function confirmerSuppression() {
           <div class="flex min-w-0 flex-col gap-4 sm:gap-6 lg:col-span-2">
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <p class="text-3xl font-bold tracking-tight">
-                {{ formaterNombre(prixMensuel) }} €<span
+                {{ formatNumber(monthlyPrice) }} €<span
                   v-if="bien.transaction !== 'achat'"
                   class="text-base font-medium text-stone"
                 >
@@ -527,34 +528,34 @@ async function confirmerSuppression() {
                 <div class="flex justify-between">
                   <span class="text-steel">Prix au m²</span>
                   <span class="font-semibold"
-                    >{{ formaterNombre(prixM2) }} €</span
+                    >{{ formatNumber(pricePerSqm) }} €</span
                   >
                 </div>
-                <div v-if="marche" class="flex justify-between">
+                <div v-if="market" class="flex justify-between">
                   <span class="text-steel">Marché (DVF)</span>
                   <span class="font-semibold"
-                    >{{ formaterNombre(marche.mediane) }} €/m²</span
+                    >{{ formatNumber(market.mediane) }} €/m²</span
                   >
                 </div>
                 <div v-if="charges" class="flex justify-between">
                   <span class="text-steel">Charges</span>
                   <span class="font-semibold"
-                    >{{ formaterNombre(charges) }} €</span
+                    >{{ formatNumber(charges) }} €</span
                   >
                 </div>
               </div>
             </div>
 
-            <CoutReel :bien="bien" />
+            <ActualCost :bien="bien" />
 
-            <TrajetsBien :bien="bien" />
+            <PropertyCommutes :bien="bien" />
 
             <ScoreBreakdown v-if="score" :score="score" />
 
-            <MarcheQuartier :marche="marche" :prix-m2="prixM2 || null" />
+            <NeighborhoodMarket :market="market" :price-per-sqm="pricePerSqm || null" />
 
             <div
-              v-if="doublons.length"
+              v-if="duplicates.length"
               class="rounded-2xl border border-brand-deep/30 bg-brand-light p-5 sm:p-6"
             >
               <h2
@@ -563,21 +564,21 @@ async function confirmerSuppression() {
                 Aussi publié ailleurs
               </h2>
               <p class="mt-1 text-xs text-ink/60">
-                Hovly a repéré {{ doublons.length }} autre{{
-                  doublons.length > 1 ? "s" : ""
+                Hovly a repéré {{ duplicates.length }} autre{{
+                  duplicates.length > 1 ? "s" : ""
                 }}
-                annonce{{ doublons.length > 1 ? "s" : "" }} du même bien.
+                annonce{{ duplicates.length > 1 ? "s" : "" }} du même bien.
               </p>
               <ul class="mt-4 space-y-2">
-                <li v-for="d in doublons" :key="d.id">
+                <li v-for="d in duplicates" :key="d.id">
                   <NuxtLink
                     :to="`/bien/${d.id}`"
                     class="flex items-center gap-3 rounded-xl bg-white/70 px-3 py-2.5 transition hover:bg-white"
                   >
-                    <LogoSource
+                    <SourceLogo
                       :source="d.site_source"
-                      :avec-nom="false"
-                      :taille="20"
+                      :with-name="false"
+                      :size="20"
                     />
                     <span class="min-w-0 flex-1">
                       <span class="block truncate text-sm font-medium text-ink">
@@ -588,7 +589,7 @@ async function confirmerSuppression() {
                       }}</span>
                     </span>
                     <span class="shrink-0 text-sm font-semibold tabular-nums">
-                      {{ formaterNombre(Math.round(d.prix / 100)) }} €
+                      {{ formatNumber(Math.round(d.prix / 100)) }} €
                       <span
                         v-if="d.prix < bien.prix"
                         class="ml-1 rounded-full bg-teal/60 px-1.5 py-0.5 text-[10px] font-bold text-[#0a4a42]"
@@ -600,7 +601,7 @@ async function confirmerSuppression() {
               </ul>
             </div>
 
-            <PlanificateurVisite :bien="bien" @maj="appliquerVisite" />
+            <VisitScheduler :bien="bien" @maj="applyVisit" />
 
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <h2
@@ -611,9 +612,9 @@ async function confirmerSuppression() {
               <div class="relative mt-3">
                 <button
                   class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left transition hover:bg-surface"
-                  @click="menuStatut = !menuStatut"
+                  @click="statusMenuOpen = !statusMenuOpen"
                 >
-                  <BadgeStatut :statut="bien.statut" />
+                  <StatusBadge :status="bien.statut" />
                   <svg
                     class="size-4 text-stone"
                     viewBox="0 0 24 24"
@@ -625,11 +626,11 @@ async function confirmerSuppression() {
                   </svg>
                 </button>
                 <div
-                  v-if="menuStatut"
+                  v-if="statusMenuOpen"
                   class="absolute z-10 mt-1 w-full rounded-xl border border-hairline bg-white p-1 shadow-lg"
                 >
                   <button
-                    v-for="s in STATUTS"
+                    v-for="s in STATUSES"
                     :key="s.value"
                     class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface"
                     :class="
@@ -637,7 +638,7 @@ async function confirmerSuppression() {
                         ? 'font-semibold text-ink'
                         : 'text-slate'
                     "
-                    @click="setStatut(s.value)"
+                    @click="setStatus(s.value)"
                   >
                     {{ s.label }}
                   </button>
@@ -669,32 +670,32 @@ async function confirmerSuppression() {
           </div>
         </div>
 
-        <PrixHistorique :points="historique" class="mt-4 sm:mt-6" />
+        <PriceHistory :points="history" class="mt-4 sm:mt-6" />
 
         <Transition name="bloc">
           <div
-            v-if="afficherChecklist"
-            ref="blocChecklist"
+            v-if="showChecklist"
+            ref="checklistBlock"
             class="scroll-mt-24"
           >
-            <ChecklistVisite
+            <VisitChecklist
               :bien="bien"
               class="mt-4 sm:mt-6"
-              @maj="appliquerVisite"
+              @maj="applyVisit"
             />
           </div>
         </Transition>
       </template>
 
-      <ModalConfirmationSuppression
-        :ouvert="confirmationSuppression"
-        titre="Supprimer ce bien ?"
-        :nom="bien?.titre"
-        :sous-ligne="bien?.ville"
+      <DeleteConfirmationModal
+        :open="deleteConfirmOpen"
+        title="Supprimer ce bien ?"
+        :name="bien?.titre"
+        :subline="bien?.ville"
         message="Le bien et son historique seront définitivement supprimés."
-        :en-cours="deleting"
-        @annuler="confirmationSuppression = false"
-        @confirmer="confirmerSuppression"
+        :loading="deleting"
+        @cancel="deleteConfirmOpen = false"
+        @confirm="confirmDeletion"
       />
     </main>
   </div>

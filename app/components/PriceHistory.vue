@@ -1,0 +1,129 @@
+<script setup lang="ts">
+interface Point {
+  prix: number
+  controle_le: string
+}
+
+const props = defineProps<{ points: Point[] }>()
+
+const PAD_X = 12
+const PAD_Y = 16
+const W = 600
+const H = 200
+
+const fmt = (centimes: number) => formatNumber(Math.round(centimes / 100))
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' })
+
+const valid = computed(() =>
+  [...props.points]
+    .filter((p) => p.prix != null)
+    .sort((a, b) => +new Date(a.controle_le) - +new Date(b.controle_le))
+)
+
+const enough = computed(() => valid.value.length >= 2)
+
+const priceMin = computed(() => Math.min(...valid.value.map((p) => p.prix)))
+const priceMax = computed(() => Math.max(...valid.value.map((p) => p.prix)))
+
+const coords = computed(() => {
+  const points = valid.value
+  if (points.length === 0) return []
+  const t0 = +new Date(points[0].controle_le)
+  const t1 = +new Date(points[points.length - 1].controle_le)
+  const dt = t1 - t0 || 1
+  const min = priceMin.value
+  const max = priceMax.value
+  const flat = max === min
+  const priceRange = max - min || 1
+  return points.map((p, i) => {
+    const x = points.length === 1 ? W / 2 : PAD_X + ((+new Date(p.controle_le) - t0) / dt) * (W - PAD_X * 2)
+    const y = flat ? H / 2 : PAD_Y + (1 - (p.prix - min) / priceRange) * (H - PAD_Y * 2)
+    return { x, y, prix: p.prix, date: p.controle_le, i }
+  })
+})
+
+const linePath = computed(() => coords.value.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' '))
+const areaPath = computed(() => {
+  const c = coords.value
+  if (!c.length) return ''
+  return `M${c[0].x},${H - PAD_Y} ${c.map((p) => `L${p.x},${p.y}`).join(' ')} L${c[c.length - 1].x},${H - PAD_Y} Z`
+})
+
+const first = computed(() => valid.value[0]?.prix ?? 0)
+const last = computed(() => valid.value[valid.value.length - 1]?.prix ?? 0)
+const delta = computed(() => last.value - first.value)
+const deltaPct = computed(() => (first.value ? Math.round((delta.value / first.value) * 1000) / 10 : 0))
+
+const hovered = ref<number | null>(null)
+</script>
+
+<template>
+  <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-stone">Historique du prix</h2>
+      <span
+        v-if="enough && delta !== 0"
+        class="rounded-full px-2.5 py-1 text-xs font-semibold"
+        :class="delta < 0 ? 'bg-teal/40 text-[#0a4a42]' : 'bg-coral/40 text-[#600000]'"
+      >
+        {{ delta < 0 ? '▼' : '▲' }} {{ fmt(Math.abs(delta)) }} € ({{ deltaPct > 0 ? '+' : '' }}{{ deltaPct }} %)
+      </span>
+    </div>
+
+    <div v-if="!enough" class="mt-6 grid place-items-center py-8 text-center">
+      <p class="text-sm text-slate">Pas encore assez de données.</p>
+      <p class="mt-1 text-xs text-stone">La courbe se construit à chaque vérification du prix.</p>
+    </div>
+
+    <div v-else class="mt-4">
+      <svg
+        :viewBox="`0 0 ${W} ${H}`"
+        class="h-36 w-full sm:h-[180px]"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="prixFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffd02f" stop-opacity="0.35" />
+            <stop offset="100%" stop-color="#ffd02f" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <path :d="areaPath" fill="url(#prixFill)" />
+        <path :d="linePath" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+        <g v-for="c in coords" :key="c.i">
+          <circle
+            :cx="c.x"
+            :cy="c.y"
+            :r="hovered === c.i ? 6 : 4"
+            fill="#fff"
+            stroke="#1a1a1a"
+            stroke-width="2"
+            vector-effect="non-scaling-stroke"
+            class="cursor-pointer transition-all"
+            @mouseenter="hovered = c.i"
+            @mouseleave="hovered = null"
+          />
+        </g>
+      </svg>
+
+      <!-- Les trois libellés sont insécables : côte à côte ils débordent sous
+           400 px. Le central passe sur sa propre ligne tant qu'on est étroit. -->
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs">
+        <span class="whitespace-nowrap text-stone">{{ fmtDate(valid[0].controle_le) }}</span>
+        <span
+          v-if="hovered !== null"
+          class="order-last w-full whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-center font-semibold text-white sm:order-none sm:w-auto"
+        >
+          {{ fmt(coords[hovered].prix) }} € · {{ fmtDate(coords[hovered].date) }}
+        </span>
+        <span
+          v-else
+          class="order-last w-full whitespace-nowrap text-center text-stone sm:order-none sm:w-auto sm:text-left"
+        >
+          min {{ fmt(priceMin) }} € · max {{ fmt(priceMax) }} €
+        </span>
+        <span class="whitespace-nowrap text-stone">{{ fmtDate(valid[valid.length - 1].controle_le) }}</span>
+      </div>
+    </div>
+  </div>
+</template>

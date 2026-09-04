@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extraireOrpi } from '../server/utils/scrape/extract'
+import { extractOrpi } from '../server/utils/scrape/extract'
 import { detecterSource } from '../server/utils/scrape/source'
 
 const VENTE = JSON.stringify({
@@ -55,9 +55,9 @@ describe('detecterSource', () => {
   })
 })
 
-describe('extraireOrpi — vente', () => {
+describe('extractOrpi — vente', () => {
   it('lit prix, surface, pièces, étage', () => {
-    const d = extraireOrpi(VENTE)
+    const d = extractOrpi(VENTE)
     expect(d.prix).toBe(20400000)
     expect(d.surface).toBe(59)
     expect(d.nb_pieces).toBe(2)
@@ -65,51 +65,51 @@ describe('extraireOrpi — vente', () => {
   })
 
   it('mappe storyLocation (étage du bien), pas story (étages de l’immeuble)', () => {
-    expect(extraireOrpi(VENTE).etage).toBe(1)
+    expect(extractOrpi(VENTE).etage).toBe(1)
   })
 
   it('DPE non requis (dpeDisplay=false) → dpe null, pas une lettre par défaut', () => {
-    expect(extraireOrpi(VENTE).dpe).toBeNull()
+    expect(extractOrpi(VENTE).dpe).toBeNull()
   })
 
   it('garde le nom de ville accentué', () => {
-    expect(extraireOrpi(VENTE).ville).toBe('Saint-Égrève')
-    expect(extraireOrpi(VENTE).code_postal).toBe('38120')
+    expect(extractOrpi(VENTE).ville).toBe('Saint-Égrève')
+    expect(extractOrpi(VENTE).code_postal).toBe('38120')
   })
 
   it('charges absentes → null', () => {
-    expect(extraireOrpi(VENTE).charges).toBeNull()
+    expect(extractOrpi(VENTE).charges).toBeNull()
   })
 })
 
-describe('extraireOrpi — location', () => {
+describe('extractOrpi — location', () => {
   it('lit le loyer en centimes', () => {
-    expect(extraireOrpi(LOCATION).prix).toBe(74000)
+    expect(extractOrpi(LOCATION).prix).toBe(74000)
   })
 
   it('convertit l’indice DPE numérique en lettre', () => {
-    expect(extraireOrpi(LOCATION).dpe).toBe('C')
+    expect(extractOrpi(LOCATION).dpe).toBe('C')
   })
 
   it('lit la provision pour charges', () => {
-    expect(extraireOrpi(LOCATION).charges).toBe(1200)
+    expect(extractOrpi(LOCATION).charges).toBe(1200)
   })
 
   it('arrondit une surface décimale', () => {
-    expect(extraireOrpi(LOCATION).surface).toBe(44)
+    expect(extractOrpi(LOCATION).surface).toBe(44)
   })
 
   it('récupère les photos', () => {
-    expect(extraireOrpi(LOCATION).photos).toHaveLength(2)
+    expect(extractOrpi(LOCATION).photos).toHaveLength(2)
   })
 })
 
-describe('extraireOrpi — cas limites', () => {
+describe('extractOrpi — cas limites', () => {
   it('estateData absent → objet vide', () => {
-    expect(extraireOrpi(undefined)).toEqual({})
+    expect(extractOrpi(undefined)).toEqual({})
   })
 
   it('estateData invalide → objet vide', () => {
-    expect(extraireOrpi('{pas du json')).toEqual({})
+    expect(extractOrpi('{pas du json')).toEqual({})
   })
 })

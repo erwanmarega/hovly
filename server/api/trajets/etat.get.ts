@@ -1,12 +1,12 @@
-import { routageDisponible } from '../../utils/routage'
+import { routingAvailable } from '../../utils/routage'
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
 
   return {
-    voiture: routageDisponible('voiture'),
-    velo: routageDisponible('velo'),
-    marche: routageDisponible('marche'),
-    transport: routageDisponible('transport')
+    voiture: routingAvailable('voiture'),
+    velo: routingAvailable('velo'),
+    marche: routingAvailable('marche'),
+    transport: routingAvailable('transport')
   }
 })

@@ -1,11 +1,11 @@
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
-import { assertTailleCorps, nettoyerTexte } from '../../utils/validation'
-import { genererTokenPartage, MAX_BIENS_PARTAGE } from '../../utils/partages'
+import { assertBodySize, cleanText } from '../../utils/validation'
+import { generateShareToken, MAX_SHARED_PROPERTIES } from '../../utils/partages'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.partage, QUOTAS.partageHeure)
-  assertTailleCorps(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.share, QUOTAS.sharePerHour)
+  assertBodySize(event)
   const client = await db(event)
   const body = await readBody(event)
 
@@ -13,16 +13,16 @@ export default defineEventHandler(async (event) => {
     ? [...new Set(body.bien_ids.filter((id: unknown): id is string => typeof id === 'string'))]
     : []
 
-  if (!bienIds.length || bienIds.length > MAX_BIENS_PARTAGE) {
+  if (!bienIds.length || bienIds.length > MAX_SHARED_PROPERTIES) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Sélection invalide',
-      message: `Sélectionne entre 1 et ${MAX_BIENS_PARTAGE} biens à partager.`
+      message: `Sélectionne entre 1 et ${MAX_SHARED_PROPERTIES} biens à partager.`
     })
   }
 
-  const titre = nettoyerTexte(body?.titre, 80)
-  const token = genererTokenPartage()
+  const titre = cleanText(body?.titre, 80)
+  const token = generateShareToken()
 
   const { data: partage, error } = await client
     .from('partages')
@@ -34,11 +34,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  const { error: errLiens } = await client
+  const { error: errLinks } = await client
     .from('partage_biens')
     .insert(bienIds.map((bien_id) => ({ partage_id: partage.id, bien_id })))
 
-  if (errLiens) {
+  if (errLinks) {
     // La policy RLS rejette un bien qui n'appartient pas à l'utilisateur (ou
     // qui n'existe pas) : on annule le partage plutôt que de laisser un lien
     // à moitié rempli.

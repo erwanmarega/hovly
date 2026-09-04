@@ -1,14 +1,14 @@
-import { assertTailleCorps } from '../../utils/validation'
+import { assertBodySize } from '../../utils/validation'
 
-interface CorpsAbonnement {
+interface SubscriptionBody {
   endpoint?: string
   keys?: { p256dh?: string; auth?: string }
 }
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertTailleCorps(event)
-  const body = await readBody<CorpsAbonnement>(event)
+  assertBodySize(event)
+  const body = await readBody<SubscriptionBody>(event)
 
   const endpoint = body?.endpoint
   const p256dh = body?.keys?.p256dh

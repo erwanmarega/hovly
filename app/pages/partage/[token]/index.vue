@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PartagePublic } from "~/types";
+import type { PublicShare } from "~/types";
 
 const route = useRoute();
 const token = route.params.token as string;
@@ -10,7 +10,7 @@ const {
   error,
 } = await useAsyncData(
   `partage-${token}`,
-  () => $fetch<PartagePublic>(`/api/partages/${token}`),
+  () => $fetch<PublicShare>(`/api/partages/${token}`),
   {
     server: false,
   }
@@ -62,14 +62,14 @@ useHead({
         <div v-if="!partage.biens.length" class="mt-10 text-center text-slate">
           Ce partage ne contient plus aucun bien.
         </div>
-        <TableauComparaisonPartage
+        <SharedComparisonTable
           v-else-if="partage.biens.length > 1"
           class="mt-8"
           :biens="partage.biens"
           :token="token"
         />
         <div v-else class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <CarteBienPartage
+          <SharedPropertyCard
             v-for="b in partage.biens"
             :key="b.id"
             :bien="b"

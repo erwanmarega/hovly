@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const route = useRoute()
-const { nonVues } = useAlertes()
-const { nouveaux } = useVeilles()
+const { unread } = useAlerts()
+const { newCount } = useWatches()
 
-const onglets = [
+const tabs = [
   { to: '/dashboard', label: 'Mes biens' },
   { to: '/veilles', label: 'Veilles' },
   { to: '/comparer', label: 'Comparer' },
@@ -12,9 +12,9 @@ const onglets = [
 ]
 
 const badge = (to: string) =>
-  to === '/alertes' ? nonVues.value : to === '/veilles' ? nouveaux.value : 0
+  to === '/alertes' ? unread.value : to === '/veilles' ? newCount.value : 0
 
-const actif = (to: string) => route.path === to || route.path.startsWith(`${to}/`)
+const isActive = (to: string) => route.path === to || route.path.startsWith(`${to}/`)
 </script>
 
 <template>
@@ -23,15 +23,15 @@ const actif = (to: string) => route.path === to || route.path.startsWith(`${to}/
     aria-label="Navigation principale"
   >
     <ul class="mx-auto flex max-w-md items-stretch">
-      <li v-for="o in onglets" :key="o.to" class="flex-1">
+      <li v-for="o in tabs" :key="o.to" class="flex-1">
         <NuxtLink
           :to="o.to"
           class="relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition"
-          :class="actif(o.to) ? 'text-ink' : 'text-stone'"
+          :class="isActive(o.to) ? 'text-ink' : 'text-stone'"
         >
           <span
             class="grid size-6 place-items-center rounded-full transition"
-            :class="actif(o.to) && 'bg-brand'"
+            :class="isActive(o.to) && 'bg-brand'"
           >
             <svg
               v-if="o.to === '/dashboard'"

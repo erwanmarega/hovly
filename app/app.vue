@@ -2,7 +2,7 @@
   <div>
     <NuxtRouteAnnouncer />
     <NuxtPage />
-    <RideauPage />
-    <ToastGlobal />
+    <CurtainOverlay />
+    <GlobalToast />
   </div>
 </template>

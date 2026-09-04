@@ -1,9 +1,9 @@
-import { envoyerPush, pushDisponible } from '../../utils/push'
+import { sendPush, pushAvailable } from '../../utils/push'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
 
-  if (!pushDisponible()) {
+  if (!pushAvailable()) {
     throw createError({
       statusCode: 503,
       statusMessage: 'Push non configure',
@@ -12,12 +12,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const client = await db(event)
-  const envois = await envoyerPush(client, user.id, {
+  const result = await sendPush(client, user.id, {
     titre: 'Hovly',
     corps: 'Les notifications fonctionnent. Tu seras prévenu dès qu’un prix baisse.',
     url: '/alertes',
     tag: 'test'
   })
 
-  return { ok: envois.envoyes > 0, ...envois }
+  return { ok: result.sent > 0, ...result }
 })

@@ -1,15 +1,15 @@
-import type { Ancre, Bien, ModeTrajet, Trajet } from '~/types'
-import { dureesVersAncre, paquets, routageDisponible } from '../../utils/routage'
+import type { Anchor, Property, TravelMode, Commute } from '~/types'
+import { durationsToAnchor, batches, routingAvailable } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
-import { assertTailleCorps } from '../../utils/validation'
-import { MAX_ANCRES } from '~/composables/usePreferences'
+import { assertBodySize } from '../../utils/validation'
+import { MAX_ANCHORS } from '~/composables/usePreferences'
 
-const MODES: ModeTrajet[] = ['voiture', 'velo', 'marche', 'transport']
+const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
 
-function ancresValides(brut: unknown): Ancre[] {
-  if (!Array.isArray(brut)) return []
-  return brut.filter(
-    (a): a is Ancre =>
+function validAnchors(raw: unknown): Anchor[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (a): a is Anchor =>
       !!a &&
       typeof a.id === 'string' &&
       typeof a.lat === 'number' &&
@@ -18,108 +18,108 @@ function ancresValides(brut: unknown): Ancre[] {
   )
 }
 
-const memePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
+const samePoint = (a: number, b: number) => Math.abs(a - b) < 0.00001
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.trajets, QUOTAS.trajetsHeure)
-  assertTailleCorps(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.commutes, QUOTAS.commutesPerHour)
+  assertBodySize(event)
 
   const body = await readBody<{ ancres?: unknown }>(event)
-  const ancres = ancresValides(body?.ancres)
+  const anchors = validAnchors(body?.ancres)
 
-  if (ancres.length > MAX_ANCRES) {
+  if (anchors.length > MAX_ANCHORS) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Trop de points d’ancrage',
-      message: `Maximum ${MAX_ANCRES} points d'ancrage par calcul.`
+      message: `Maximum ${MAX_ANCHORS} points d'ancrage par calcul.`
     })
   }
 
   const client = await db(event)
 
-  const { data: biensBruts, error: erreurBiens } = await client
+  const { data: rawProperties, error: propertiesError } = await client
     .from('biens')
     .select('id, lat, lon')
     .eq('user_id', user.id)
     .eq('actif', true)
     .not('lat', 'is', null)
 
-  if (erreurBiens) throw createError({ statusCode: 500, statusMessage: erreurBiens.message })
+  if (propertiesError) throw createError({ statusCode: 500, statusMessage: propertiesError.message })
 
-  const biens = (biensBruts ?? []) as Pick<Bien, 'id' | 'lat' | 'lon'>[]
+  const properties = (rawProperties ?? []) as Pick<Property, 'id' | 'lat' | 'lon'>[]
 
-  if (ancres.length === 0) {
+  if (anchors.length === 0) {
     await client.from('trajets').delete().not('id', 'is', null)
-    return { ancres: 0, biens: biens.length, calcules: 0, ignores: 0, echecs: 0 }
+    return { ancres: 0, biens: properties.length, calcules: 0, ignores: 0, echecs: 0 }
   }
   await client
     .from('trajets')
     .delete()
-    .not('ancre', 'in', `(${ancres.map((a) => `"${a.id}"`).join(',')})`)
+    .not('ancre', 'in', `(${anchors.map((a) => `"${a.id}"`).join(',')})`)
 
-  const { data: existantsBruts } = await client.from('trajets').select('*')
-  const existants = (existantsBruts ?? []) as Trajet[]
+  const { data: rawExisting } = await client.from('trajets').select('*')
+  const existing = (rawExisting ?? []) as Commute[]
 
-  const cle = (bienId: string, ancreId: string, mode: string) => `${bienId}|${ancreId}|${mode}`
-  const connus = new Map(existants.map((t) => [cle(t.bien_id, t.ancre, t.mode), t]))
+  const key = (propertyId: string, anchorId: string, mode: string) => `${propertyId}|${anchorId}|${mode}`
+  const known = new Map(existing.map((t) => [key(t.bien_id, t.ancre, t.mode), t]))
 
-  const resume = {
-    ancres: ancres.length,
-    biens: biens.length,
+  const summary = {
+    ancres: anchors.length,
+    biens: properties.length,
     calcules: 0,
     ignores: 0,
     echecs: 0,
     indisponibles: [] as string[]
   }
-  const maintenant = new Date().toISOString()
+  const now = new Date().toISOString()
 
-  for (const ancre of ancres) {
-    if (!routageDisponible(ancre.mode)) {
-      resume.indisponibles.push(ancre.id)
+  for (const anchor of anchors) {
+    if (!routingAvailable(anchor.mode)) {
+      summary.indisponibles.push(anchor.id)
       continue
     }
 
-    const aFaire = biens.filter((b) => {
-      const t = connus.get(cle(b.id, ancre.id, ancre.mode))
+    const toDo = properties.filter((b) => {
+      const t = known.get(key(b.id, anchor.id, anchor.mode))
       if (!t) return true
-      return !memePoint(t.ancre_lat, ancre.lat) || !memePoint(t.ancre_lon, ancre.lon)
+      return !samePoint(t.ancre_lat, anchor.lat) || !samePoint(t.ancre_lon, anchor.lon)
     })
-    resume.ignores += biens.length - aFaire.length
-    if (!aFaire.length) continue
+    summary.ignores += properties.length - toDo.length
+    if (!toDo.length) continue
 
-    for (const lot of paquets(aFaire)) {
-      let durees
+    for (const batch of batches(toDo)) {
+      let durations
       try {
-        durees = await dureesVersAncre(
-          lot.map((b) => ({ lat: b.lat!, lon: b.lon! })),
-          { lat: ancre.lat, lon: ancre.lon },
-          ancre.mode
+        durations = await durationsToAnchor(
+          batch.map((b) => ({ lat: b.lat!, lon: b.lon! })),
+          { lat: anchor.lat, lon: anchor.lon },
+          anchor.mode
         )
       } catch {
-        resume.echecs += lot.length
+        summary.echecs += batch.length
         continue
       }
 
-      const lignes = lot.map((b, i) => ({
+      const rows = batch.map((b, i) => ({
         bien_id: b.id,
-        ancre: ancre.id,
-        mode: ancre.mode,
-        ancre_lat: ancre.lat,
-        ancre_lon: ancre.lon,
-        duree_s: durees[i]?.duree_s ?? null,
-        distance_m: durees[i]?.distance_m ?? null,
-        calcule_le: maintenant
+        ancre: anchor.id,
+        mode: anchor.mode,
+        ancre_lat: anchor.lat,
+        ancre_lon: anchor.lon,
+        duree_s: durations[i]?.duree_s ?? null,
+        distance_m: durations[i]?.distance_m ?? null,
+        calcule_le: now
       }))
 
       const { error } = await client
         .from('trajets')
-        .upsert(lignes, { onConflict: 'bien_id,ancre,mode' })
+        .upsert(rows, { onConflict: 'bien_id,ancre,mode' })
 
-      if (error) resume.echecs += lignes.length
-      else resume.calcules += lignes.length
+      if (error) summary.echecs += rows.length
+      else summary.calcules += rows.length
     }
   }
 
-  return resume
+  return summary
 })

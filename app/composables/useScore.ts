@@ -1,6 +1,6 @@
-import type { Bien, DPE, Preferences } from '~/types'
-import { estAchat } from './useBiens'
-import { prixAuM2 } from './useMarche'
+import type { Property, DPE, Preferences } from '~/types'
+import { isPurchase } from './useProperties'
+import { pricePerSqm } from './useMarket'
 
 export interface ScorePart {
   label: string
@@ -9,7 +9,7 @@ export interface ScorePart {
   hint: string
 }
 
-export interface Critere {
+export interface Criterion {
   label: string
   ok: boolean
   detail: string
@@ -18,14 +18,14 @@ export interface Critere {
 export interface Score {
   total: number
   label: string
-  couleur: string
+  color: string
   tint: string
   parts: ScorePart[]
-  criteres: Critere[]
-  personnalise: boolean
+  criteria: Criterion[]
+  customized: boolean
 }
 
-export const PREFERENCES_DEFAUT: Preferences = {
+export const DEFAULT_PREFERENCES: Preferences = {
   budgetMax: null,
   surfaceMin: null,
   piecesMin: null,
@@ -42,9 +42,9 @@ export const PREFERENCES_DEFAUT: Preferences = {
   ancres: []
 }
 
-const MALUS_CRITERE = 12
+const CRITERION_PENALTY = 12
 
-const DPE_ORDRE: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+const DPE_ORDER: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
 const DPE_FRACTION: Record<DPE, number> = {
   A: 1,
@@ -56,7 +56,7 @@ const DPE_FRACTION: Record<DPE, number> = {
   G: 0
 }
 
-function mediane(vals: number[]): number {
+function median(vals: number[]): number {
   if (vals.length === 0) return 0
   const s = [...vals].sort((a, b) => a - b)
   const m = Math.floor(s.length / 2)
@@ -67,39 +67,39 @@ function clamp01(x: number): number {
   return Math.max(0, Math.min(1, x))
 }
 
-function pm2(b: Bien): number {
-  return prixAuM2(b) ?? 0
+function pm2(b: Property): number {
+  return pricePerSqm(b) ?? 0
 }
 
-export function estPersonnalise(p: Preferences): boolean {
+export function isCustomized(p: Preferences): boolean {
   return (
     p.budgetMax != null ||
     p.budgetAchatMax != null ||
     p.surfaceMin != null ||
     p.piecesMin != null ||
     p.dpeMin != null ||
-    p.poidsPrix !== PREFERENCES_DEFAUT.poidsPrix ||
-    p.poidsDpe !== PREFERENCES_DEFAUT.poidsDpe ||
-    p.poidsCharges !== PREFERENCES_DEFAUT.poidsCharges
+    p.poidsPrix !== DEFAULT_PREFERENCES.poidsPrix ||
+    p.poidsDpe !== DEFAULT_PREFERENCES.poidsDpe ||
+    p.poidsCharges !== DEFAULT_PREFERENCES.poidsCharges
   )
 }
 
-function repartir(prefs: Preferences): { prix: number; dpe: number; charges: number } {
-  const brut = [
+function splitWeights(prefs: Preferences): { prix: number; dpe: number; charges: number } {
+  const raw = [
     Math.max(0, prefs.poidsPrix),
     Math.max(0, prefs.poidsDpe),
     Math.max(0, prefs.poidsCharges)
   ]
-  const somme = brut[0]! + brut[1]! + brut[2]!
-  if (!somme) return { prix: 50, dpe: 30, charges: 20 }
+  const sum = raw[0]! + raw[1]! + raw[2]!
+  if (!sum) return { prix: 50, dpe: 30, charges: 20 }
 
-  const prix = Math.round((brut[0]! / somme) * 100)
-  const dpe = Math.round((brut[1]! / somme) * 100)
+  const prix = Math.round((raw[0]! / sum) * 100)
+  const dpe = Math.round((raw[1]! / sum) * 100)
   return { prix, dpe, charges: 100 - prix - dpe }
 }
 
-function criteres(bien: Bien, prefs: Preferences): Critere[] {
-  const out: Critere[] = []
+function criteria(bien: Property, prefs: Preferences): Criterion[] {
+  const out: Criterion[] = []
   const eur = (n: number) => n.toLocaleString('fr-FR')
 
   const budget =
@@ -127,104 +127,104 @@ function criteres(bien: Bien, prefs: Preferences): Critere[] {
     })
   }
   if (prefs.dpeMin != null) {
-    const rang = bien.dpe ? DPE_ORDRE.indexOf(bien.dpe) : -1
+    const rang = bien.dpe ? DPE_ORDER.indexOf(bien.dpe) : -1
     out.push({
       label: 'DPE',
-      ok: rang >= 0 && rang <= DPE_ORDRE.indexOf(prefs.dpeMin),
+      ok: rang >= 0 && rang <= DPE_ORDER.indexOf(prefs.dpeMin),
       detail: bien.dpe ? `${bien.dpe} / min ${prefs.dpeMin}` : `non renseigné / min ${prefs.dpeMin}`
     })
   }
   return out
 }
 
-export function scoreBien(
-  bien: Bien,
-  contexte: Bien[],
-  prefs: Preferences = PREFERENCES_DEFAUT
+export function scoreProperty(
+  bien: Property,
+  context: Property[],
+  prefs: Preferences = DEFAULT_PREFERENCES
 ): Score {
-  const poids = repartir(prefs)
+  const weights = splitWeights(prefs)
   const parts: ScorePart[] = []
 
   const p = pm2(bien)
   // On ne compare des €/m² qu'entre biens de même nature : un prix de vente
   // au m² n'a rien à voir avec un loyer au m².
-  const comparables = contexte.filter((b) => estAchat(b) === estAchat(bien))
-  const memeVille = comparables.filter((b) => b.actif && b.surface > 0 && b.ville === bien.ville)
-  const refs = memeVille.length >= 2 ? memeVille : comparables.filter((b) => b.actif && b.surface > 0)
-  const med = mediane(refs.map(pm2))
+  const comparables = context.filter((b) => isPurchase(b) === isPurchase(bien))
+  const sameCity = comparables.filter((b) => b.actif && b.surface > 0 && b.ville === bien.ville)
+  const refs = sameCity.length >= 2 ? sameCity : comparables.filter((b) => b.actif && b.surface > 0)
+  const med = median(refs.map(pm2))
 
-  let ptsPrix: number
-  let hintPrix: string
+  let pricePoints: number
+  let priceHint: string
   if (!p || !med) {
-    ptsPrix = Math.round(poids.prix * 0.5)
-    hintPrix = 'Pas assez de comparables'
+    pricePoints = Math.round(weights.prix * 0.5)
+    priceHint = 'Pas assez de comparables'
   } else {
     const ratio = p / med
-    ptsPrix = Math.round(clamp01((1.25 - ratio) / 0.5) * poids.prix)
-    const ecart = Math.round((ratio - 1) * 100)
-    hintPrix =
-      ecart <= -5
-        ? `${Math.abs(ecart)}% sous le marché local`
-        : ecart >= 5
-          ? `${ecart}% au-dessus du marché local`
+    pricePoints = Math.round(clamp01((1.25 - ratio) / 0.5) * weights.prix)
+    const gap = Math.round((ratio - 1) * 100)
+    priceHint =
+      gap <= -5
+        ? `${Math.abs(gap)}% sous le marché local`
+        : gap >= 5
+          ? `${gap}% au-dessus du marché local`
           : 'Dans le marché local'
   }
-  parts.push({ label: 'Prix au m²', points: ptsPrix, max: poids.prix, hint: hintPrix })
+  parts.push({ label: 'Prix au m²', points: pricePoints, max: weights.prix, hint: priceHint })
 
-  const ptsDpe = Math.round((bien.dpe ? DPE_FRACTION[bien.dpe] : 0.5) * poids.dpe)
+  const dpePoints = Math.round((bien.dpe ? DPE_FRACTION[bien.dpe] : 0.5) * weights.dpe)
   parts.push({
     label: 'Performance énergétique',
-    points: ptsDpe,
-    max: poids.dpe,
+    points: dpePoints,
+    max: weights.dpe,
     hint: bien.dpe ? `DPE ${bien.dpe}` : 'DPE non renseigné'
   })
 
-  let ptsCharges: number
-  let hintCharges: string
+  let chargesPoints: number
+  let chargesHint: string
   if (bien.charges == null || !bien.prix) {
-    ptsCharges = Math.round(poids.charges * 0.5)
-    hintCharges = 'Charges non renseignées'
-  } else if (estAchat(bien)) {
+    chargesPoints = Math.round(weights.charges * 0.5)
+    chargesHint = 'Charges non renseignées'
+  } else if (isPurchase(bien)) {
     // Charges de copropriété : jugées en €/m²/mois (le ratio charges/prix
     // de vente serait toujours proche de 0 et ne dirait rien).
-    const cpm2 = bien.charges / 100 / (bien.surface || 1)
-    ptsCharges = Math.round(clamp01((4 - cpm2) / 2.5) * poids.charges)
-    hintCharges = `${cpm2.toFixed(1).replace('.', ',')} €/m²/mois de copropriété`
+    const feesPerSqm = bien.charges / 100 / (bien.surface || 1)
+    chargesPoints = Math.round(clamp01((4 - feesPerSqm) / 2.5) * weights.charges)
+    chargesHint = `${feesPerSqm.toFixed(1).replace('.', ',')} €/m²/mois de copropriété`
   } else {
     const c = bien.charges / bien.prix
-    ptsCharges = Math.round(clamp01((0.3 - c) / 0.25) * poids.charges)
-    hintCharges = `${Math.round(c * 100)}% du loyer`
+    chargesPoints = Math.round(clamp01((0.3 - c) / 0.25) * weights.charges)
+    chargesHint = `${Math.round(c * 100)}% du loyer`
   }
-  parts.push({ label: 'Charges', points: ptsCharges, max: poids.charges, hint: hintCharges })
+  parts.push({ label: 'Charges', points: chargesPoints, max: weights.charges, hint: chargesHint })
 
-  const listeCriteres = criteres(bien, prefs)
-  const malus = listeCriteres.filter((c) => !c.ok).length * MALUS_CRITERE
-  const brut = parts.reduce((s, part) => s + part.points, 0)
-  const total = Math.max(0, brut - malus)
+  const criteriaList = criteria(bien, prefs)
+  const penalty = criteriaList.filter((c) => !c.ok).length * CRITERION_PENALTY
+  const raw = parts.reduce((s, part) => s + part.points, 0)
+  const total = Math.max(0, raw - penalty)
 
-  const { label, couleur, tint } =
+  const { label, color, tint } =
     total >= 80
-      ? { label: 'Excellent', couleur: 'text-[#1c6a3a]', tint: 'bg-teal' }
+      ? { label: 'Excellent', color: 'text-[#1c6a3a]', tint: 'bg-teal' }
       : total >= 65
-        ? { label: 'Bon', couleur: 'text-[#1c6a3a]', tint: 'bg-teal' }
+        ? { label: 'Bon', color: 'text-[#1c6a3a]', tint: 'bg-teal' }
         : total >= 50
-          ? { label: 'Correct', couleur: 'text-[#8a6d1c]', tint: 'bg-brand' }
+          ? { label: 'Correct', color: 'text-[#8a6d1c]', tint: 'bg-brand' }
           : total >= 35
-            ? { label: 'Moyen', couleur: 'text-[#8a4a1c]', tint: 'bg-coral' }
-            : { label: 'Faible', couleur: 'text-[#8a1c1c]', tint: 'bg-coral' }
+            ? { label: 'Moyen', color: 'text-[#8a4a1c]', tint: 'bg-coral' }
+            : { label: 'Faible', color: 'text-[#8a1c1c]', tint: 'bg-coral' }
 
   return {
     total,
     label,
-    couleur,
+    color,
     tint,
     parts,
-    criteres: listeCriteres,
-    personnalise: estPersonnalise(prefs)
+    criteria: criteriaList,
+    customized: isCustomized(prefs)
   }
 }
 
-export function couleurScore(total: number | null | undefined): string {
+export function scoreColor(total: number | null | undefined): string {
   if (total == null) return '#8e91a0'
   if (total >= 65) return '#0fbcb0'
   if (total >= 50) return '#fcb900'

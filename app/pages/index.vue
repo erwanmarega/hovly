@@ -25,13 +25,13 @@ function scrollToTop() {
   <div class="min-h-screen bg-white text-ink antialiased">
     <TheNavbar show-links />
 
-    <SectionHeroGalerie />
+    <HeroGallerySection />
 
-    <SectionFeatures />
+    <FeaturesSection />
 
-    <SectionEtapes />
+    <StepsSection />
 
-    <SectionCta />
+    <CtaSection />
 
     <ArrowReturnToTop @scroll-to-top="scrollToTop" />
 

@@ -5,7 +5,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     },
 
     mounted(el: HTMLElement, binding: { value?: string; modifiers: Record<string, boolean> }) {
-      if (!binding.modifiers.groupe) el.classList.add('reveal')
+      if (!binding.modifiers.group) el.classList.add('reveal')
       if (binding.value) el.style.transitionDelay = binding.value
 
       const io = new IntersectionObserver(

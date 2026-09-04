@@ -1,25 +1,25 @@
-import type { TypeAlerte } from './index'
+import type { AlertType } from './index'
 
-export interface AlerteCreee {
+export interface CreatedAlert {
   bien_id: string
-  type: TypeAlerte
+  type: AlertType
   ancien_prix: number | null
   nouveau_prix: number | null
   titre: string
 }
 
-export interface ResumeEnvois {
-  envoyes: number
-  echecs: number
-  raisons: string[]
+export interface SendSummary {
+  sent: number
+  failed: number
+  reasons: string[]
 }
 
-export interface CheckResume {
-  verifies: number
-  baisses: number
-  supprimes: number
-  erreurs: number
-  alertes: AlerteCreee[]
-  envois?: ResumeEnvois
-  push?: ResumeEnvois
+export interface CheckSummary {
+  checked: number
+  priceDrops: number
+  removed: number
+  errors: number
+  alerts: CreatedAlert[]
+  emails?: SendSummary
+  push?: SendSummary
 }

@@ -3,9 +3,9 @@
 // loyer réel n'atteint 50 000 €/mois). Le champ reste éditable à la main.
 
 import type { Transaction } from '~/types'
-import { SEUIL_PRIX_VENTE_EUROS } from '~/types'
+import { SALE_PRICE_THRESHOLD_EUROS } from '~/types'
 
-const MOTIFS_ACHAT = [
+const PURCHASE_PATTERNS = [
   /\/ad\/ventes_immobilieres\//i, // leboncoin
   /\/annonce\/vente\//i, // bienici
   /\/annonces\/achat\//i, // seloger
@@ -14,7 +14,7 @@ const MOTIFS_ACHAT = [
   /\/annonce-vente-/i // orpi
 ]
 
-const MOTIFS_LOCATION = [
+const RENTAL_PATTERNS = [
   /\/ad\/locations\//i, // leboncoin
   /\/annonce\/(?:location|colocation)\//i, // bienici
   /\/annonces\/location\//i, // seloger
@@ -23,10 +23,10 @@ const MOTIFS_LOCATION = [
   /\/annonce-location-/i // orpi
 ]
 
-export function detecterTransaction(url: string, prixCentimes: number | null): Transaction {
-  if (MOTIFS_ACHAT.some((m) => m.test(url))) return 'achat'
-  if (MOTIFS_LOCATION.some((m) => m.test(url))) return 'location'
-  return prixCentimes != null && prixCentimes / 100 >= SEUIL_PRIX_VENTE_EUROS
+export function detectTransaction(url: string, prixCentimes: number | null): Transaction {
+  if (PURCHASE_PATTERNS.some((m) => m.test(url))) return 'achat'
+  if (RENTAL_PATTERNS.some((m) => m.test(url))) return 'location'
+  return prixCentimes != null && prixCentimes / 100 >= SALE_PRICE_THRESHOLD_EUROS
     ? 'achat'
     : 'location'
 }

@@ -1,26 +1,26 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { Bien, Recherche } from '../app/types'
-import type { AnnonceListe } from '../server/utils/scrape/liste'
+import type { Property, SavedSearch } from '../app/types'
+import type { ListingAd } from '../server/utils/scrape/listing'
 
-const scrapeListe = vi.fn()
+const scrapeListing = vi.fn()
 
-vi.mock('../server/utils/scrape/liste', () => ({
-  scrapeListe: (...a: any[]) => scrapeListe(...a)
+vi.mock('../server/utils/scrape/listing', () => ({
+  scrapeListing: (...a: any[]) => scrapeListing(...a)
 }))
-vi.mock('../server/utils/email', () => ({ envoyerVeilleEmail: vi.fn() }))
-vi.mock('../server/utils/push', () => ({ envoyerPush: vi.fn(), pushDisponible: () => false }))
+vi.mock('../server/utils/email', () => ({ sendWatchEmail: vi.fn() }))
+vi.mock('../server/utils/push', () => ({ sendPush: vi.fn(), pushAvailable: () => false }))
 
 const {
-  correspond,
-  estConnu,
-  aVerifier,
-  prochaineVerif,
-  champsVeille,
-  verifierRecherche,
-  purgerResultatsTraites
+  matches,
+  isKnown,
+  needsCheck,
+  nextCheck,
+  watchFields,
+  checkSearch,
+  purgeProcessedResults
 } = await import('../server/utils/veille')
 
-function recherche(over: Partial<Recherche> = {}): Recherche {
+function recherche(over: Partial<SavedSearch> = {}): SavedSearch {
   return {
     id: 'r1',
     user_id: 'u1',
@@ -41,7 +41,7 @@ function recherche(over: Partial<Recherche> = {}): Recherche {
   }
 }
 
-function annonce(over: Partial<AnnonceListe> = {}): AnnonceListe {
+function annonce(over: Partial<ListingAd> = {}): ListingAd {
   return {
     url: 'https://www.seloger.com/annonces/locations/appartement/paris/x/123456789.htm',
     titre: 'T2 refait à neuf',
@@ -55,7 +55,7 @@ function annonce(over: Partial<AnnonceListe> = {}): AnnonceListe {
   }
 }
 
-function bien(over: Partial<Bien> = {}): Bien {
+function bien(over: Partial<Property> = {}): Property {
   return {
     id: 'b1',
     user_id: 'u1',
@@ -69,50 +69,50 @@ function bien(over: Partial<Bien> = {}): Bien {
     code_postal: '75011',
     created_at: '2026-07-01T10:00:00.000Z',
     ...over
-  } as Bien
+  } as Property
 }
 
-describe('correspond', () => {
+describe('matches', () => {
   it('accepte une annonce dans les clous', () => {
-    expect(correspond(annonce(), recherche({ prix_max: 120000, surface_min: 40 }))).toBe(true)
+    expect(matches(annonce(), recherche({ prix_max: 120000, surface_min: 40 }))).toBe(true)
   })
 
   it('écarte au-dessus du loyer max et sous la surface min', () => {
-    expect(correspond(annonce(), recherche({ prix_max: 100000 }))).toBe(false)
-    expect(correspond(annonce(), recherche({ surface_min: 50 }))).toBe(false)
-    expect(correspond(annonce(), recherche({ pieces_min: 3 }))).toBe(false)
-    expect(correspond(annonce(), recherche({ prix_min: 150000 }))).toBe(false)
+    expect(matches(annonce(), recherche({ prix_max: 100000 }))).toBe(false)
+    expect(matches(annonce(), recherche({ surface_min: 50 }))).toBe(false)
+    expect(matches(annonce(), recherche({ pieces_min: 3 }))).toBe(false)
+    expect(matches(annonce(), recherche({ prix_min: 150000 }))).toBe(false)
   })
 
   it('laisse passer une carte illisible plutôt que de la perdre', () => {
     const inconnue = annonce({ prix: null, surface: null, nb_pieces: null })
-    expect(correspond(inconnue, recherche({ prix_max: 50000, surface_min: 200 }))).toBe(true)
+    expect(matches(inconnue, recherche({ prix_max: 50000, surface_min: 200 }))).toBe(true)
   })
 })
 
-describe('estConnu', () => {
+describe('isKnown', () => {
   it('reconnaît une URL déjà suivie', () => {
     const a = annonce()
-    expect(estConnu(a, [bien({ url_source: a.url })], new Set())).toBe(true)
+    expect(isKnown(a, [bien({ url_source: a.url })], new Set())).toBe(true)
   })
 
   it('reconnaît une URL déjà remontée par une autre veille', () => {
     const a = annonce()
-    expect(estConnu(a, [], new Set([a.url]))).toBe(true)
+    expect(isKnown(a, [], new Set([a.url]))).toBe(true)
   })
 
   it('reconnaît le même logement rediffusé sur un autre site', () => {
-    expect(estConnu(annonce(), [bien()], new Set())).toBe(true)
+    expect(isKnown(annonce(), [bien()], new Set())).toBe(true)
   })
 
   it('laisse passer un logement différent dans la même ville', () => {
     const autre = annonce({ prix: 250000, surface: 90, nb_pieces: 4, titre: 'Grand T4 terrasse' })
-    expect(estConnu(autre, [bien()], new Set())).toBe(false)
+    expect(isKnown(autre, [bien()], new Set())).toBe(false)
   })
 
   it('ne compare pas une carte trop pauvre — elle passera pour nouvelle', () => {
     const pauvre = annonce({ prix: null, surface: null, ville: null, code_postal: null })
-    expect(estConnu(pauvre, [bien()], new Set())).toBe(false)
+    expect(isKnown(pauvre, [bien()], new Set())).toBe(false)
   })
 })
 
@@ -120,46 +120,46 @@ describe('planification', () => {
   const t0 = new Date('2026-07-26T12:00:00.000Z')
 
   it('scanne une veille jamais vérifiée', () => {
-    expect(aVerifier(recherche(), t0)).toBe(true)
+    expect(needsCheck(recherche(), t0)).toBe(true)
   })
 
   it('ignore une veille en pause', () => {
-    expect(aVerifier(recherche({ active: false }), t0)).toBe(false)
+    expect(needsCheck(recherche({ active: false }), t0)).toBe(false)
   })
 
   it('attend la fréquence choisie', () => {
     const r = recherche({ frequence_min: 60, derniere_verif: '2026-07-26T11:30:00.000Z' })
-    expect(aVerifier(r, t0)).toBe(false)
-    expect(aVerifier({ ...r, derniere_verif: '2026-07-26T10:59:00.000Z' }, t0)).toBe(true)
+    expect(needsCheck(r, t0)).toBe(false)
+    expect(needsCheck({ ...r, derniere_verif: '2026-07-26T10:59:00.000Z' }, t0)).toBe(true)
   })
 
   it('relève le plancher de fréquence', () => {
-    expect(prochaineVerif(recherche({ frequence_min: 5 }))).toBe(30)
+    expect(nextCheck(recherche({ frequence_min: 5 }))).toBe(30)
   })
 
   it('espace les scans après des échecs, avec un plafond', () => {
-    expect(prochaineVerif(recherche({ echecs_consecutifs: 2 }))).toBe(240)
-    expect(prochaineVerif(recherche({ echecs_consecutifs: 99 }))).toBe(
-      prochaineVerif(recherche({ echecs_consecutifs: 4 }))
+    expect(nextCheck(recherche({ echecs_consecutifs: 2 }))).toBe(240)
+    expect(nextCheck(recherche({ echecs_consecutifs: 99 }))).toBe(
+      nextCheck(recherche({ echecs_consecutifs: 4 }))
     )
   })
 })
 
-describe('champsVeille', () => {
+describe('watchFields', () => {
   it('assainit les nombres et borne la fréquence', () => {
     expect(
-      champsVeille({ prix_max: '120000', surface_min: -5, pieces_min: 2.4, frequence_min: 1 })
+      watchFields({ prix_max: '120000', surface_min: -5, pieces_min: 2.4, frequence_min: 1 })
     ).toEqual({ prix_max: 120000, surface_min: null, pieces_min: 2, frequence_min: 30 })
   })
 
   it('ne laisse pas passer de champ non déclaré', () => {
-    expect(champsVeille({ user_id: 'autre', url: 'https://evil.example', active: true })).toEqual({
+    expect(watchFields({ user_id: 'autre', url: 'https://evil.example', active: true })).toEqual({
       active: true
     })
   })
 
   it('ne renvoie que les champs présents', () => {
-    expect(champsVeille({})).toEqual({})
+    expect(watchFields({})).toEqual({})
   })
 })
 
@@ -201,7 +201,7 @@ function clientFactice(options: { dejaVues?: string[]; inseres?: any[] } = {}) {
   return client
 }
 
-describe('verifierRecherche', () => {
+describe('checkSearch', () => {
   const t0 = new Date('2026-07-26T12:00:00.000Z')
 
   it('n’enregistre que les annonces neuves et dans les filtres', async () => {
@@ -209,10 +209,10 @@ describe('verifierRecherche', () => {
     const chere = annonce({ url: 'https://www.seloger.com/annonces/x/y/222222222.htm', prix: 300000 })
     const connue = annonce({ url: 'https://www.seloger.com/annonces/x/y/333333333.htm' })
 
-    scrapeListe.mockResolvedValue({ source: 'seloger', annonces: [neuve, chere, connue] })
+    scrapeListing.mockResolvedValue({ source: 'seloger', ads: [neuve, chere, connue] })
     const client = clientFactice({ dejaVues: [connue.url] })
 
-    const resume = await verifierRecherche(
+    const resume = await checkSearch(
       client as any,
       recherche({ prix_max: 150000 }),
       [],
@@ -228,10 +228,10 @@ describe('verifierRecherche', () => {
   })
 
   it('remet le compteur d’échecs à zéro après un scan réussi', async () => {
-    scrapeListe.mockResolvedValue({ source: 'seloger', annonces: [annonce()] })
+    scrapeListing.mockResolvedValue({ source: 'seloger', ads: [annonce()] })
     const client = clientFactice()
 
-    await verifierRecherche(client as any, recherche({ echecs_consecutifs: 3 }), [], t0)
+    await checkSearch(client as any, recherche({ echecs_consecutifs: 3 }), [], t0)
 
     expect(client.majRecherches.at(-1)).toMatchObject({
       echecs_consecutifs: 0,
@@ -243,14 +243,14 @@ describe('verifierRecherche', () => {
   // `createError` met le texte lisible dans `message` ; `statusMessage` n'est
   // plus qu'un code court, et h3 le sanitisera à terme.
   it('compte l’échec et laisse la veille active tant que le plafond n’est pas atteint', async () => {
-    scrapeListe.mockImplementation(() => {
+    scrapeListing.mockImplementation(() => {
       throw Object.assign(new Error('Page de résultats bloquée par un anti-bot.'), {
         statusMessage: 'Anti-bot'
       })
     })
     const client = clientFactice()
 
-    const resume = await verifierRecherche(
+    const resume = await checkSearch(
       client as any,
       recherche({ echecs_consecutifs: 2 }),
       [],
@@ -263,26 +263,26 @@ describe('verifierRecherche', () => {
   })
 
   it('met la veille en pause après trop d’échecs d’affilée', async () => {
-    scrapeListe.mockImplementation(() => {
+    scrapeListing.mockImplementation(() => {
       throw new Error('URL morte')
     })
     const client = clientFactice()
 
-    await verifierRecherche(client as any, recherche({ echecs_consecutifs: 7 }), [], t0)
+    await checkSearch(client as any, recherche({ echecs_consecutifs: 7 }), [], t0)
 
     expect(client.majRecherches[0]).toMatchObject({ echecs_consecutifs: 8, active: false })
   })
   it('retombe sur statusMessage quand l’erreur n’a pas de message', async () => {
-    scrapeListe.mockImplementation(() => {
+    scrapeListing.mockImplementation(() => {
       throw { statusMessage: 'Anti-bot' }
     })
 
-    const resume = await verifierRecherche(clientFactice() as any, recherche(), [], t0)
+    const resume = await checkSearch(clientFactice() as any, recherche(), [], t0)
     expect(resume.erreur).toBe('Anti-bot')
   })
 })
 
-describe('purgerResultatsTraites', () => {
+describe('purgeProcessedResults', () => {
   function clientPurge(reponse: { data: any; error: any }) {
     return {
       from: () => ({
@@ -299,11 +299,11 @@ describe('purgerResultatsTraites', () => {
 
   it('retourne le nombre de résultats supprimés', async () => {
     const client = clientPurge({ data: [{ id: 'a' }, { id: 'b' }], error: null })
-    expect(await purgerResultatsTraites(client as any)).toBe(2)
+    expect(await purgeProcessedResults(client as any)).toBe(2)
   })
 
   it('retourne 0 en cas d’erreur', async () => {
     const client = clientPurge({ data: null, error: { message: 'boom' } })
-    expect(await purgerResultatsTraites(client as any)).toBe(0)
+    expect(await purgeProcessedResults(client as any)).toBe(0)
   })
 })

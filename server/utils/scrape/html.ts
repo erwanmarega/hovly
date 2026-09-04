@@ -1,9 +1,9 @@
 import { parseHTML } from 'linkedom'
-import type { LienCarte, PageData } from './extract'
+import type { CardLink, PageData } from './extract'
 
-export const MAX_LIENS = 600
+export const MAX_LINKS = 600
 
-function plusGrande(srcset: string): string {
+function largestSrc(srcset: string): string {
   const parts = srcset
     .split(',')
     .map((p) => p.trim().split(/\s+/))
@@ -21,74 +21,74 @@ function plusGrande(srcset: string): string {
  * sous-arbre ne décrit qu'une seule annonce ; dès qu'il en contient plusieurs,
  * on est arrivé au conteneur de liste et on s'arrête au niveau précédent.
  */
-function carteDe(ancre: any, motifFiche: RegExp | null): any {
-  if (!motifFiche) return ancre
+function cardFrom(anchor: any, listingPattern: RegExp | null): any {
+  if (!listingPattern) return anchor
   // Une ancre qui ne pointe pas vers une fiche (navigation, footer) n'a pas de
   // carte : sans ce garde-fou, chacune des ~600 ancres d'une page remonterait
   // 5 niveaux en balayant des sous-arbres de plus en plus gros pour rien.
-  if (!motifFiche.test(ancre.getAttribute('href') || '')) return ancre
+  if (!listingPattern.test(anchor.getAttribute('href') || '')) return anchor
 
-  let courant = ancre
-  let carte = ancre
+  let current = anchor
+  let card = anchor
 
-  for (let i = 0; i < 5 && courant.parentElement; i++) {
-    courant = courant.parentElement
+  for (let i = 0; i < 5 && current.parentElement; i++) {
+    current = current.parentElement
 
     // Clé = la portion d'URL qui identifie l'annonce, pas le href brut. Une
     // carte contient souvent deux liens vers la même fiche (l'ancre étirée et un
     // bouton « Voir le détail »), l'un relatif et l'autre absolu : comparer les
     // href bruts les compterait comme deux annonces et stopperait la remontée
     // avant d'atteindre la carte.
-    const annonces = new Set<string>()
-    courant.querySelectorAll('a[href]').forEach((a: any) => {
-      const cible = (a.getAttribute('href') || '').match(motifFiche)
-      if (cible) annonces.add(cible[0])
+    const listings = new Set<string>()
+    current.querySelectorAll('a[href]').forEach((a: any) => {
+      const match = (a.getAttribute('href') || '').match(listingPattern)
+      if (match) listings.add(match[0])
     })
 
-    if (annonces.size > 1) break
-    carte = courant
+    if (listings.size > 1) break
+    card = current
   }
 
-  return carte
+  return card
 }
 
-export const LARGEUR_PHOTO_MIN = 200
-export const HAUTEUR_PHOTO_MIN = 150
+export const MIN_PHOTO_WIDTH = 200
+export const MIN_PHOTO_HEIGHT = 150
 
 /**
  * Une carte d'annonce commence souvent par le logo de l'agence, servi depuis le
  * même CDN que les photos — seule sa taille le trahit. SeLoger le demande en
  * `&h=50` là où les photos sont en `w=525&h=394`.
  */
-export function vignetteTropPetite(url: string, largeur?: unknown, hauteur?: unknown): boolean {
-  const nombre = (v: unknown) => {
+export function thumbnailTooSmall(url: string, width?: unknown, height?: unknown): boolean {
+  const number = (v: unknown) => {
     const n = typeof v === 'string' ? parseInt(v, 10) : typeof v === 'number' ? v : NaN
     return Number.isFinite(n) && n > 0 ? n : null
   }
 
-  const l = nombre(url.match(/[?&](?:w|width)=(\d+)/i)?.[1]) ?? nombre(largeur)
-  const h = nombre(url.match(/[?&](?:h|height)=(\d+)/i)?.[1]) ?? nombre(hauteur)
+  const l = number(url.match(/[?&](?:w|width)=(\d+)/i)?.[1]) ?? number(width)
+  const h = number(url.match(/[?&](?:h|height)=(\d+)/i)?.[1]) ?? number(height)
 
-  return (l !== null && l < LARGEUR_PHOTO_MIN) || (h !== null && h < HAUTEUR_PHOTO_MIN)
+  return (l !== null && l < MIN_PHOTO_WIDTH) || (h !== null && h < MIN_PHOTO_HEIGHT)
 }
 
-const premiereImage = (el: any): string => {
+const firstImage = (el: any): string => {
   for (const img of [...el.querySelectorAll('img')].slice(0, 8) as any[]) {
     const cand =
       img.getAttribute('src') ||
       img.getAttribute('data-src') ||
       img.getAttribute('data-lazy-src') ||
       img.getAttribute('data-original') ||
-      plusGrande(img.getAttribute('srcset') || '')
+      largestSrc(img.getAttribute('srcset') || '')
 
     if (!cand || !/^https?:\/\//i.test(cand)) continue
-    if (vignetteTropPetite(cand, img.getAttribute('width'), img.getAttribute('height'))) continue
+    if (thumbnailTooSmall(cand, img.getAttribute('width'), img.getAttribute('height'))) continue
     return cand
   }
   return ''
 }
 
-export function htmlToPageData(html: string, motifFiche: RegExp | null = null): PageData {
+export function htmlToPageData(html: string, listingPattern: RegExp | null = null): PageData {
   const { document } = parseHTML(html)
 
   const meta = (p: string) =>
@@ -107,12 +107,12 @@ export function htmlToPageData(html: string, motifFiche: RegExp | null = null): 
       el.getAttribute('data-src') ||
       el.getAttribute('data-lazy-src') ||
       el.getAttribute('data-original') ||
-      plusGrande(el.getAttribute('srcset') || '') ||
+      largestSrc(el.getAttribute('srcset') || '') ||
       ''
     if (cand) domImages.push(cand)
   })
   document.querySelectorAll('source[srcset]').forEach((s: any) => {
-    const u = plusGrande(s.getAttribute('srcset') || '')
+    const u = largestSrc(s.getAttribute('srcset') || '')
     if (u) domImages.push(u)
   })
 
@@ -133,9 +133,9 @@ export function htmlToPageData(html: string, motifFiche: RegExp | null = null): 
     }
   })
 
-  const liens: LienCarte[] = []
+  const links: CardLink[] = []
   document.querySelectorAll('a[href]').forEach((a: any) => {
-    if (liens.length >= MAX_LIENS) return
+    if (links.length >= MAX_LINKS) return
     const href = a.getAttribute('href') || ''
     if (!href) return
 
@@ -143,16 +143,16 @@ export function htmlToPageData(html: string, motifFiche: RegExp | null = null): 
     // simple badge trompeur (« Exclusivité » chez Century 21). On remonte les
     // deux textes sans arbitrer ici : c'est annoncesDepuisLiens qui garde celui
     // qui produit le plus de signal, car lui seul sait parser une carte.
-    const propre = (a.textContent || '').replace(/\s+/g, ' ').trim()
-    const carte = carteDe(a, motifFiche)
-    const texteCarte =
-      carte === a ? '' : (carte.textContent || '').replace(/\s+/g, ' ').trim()
+    const clean = (a.textContent || '').replace(/\s+/g, ' ').trim()
+    const card = cardFrom(a, listingPattern)
+    const cardText =
+      card === a ? '' : (card.textContent || '').replace(/\s+/g, ' ').trim()
 
-    liens.push({
+    links.push({
       href,
-      texte: propre.slice(0, 300),
-      ...(texteCarte && texteCarte !== propre ? { texteCarte: texteCarte.slice(0, 400) } : {}),
-      image: premiereImage(carte)
+      text: clean.slice(0, 300),
+      ...(cardText && cardText !== clean ? { cardText: cardText.slice(0, 400) } : {}),
+      image: firstImage(card)
     })
   })
 
@@ -167,6 +167,6 @@ export function htmlToPageData(html: string, motifFiche: RegExp | null = null): 
     bodyText: (document.body?.textContent || '').replace(/\s+/g, ' ').slice(0, 20000),
     nextData: document.querySelector('#__NEXT_DATA__')?.textContent || '',
     estateData: document.querySelector('[data-estate]')?.getAttribute('data-estate') || '',
-    liens
+    links
   }
 }

@@ -61,7 +61,7 @@ async function handleSignup() {
           <h1 class="text-3xl font-bold tracking-tight text-ink-deep">Crée ton compte</h1>
           <p class="mt-2 text-slate">Centralise tous tes biens en un seul endroit.</p>
 
-          <BoutonGoogle class="mt-8" :disabled="loading" @erreur="error = $event" />
+          <GoogleButton class="mt-8" :disabled="loading" @error="error = $event" />
 
           <div class="my-6 flex items-center gap-4">
             <span class="h-px flex-1 bg-hairline"/>
@@ -124,9 +124,9 @@ async function handleSignup() {
       </div>
     </div>
 
-    <PanneauMarque
-      titre="Arrête de jongler entre douze onglets."
-      accroche="Un seul tableau pour tous tes biens : score, coût réel, temps de trajet, historique des prix."
+    <BrandPanel
+      title="Arrête de jongler entre douze onglets."
+      tagline="Un seul tableau pour tous tes biens : score, coût réel, temps de trajet, historique des prix."
     />
   </div>
 </template>

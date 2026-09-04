@@ -1,28 +1,28 @@
-import type { Bien } from '~/types'
-import type { ResumeEnvois } from '~/types/check'
-import { envoyerRappelEmail } from './email'
-import { envoyerPush, pushDisponible } from './push'
+import type { Property } from '~/types'
+import type { SendSummary } from '~/types/check'
+import { sendReminderEmail } from './email'
+import { sendPush, pushAvailable } from './push'
 
-export interface ResumeRappels {
+export interface ReminderSummary {
   candidats: number
   envoyes: number
   echecs: number
   raisons: string[]
 }
 
-export const FENETRE_MS = 24 * 60 * 60 * 1000
+export const WINDOW_MS = 24 * 60 * 60 * 1000
 
-export function aRappeler(bien: Bien, maintenant = new Date()): boolean {
+export function needsReminder(bien: Property, now = new Date()): boolean {
   if (!bien.actif || !bien.visite_le || bien.rappel_envoye_le) return false
 
-  const visite = new Date(bien.visite_le).getTime()
-  if (Number.isNaN(visite)) return false
+  const visitAt = new Date(bien.visite_le).getTime()
+  if (Number.isNaN(visitAt)) return false
 
-  const t = maintenant.getTime()
-  return visite > t && visite - t <= FENETRE_MS
+  const t = now.getTime()
+  return visitAt > t && visitAt - t <= WINDOW_MS
 }
 
-const heure = (iso: string) =>
+const formatTime = (iso: string) =>
   new Date(iso).toLocaleString('fr-FR', {
     weekday: 'long',
     day: 'numeric',
@@ -31,48 +31,48 @@ const heure = (iso: string) =>
     minute: '2-digit'
   })
 
-export async function envoyerRappels(
+export async function sendReminders(
   client: any,
-  biens: Bien[],
+  biens: Property[],
   email: string | null,
-  maintenant = new Date()
-): Promise<ResumeRappels> {
-  const resume: ResumeRappels = { candidats: 0, envoyes: 0, echecs: 0, raisons: [] }
-  const aTraiter = biens.filter((b) => aRappeler(b, maintenant))
-  resume.candidats = aTraiter.length
+  now = new Date()
+): Promise<ReminderSummary> {
+  const summary: ReminderSummary = { candidats: 0, envoyes: 0, echecs: 0, raisons: [] }
+  const toProcess = biens.filter((b) => needsReminder(b, now))
+  summary.candidats = toProcess.length
 
-  for (const bien of aTraiter) {
-    let envoye = false
+  for (const bien of toProcess) {
+    let sent = false
 
-    const mail = await envoyerRappelEmail(email, bien).catch((e: Error) => ({
+    const mail = await sendReminderEmail(email, bien).catch((e: Error) => ({
       envoye: false,
       raison: e.message
     }))
-    if (mail.envoye) envoye = true
-    else if (mail.raison && !resume.raisons.includes(mail.raison)) resume.raisons.push(mail.raison)
+    if (mail.envoye) sent = true
+    else if (mail.raison && !summary.raisons.includes(mail.raison)) summary.raisons.push(mail.raison)
 
-    if (pushDisponible()) {
-      const push: ResumeEnvois = await envoyerPush(client, bien.user_id, {
+    if (pushAvailable()) {
+      const push: SendSummary = await sendPush(client, bien.user_id, {
         titre: 'Visite demain',
-        corps: `${bien.titre} — ${heure(bien.visite_le!)}`,
+        corps: `${bien.titre} — ${formatTime(bien.visite_le!)}`,
         url: `/bien/${bien.id}`,
         tag: `visite-${bien.id}`
-      }).catch((e: Error) => ({ envoyes: 0, echecs: 1, raisons: [e.message] }))
+      }).catch((e: Error) => ({ sent: 0, failed: 1, reasons: [e.message] }))
 
-      if (push.envoyes > 0) envoye = true
-      for (const r of push.raisons) if (!resume.raisons.includes(r)) resume.raisons.push(r)
+      if (push.sent > 0) sent = true
+      for (const r of push.reasons) if (!summary.raisons.includes(r)) summary.raisons.push(r)
     }
 
-    if (envoye) {
-      resume.envoyes++
+    if (sent) {
+      summary.envoyes++
       await client
         .from('biens')
-        .update({ rappel_envoye_le: maintenant.toISOString() })
+        .update({ rappel_envoye_le: now.toISOString() })
         .eq('id', bien.id)
     } else {
-      resume.echecs++
+      summary.echecs++
     }
   }
 
-  return resume
+  return summary
 }

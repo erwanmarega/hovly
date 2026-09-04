@@ -1,11 +1,11 @@
-import type { BienPartage, PartagePublic } from '~/types'
-import { partageExpire, SELECT_PUBLIC_BIEN } from '../../utils/partages'
+import type { SharedProperty, PublicShare } from '~/types'
+import { isShareExpired, PUBLIC_PROPERTY_SELECT } from '../../utils/partages'
 
 // Route publique : pas de requireUser. N'expose jamais `select('*')` sur
-// `biens` ici — seuls les champs de `SELECT_PUBLIC_BIEN` sont utiles à un
+// `biens` ici — seuls les champs de `PUBLIC_PROPERTY_SELECT` sont utiles à un
 // visiteur sans compte.
 
-export default defineEventHandler(async (event): Promise<PartagePublic> => {
+export default defineEventHandler(async (event): Promise<PublicShare> => {
   // Le fichier utilise le param `id` (et non `token`) car Nitro fusionne les
   // routes d'un même segment de chemin : `[id].delete.ts` dans ce même dossier
   // impose le nom de param `id` pour tout `/api/partages/:param`, quelle que
@@ -25,22 +25,22 @@ export default defineEventHandler(async (event): Promise<PartagePublic> => {
 
   // Un token expiré renvoie la même erreur qu'un token inexistant : ne pas
   // donner à un attaquant qui bruteforce un signal sur l'existence passée.
-  if (!partage || partageExpire(partage.expire_le)) {
+  if (!partage || isShareExpired(partage.expire_le)) {
     throw createError({ statusCode: 404, statusMessage: 'Lien introuvable' })
   }
 
-  const { data: liens, error: linksError } = await client
+  const { data: links, error: linksError } = await client
     .from('partage_biens')
-    .select(`biens (${SELECT_PUBLIC_BIEN})`)
+    .select(`biens (${PUBLIC_PROPERTY_SELECT})`)
     .eq('partage_id', partage.id)
 
   if (linksError) {
     console.error('[partages] lecture des biens échouée', linksError.message)
   }
 
-  const biens = ((liens ?? []) as unknown as { biens: BienPartage | null }[])
+  const biens = ((links ?? []) as unknown as { biens: SharedProperty | null }[])
     .map((l) => l.biens)
-    .filter((b): b is BienPartage => b != null)
+    .filter((b): b is SharedProperty => b != null)
 
   return { titre: partage.titre, cree_le: partage.cree_le, biens }
 })

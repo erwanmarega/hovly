@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PartagePublic } from "~/types";
+import type { PublicShare } from "~/types";
 
 const route = useRoute();
 const token = route.params.token as string;
@@ -11,7 +11,7 @@ const {
   error,
 } = await useAsyncData(
   `partage-${token}`,
-  () => $fetch<PartagePublic>(`/api/partages/${token}`),
+  () => $fetch<PublicShare>(`/api/partages/${token}`),
   {
     server: false,
   }
@@ -21,7 +21,7 @@ const bien = computed(
   () => partage.value?.biens.find((b) => b.id === id) ?? null
 );
 
-const achat = computed(() => bien.value != null && estAchat(bien.value));
+const purchase = computed(() => bien.value != null && isPurchase(bien.value));
 
 useHead({
   title: () =>
@@ -80,7 +80,7 @@ useHead({
             :src="photo"
             :alt="bien.titre ?? ''"
             class="aspect-[4/3] w-full rounded-xl bg-surface"
-            :class="estPhotoParDefaut(photo) ? 'object-contain' : 'object-cover'"
+            :class="isDefaultPhoto(photo) ? 'object-contain' : 'object-cover'"
             loading="lazy"
           />
         </div>
@@ -103,8 +103,8 @@ useHead({
         <div class="mt-6 rounded-2xl border border-hairline bg-white p-5">
           <p class="text-2xl font-semibold tabular-nums">
             <template v-if="bien.prix != null">
-              {{ formaterNombre(Math.round(bien.prix / 100)) }} €<span
-                v-if="!achat"
+              {{ formatNumber(Math.round(bien.prix / 100)) }} €<span
+                v-if="!purchase"
                 class="text-sm font-normal text-stone"
                 >/mois</span
               >
@@ -115,11 +115,11 @@ useHead({
           </p>
 
           <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-            <StatsBien
-              taille="md"
+            <PropertyStats
+              size="md"
               :surface="bien.surface"
-              :nb-pieces="bien.nb_pieces"
-              :pieces-label="bien.nb_pieces && bien.nb_pieces > 1 ? 'pièces' : 'pièce'"
+              :rooms="bien.nb_pieces"
+              :rooms-label="bien.nb_pieces && bien.nb_pieces > 1 ? 'pièces' : 'pièce'"
               :etage="bien.etage"
               :dpe="bien.dpe"
             />

@@ -4,16 +4,16 @@ import type { H3Event } from 'h3'
 import { createError } from 'h3'
 
 /** Longueur maximale acceptée pour une URL source. */
-export const MAX_URL_LONGUEUR = 2048
+export const MAX_URL_LENGTH = 2048
 
 /** Taille maximale par défaut d'un corps de requête JSON. */
-export const MAX_CORPS_OCTETS = 131072 // 128 KiB
+export const MAX_BODY_BYTES = 131072 // 128 KiB
 
 /**
  * Valide une URL source d'annonce immobilière.
  * Retourne l'URL nettoyée ou lève une erreur 400.
  */
-export function validerUrlSource(url: unknown): string {
+export function validateSourceUrl(url: unknown): string {
   if (typeof url !== 'string') {
     throw createError({ statusCode: 400, statusMessage: 'URL requise' })
   }
@@ -23,11 +23,11 @@ export function validerUrlSource(url: unknown): string {
     throw createError({ statusCode: 400, statusMessage: 'URL requise' })
   }
 
-  if (nettoyee.length > MAX_URL_LONGUEUR) {
+  if (nettoyee.length > MAX_URL_LENGTH) {
     throw createError({
       statusCode: 400,
       statusMessage: 'URL invalide',
-      message: `L'URL ne doit pas dépasser ${MAX_URL_LONGUEUR} caractères.`
+      message: `L'URL ne doit pas dépasser ${MAX_URL_LENGTH} caractères.`
     })
   }
 
@@ -57,7 +57,7 @@ export function validerUrlSource(url: unknown): string {
  * Vérifie que le corps de la requête n'est pas démesurément grand avant
  * de tenter de le lire.
  */
-export function assertTailleCorps(event: H3Event, maxBytes = MAX_CORPS_OCTETS) {
+export function assertBodySize(event: H3Event, maxBytes = MAX_BODY_BYTES) {
   const length = event.node.req.headers['content-length']
   if (length) {
     const taille = Number(length)
@@ -72,7 +72,7 @@ export function assertTailleCorps(event: H3Event, maxBytes = MAX_CORPS_OCTETS) {
 }
 
 /** Blocs IPv4 privés/réservés (RFC 1918, loopback, link-local incl. metadata cloud, CGNAT). */
-const BLOCS_IPV4: [number, number][] = [
+const IPV4_BLOCKS: [number, number][] = [
   [ip4(0, 0, 0, 0), ip4(0, 255, 255, 255)], // "this network"
   [ip4(10, 0, 0, 0), ip4(10, 255, 255, 255)],
   [ip4(100, 64, 0, 0), ip4(100, 127, 255, 255)], // CGNAT
@@ -87,27 +87,27 @@ function ip4(a: number, b: number, c: number, d: number): number {
   return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0
 }
 
-function estIpv4Privee(ip: string): boolean {
+function isIpv4Private(ip: string): boolean {
   const octets = ip.split('.').map(Number)
   if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
     return true // adresse malformée : on refuse par prudence
   }
   const [a, b, c, d] = octets as [number, number, number, number]
-  const valeur = ip4(a, b, c, d)
-  return BLOCS_IPV4.some(([debut, fin]) => valeur >= debut && valeur <= fin)
+  const value = ip4(a, b, c, d)
+  return IPV4_BLOCKS.some(([start, end]) => value >= start && value <= end)
 }
 
-function estIpv6Privee(ip: string): boolean {
-  const normalisee = ip.toLowerCase()
-  if (normalisee === '::1' || normalisee === '::') return true
+function isIpv6Private(ip: string): boolean {
+  const normalized = ip.toLowerCase()
+  if (normalized === '::1' || normalized === '::') return true
   // IPv4 mappée dans une adresse IPv6 (::ffff:a.b.c.d).
-  const mappee = normalisee.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
-  if (mappee) return estIpv4Privee(mappee[1]!)
-  const premierGroupe = normalisee.split(':')[0] ?? ''
-  if (normalisee.startsWith('fe8') || normalisee.startsWith('fe9')) return true // link-local fe80::/10
-  if (normalisee.startsWith('fea') || normalisee.startsWith('feb')) return true
-  const valeurGroupe = parseInt(premierGroupe, 16)
-  if (!Number.isNaN(valeurGroupe) && valeurGroupe >= 0xfc00 && valeurGroupe <= 0xfdff) return true // ULA fc00::/7
+  const mapped = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
+  if (mapped) return isIpv4Private(mapped[1]!)
+  const firstGroup = normalized.split(':')[0] ?? ''
+  if (normalized.startsWith('fe8') || normalized.startsWith('fe9')) return true // link-local fe80::/10
+  if (normalized.startsWith('fea') || normalized.startsWith('feb')) return true
+  const groupValue = parseInt(firstGroup, 16)
+  if (!Number.isNaN(groupValue) && groupValue >= 0xfc00 && groupValue <= 0xfdff) return true // ULA fc00::/7
   return false
 }
 
@@ -118,19 +118,19 @@ function estIpv6Privee(ip: string): boolean {
  * juste avant tout scraping, pour couvrir aussi le cas d'une IP qui aurait
  * changé (DNS rebinding) après la création du bien/de la veille.
  */
-export async function assertHostnamePublique(hostname: string): Promise<void> {
+export async function assertPublicHostname(hostname: string): Promise<void> {
   if (isIP(hostname)) {
-    const privee = isIP(hostname) === 4 ? estIpv4Privee(hostname) : estIpv6Privee(hostname)
-    if (privee) {
+    const isPrivate = isIP(hostname) === 4 ? isIpv4Private(hostname) : isIpv6Private(hostname)
+    if (isPrivate) {
       throw createError({ statusCode: 422, statusMessage: 'Cible interdite' })
     }
     return
   }
 
-  const adresses = await lookup(hostname, { all: true, verbatim: true })
-  for (const { address, family } of adresses) {
-    const privee = family === 4 ? estIpv4Privee(address) : estIpv6Privee(address)
-    if (privee) {
+  const addresses = await lookup(hostname, { all: true, verbatim: true })
+  for (const { address, family } of addresses) {
+    const isPrivate = family === 4 ? isIpv4Private(address) : isIpv6Private(address)
+    if (isPrivate) {
       throw createError({ statusCode: 422, statusMessage: 'Cible interdite' })
     }
   }
@@ -141,19 +141,19 @@ const HOSTNAME_CACHE_MS = 5 * 60_000
 const hostnamePublicCache = new Map<string, { isPublic: boolean; expiresAt: number }>()
 
 /**
- * Variante non-throwing d'`assertHostnamePublique`, mise en cache par hôte.
+ * Variante non-throwing d'`assertPublicHostname`, mise en cache par hôte.
  * Utilisée pour valider *chaque* requête réseau d'une page scrapée (nav,
  * redirections, sous-ressources) sans relancer une résolution DNS à chaque
  * appel — une page charge souvent des dizaines d'images sur les mêmes 1-3 CDN.
  */
-export async function isHostnamePublic(hostname: string): Promise<boolean> {
+export async function isPublicHostname(hostname: string): Promise<boolean> {
   const key = hostname.toLowerCase()
   const cached = hostnamePublicCache.get(key)
   if (cached && cached.expiresAt > Date.now()) return cached.isPublic
 
   let isPublic: boolean
   try {
-    await assertHostnamePublique(hostname)
+    await assertPublicHostname(hostname)
     isPublic = true
   } catch {
     isPublic = false
@@ -165,9 +165,9 @@ export async function isHostnamePublic(hostname: string): Promise<boolean> {
 /**
  * Nettoie une chaîne de texte libre pour stockage en base.
  */
-export function nettoyerTexte(valeur: unknown, maxLongueur: number): string | null {
-  if (valeur == null) return null
-  const texte = String(valeur).trim()
-  if (!texte) return null
-  return texte.slice(0, maxLongueur)
+export function cleanText(value: unknown, maxLength: number): string | null {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text) return null
+  return text.slice(0, maxLength)
 }

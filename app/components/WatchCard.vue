@@ -1,0 +1,187 @@
+<script setup lang="ts">
+import type { SavedSearch } from '~/types'
+
+const props = defineProps<{
+  search: SavedSearch
+  open?: boolean
+  scanning?: boolean
+}>()
+
+const emit = defineEmits<{
+  toggle: [id: string]
+  scan: [id: string]
+  pause: [id: string, active: boolean]
+  remove: [id: string]
+}>()
+
+const criteria = computed(() => {
+  const r = props.search
+  return [
+    r.prix_min && r.prix_max
+      ? `${formatPrice(r.prix_min)}–${formatPrice(r.prix_max)}`
+      : r.prix_max
+        ? `≤ ${formatPrice(r.prix_max)}`
+        : r.prix_min
+          ? `≥ ${formatPrice(r.prix_min)}`
+          : '',
+    r.surface_min ? `≥ ${r.surface_min} m²` : '',
+    r.pieces_min ? `≥ ${r.pieces_min} p` : ''
+  ].filter(Boolean)
+})
+
+const lastScan = computed(() => {
+  const iso = props.search.derniere_verif
+  if (!iso) return 'jamais scannée'
+
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (minutes < 1) return "à l'instant"
+  if (minutes < 60) return `il y a ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `il y a ${hours} h`
+  return `il y a ${Math.round(hours / 24)} j`
+})
+
+const paused = computed(() => !props.search.active)
+</script>
+
+<template>
+  <article
+    class="overflow-hidden rounded-2xl border bg-white transition"
+    :class="
+      search.nouveaux
+        ? 'border-blue/40 ring-1 ring-blue/10'
+        : 'border-hairline-soft'
+    "
+  >
+    <div class="flex flex-wrap items-center gap-3 p-4">
+      <button
+        class="flex min-w-0 flex-1 items-center gap-3 text-left"
+        :aria-expanded="open"
+        @click="emit('toggle', search.id)"
+      >
+        <SourceLogo
+          v-if="search.site_source"
+          :source="search.site_source"
+          :with-name="false"
+          :size="28"
+        />
+
+        <span class="min-w-0 flex-1">
+          <span class="flex items-center gap-2">
+            <span class="truncate font-medium text-ink">{{ search.label }}</span>
+            <span
+              v-if="search.nouveaux"
+              class="grid min-w-5 shrink-0 place-items-center rounded-full bg-blue px-1.5 text-xs font-bold text-white"
+            >
+              {{ search.nouveaux }}
+            </span>
+            <span
+              v-if="paused"
+              class="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-stone"
+            >
+              En pause
+            </span>
+          </span>
+
+          <span class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-stone">
+            <span v-for="c in criteria" :key="c" class="rounded-full bg-surface px-2 py-0.5">
+              {{ c }}
+            </span>
+            <span>Scannée {{ lastScan }}</span>
+          </span>
+        </span>
+
+        <svg
+          class="size-4 shrink-0 text-stone transition"
+          :class="open && 'rotate-180'"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      <div class="flex shrink-0 items-center gap-1">
+        <button
+          :disabled="scanning"
+          title="Scanner maintenant"
+          class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-surface hover:text-ink disabled:opacity-50"
+          @click="emit('scan', search.id)"
+        >
+          <span
+            v-if="scanning"
+            class="size-4 animate-spin rounded-full border-2 border-stone/40 border-t-ink"
+          />
+          <svg
+            v-else
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        </button>
+
+        <button
+          :title="paused ? 'Reprendre la veille' : 'Mettre en pause'"
+          class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-surface hover:text-ink"
+          @click="emit('pause', search.id, paused)"
+        >
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <template v-if="paused">
+              <path d="m6 3 14 9-14 9V3Z" />
+            </template>
+            <template v-else>
+              <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+            </template>
+          </svg>
+        </button>
+
+        <a
+          :href="search.url"
+          target="_blank"
+          rel="noopener"
+          title="Ouvrir la recherche sur le site"
+          class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-surface hover:text-ink"
+        >
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <path d="M15 3h6v6" />
+            <path d="M10 14 21 3" />
+          </svg>
+        </a>
+
+        <button
+          title="Supprimer la veille"
+          class="grid size-9 place-items-center rounded-lg text-stone transition hover:bg-coral hover:text-[#600000]"
+          @click="emit('remove', search.id)"
+        >
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <p
+      v-if="search.derniere_erreur"
+      class="border-t border-hairline-soft bg-coral/20 px-4 py-2.5 text-xs text-[#600000]"
+    >
+      Dernier scan en échec : {{ search.derniere_erreur }}
+      <template v-if="paused">
+        — veille mise en pause automatiquement, vérifie que l'URL est toujours valide.
+      </template>
+    </p>
+
+    <div v-if="open" class="border-t border-hairline-soft bg-surface/50 p-3">
+      <slot />
+    </div>
+  </article>
+</template>

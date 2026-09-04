@@ -1,39 +1,39 @@
 import { describe, it, expect } from 'vitest'
 import {
-  CHAMPS_PUBLICS_BIEN,
-  genererTokenPartage,
-  partageExpire,
-  SELECT_PUBLIC_BIEN
+  PUBLIC_PROPERTY_FIELDS,
+  generateShareToken,
+  isShareExpired,
+  PUBLIC_PROPERTY_SELECT
 } from '../server/utils/partages'
 
-describe('genererTokenPartage', () => {
+describe('generateShareToken', () => {
   it('génère un token suffisamment long et url-safe', () => {
-    const token = genererTokenPartage()
+    const token = generateShareToken()
     expect(token.length).toBeGreaterThanOrEqual(20)
     expect(token).toMatch(/^[A-Za-z0-9_-]+$/)
   })
 
   it('ne génère jamais deux fois le même token', () => {
-    const tokens = new Set(Array.from({ length: 50 }, () => genererTokenPartage()))
+    const tokens = new Set(Array.from({ length: 50 }, () => generateShareToken()))
     expect(tokens.size).toBe(50)
   })
 })
 
-describe('partageExpire', () => {
+describe('isShareExpired', () => {
   it('un partage sans date d’expiration n’expire jamais', () => {
-    expect(partageExpire(null)).toBe(false)
+    expect(isShareExpired(null)).toBe(false)
   })
 
   it('une date passée est expirée', () => {
-    expect(partageExpire(new Date(Date.now() - 1000).toISOString())).toBe(true)
+    expect(isShareExpired(new Date(Date.now() - 1000).toISOString())).toBe(true)
   })
 
   it('une date future n’est pas expirée', () => {
-    expect(partageExpire(new Date(Date.now() + 1000).toISOString())).toBe(false)
+    expect(isShareExpired(new Date(Date.now() + 1000).toISOString())).toBe(false)
   })
 })
 
-describe('CHAMPS_PUBLICS_BIEN', () => {
+describe('PUBLIC_PROPERTY_FIELDS', () => {
   const INTERDITS = [
     'user_id',
     'url_source',
@@ -51,11 +51,11 @@ describe('CHAMPS_PUBLICS_BIEN', () => {
 
   it("n'expose aucun champ sensible ou interne", () => {
     for (const champ of INTERDITS) {
-      expect(CHAMPS_PUBLICS_BIEN).not.toContain(champ)
+      expect(PUBLIC_PROPERTY_FIELDS).not.toContain(champ)
     }
   })
 
   it('reste alignée avec la clause select construite pour Supabase', () => {
-    expect(SELECT_PUBLIC_BIEN).toBe(CHAMPS_PUBLICS_BIEN.join(', '))
+    expect(PUBLIC_PROPERTY_SELECT).toBe(PUBLIC_PROPERTY_FIELDS.join(', '))
   })
 })

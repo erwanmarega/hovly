@@ -1,28 +1,28 @@
 /* Service worker Hovly — mise en cache prudente : rien d'authentifié n'est stocké. */
 
 const VERSION = 'v2'
-const CACHE_COQUE = `hovly-coque-${VERSION}`
-const CACHE_STATIQUE = `hovly-statique-${VERSION}`
+const CACHE_SHELL = `hovly-coque-${VERSION}`
+const CACHE_STATIC = `hovly-statique-${VERSION}`
 const CACHE_IMAGES = `hovly-images-${VERSION}`
-const CACHE_TUILES = `hovly-tuiles-${VERSION}`
+const CACHE_TILES = `hovly-tuiles-${VERSION}`
 
-const PAGE_HORS_LIGNE = '/hors-ligne.html'
+const OFFLINE_PAGE = '/hors-ligne.html'
 
-const COQUE = [PAGE_HORS_LIGNE, '/icons/icon-192.png', '/manifest.webmanifest']
+const SHELL = [OFFLINE_PAGE, '/icons/icon-192.png', '/manifest.webmanifest']
 
 const MAX_IMAGES = 120
-const MAX_TUILES = 300
+const MAX_TILES = 300
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_COQUE).then((c) => c.addAll(COQUE)).then(() => self.skipWaiting()))
+  e.waitUntil(caches.open(CACHE_SHELL).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()))
 })
 
 self.addEventListener('activate', (e) => {
-  const garder = [CACHE_COQUE, CACHE_STATIQUE, CACHE_IMAGES, CACHE_TUILES]
+  const keep = [CACHE_SHELL, CACHE_STATIC, CACHE_IMAGES, CACHE_TILES]
   e.waitUntil(
     caches
       .keys()
-      .then((cles) => Promise.all(cles.filter((c) => !garder.includes(c)).map((c) => caches.delete(c))))
+      .then((keys) => Promise.all(keys.filter((c) => !keep.includes(c)).map((c) => caches.delete(c))))
       .then(() => self.clients.claim())
   )
 })
@@ -41,16 +41,16 @@ self.addEventListener('push', (e) => {
     d = { corps: e.data ? e.data.text() : '' }
   }
 
-  const titre = d.titre || 'Hovly'
+  const title = d.titre || 'Hovly'
 
   // Les onglets ouverts rafraîchissent leur liste d'alertes.
-  const prevenirClients = self.clients
+  const notifyClients = self.clients
     .matchAll({ type: 'window', includeUncontrolled: true })
-    .then((fenetres) => fenetres.forEach((f) => f.postMessage({ type: 'PUSH_ALERTE' })))
+    .then((windows) => windows.forEach((f) => f.postMessage({ type: 'PUSH_ALERT' })))
 
   e.waitUntil(
-    prevenirClients.then(() =>
-      self.registration.showNotification(titre, {
+    notifyClients.then(() =>
+      self.registration.showNotification(title, {
         body: d.corps || '',
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
@@ -64,16 +64,16 @@ self.addEventListener('push', (e) => {
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close()
-  const cible = new URL(e.notification.data?.url || '/alertes', self.location.origin)
+  const target = new URL(e.notification.data?.url || '/alertes', self.location.origin)
 
   e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((fenetres) => {
-      for (const f of fenetres) {
-        if (new URL(f.url).pathname === cible.pathname) return f.focus()
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      for (const f of windows) {
+        if (new URL(f.url).pathname === target.pathname) return f.focus()
       }
-      const ouverte = fenetres[0]
-      if (ouverte && 'navigate' in ouverte) return ouverte.navigate(cible.href).then((f) => f?.focus())
-      return self.clients.openWindow(cible.href)
+      const openClient = windows[0]
+      if (openClient && 'navigate' in openClient) return openClient.navigate(target.href).then((f) => f?.focus())
+      return self.clients.openWindow(target.href)
     })
   )
 })
@@ -84,24 +84,24 @@ self.addEventListener('notificationclick', (e) => {
 // sinon le HMR et les fichiers du build seraient servis périmés.
 const DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname)
 
-async function limiter(nom, max) {
-  const cache = await caches.open(nom)
-  const cles = await cache.keys()
-  if (cles.length <= max) return
-  await Promise.all(cles.slice(0, cles.length - max).map((k) => cache.delete(k)))
+async function trim(name, max) {
+  const cache = await caches.open(name)
+  const keys = await cache.keys()
+  if (keys.length <= max) return
+  await Promise.all(keys.slice(0, keys.length - max).map((k) => cache.delete(k)))
 }
 
-async function depuisCache(requete, nom, max) {
-  const cache = await caches.open(nom)
-  const enCache = await cache.match(requete)
-  if (enCache) return enCache
+async function fromCache(request, name, max) {
+  const cache = await caches.open(name)
+  const cached = await cache.match(request)
+  if (cached) return cached
 
-  const reponse = await fetch(requete)
-  if (reponse.ok || reponse.type === 'opaque') {
-    await cache.put(requete, reponse.clone())
-    if (max) limiter(nom, max)
+  const response = await fetch(request)
+  if (response.ok || response.type === 'opaque') {
+    await cache.put(request, response.clone())
+    if (max) trim(name, max)
   }
-  return reponse
+  return response
 }
 
 self.addEventListener('fetch', (e) => {
@@ -115,7 +115,7 @@ self.addEventListener('fetch', (e) => {
 
   // Les pages ne sont pas mises en cache (contenu personnel) : réseau, puis page hors ligne.
   if (request.mode === 'navigate') {
-    e.respondWith(fetch(request).catch(() => caches.match(PAGE_HORS_LIGNE)))
+    e.respondWith(fetch(request).catch(() => caches.match(OFFLINE_PAGE)))
     return
   }
 
@@ -124,18 +124,18 @@ self.addEventListener('fetch', (e) => {
     url.origin === self.location.origin &&
     /^\/(_nuxt|icons|logos)\//.test(url.pathname + '/')
   ) {
-    e.respondWith(depuisCache(request, CACHE_STATIQUE))
+    e.respondWith(fromCache(request, CACHE_STATIC))
     return
   }
 
   // Fonds de carte.
   if (url.hostname.endsWith('basemaps.cartocdn.com')) {
-    e.respondWith(depuisCache(request, CACHE_TUILES, MAX_TUILES))
+    e.respondWith(fromCache(request, CACHE_TILES, MAX_TILES))
     return
   }
 
   // Photos d'annonces.
   if (request.destination === 'image') {
-    e.respondWith(depuisCache(request, CACHE_IMAGES, MAX_IMAGES))
+    e.respondWith(fromCache(request, CACHE_IMAGES, MAX_IMAGES))
   }
 })

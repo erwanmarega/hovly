@@ -1,4 +1,4 @@
-import type { Recherche } from '~/types'
+import type { SavedSearch } from '~/types'
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
@@ -14,8 +14,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  return (data ?? []).map((r: any): Recherche => {
-    const { recherche_resultats, ...recherche } = r
-    return { ...recherche, nouveaux: recherche_resultats?.[0]?.count ?? 0 }
+  return (data ?? []).map((r: any): SavedSearch => {
+    const { recherche_resultats, ...search } = r
+    return { ...search, nouveaux: recherche_resultats?.[0]?.count ?? 0 }
   })
 })

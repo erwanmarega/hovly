@@ -1,6 +1,6 @@
 import type { SiteSource } from '~/types'
 
-const DOMAINES: Record<string, SiteSource> = {
+const DOMAINS: Record<string, SiteSource> = {
   'seloger.com': 'seloger',
   'leboncoin.fr': 'leboncoin',
   'pap.fr': 'pap',
@@ -10,6 +10,9 @@ const DOMAINES: Record<string, SiteSource> = {
   'orpi.com': 'orpi'
 }
 
+/** Nom conservé en français (`detecterSource`) : évite toute collision d'auto-import
+ *  avec `detectSource` côté client (`app/composables/useProperties.ts`), homonyme
+ *  proche mais distinct. */
 export function detecterSource(url: string): SiteSource | null {
   let host: string
   try {
@@ -17,7 +20,7 @@ export function detecterSource(url: string): SiteSource | null {
   } catch {
     return null
   }
-  for (const [domaine, source] of Object.entries(DOMAINES)) {
+  for (const [domaine, source] of Object.entries(DOMAINS)) {
     if (host === domaine || host.endsWith(`.${domaine}`)) return source
   }
   return null

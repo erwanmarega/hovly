@@ -1,13 +1,13 @@
-import { assertTailleCorps } from '../../utils/validation'
+import { assertBodySize } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
-  if (body?.statut && !STATUTS_VALIDES.includes(body.statut)) {
+  if (body?.statut && !VALID_STATUSES.includes(body.statut)) {
     throw createError({ statusCode: 400, statusMessage: 'Statut invalide' })
   }
 
@@ -20,8 +20,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const patch: Record<string, unknown> = {}
-  for (const champ of CHAMPS_MODIFIABLES) {
-    if (champ in body) patch[champ] = body[champ]
+  for (const field of EDITABLE_FIELDS) {
+    if (field in body) patch[field] = body[field]
   }
 
   if ('visite_le' in patch) patch.rappel_envoye_le = null

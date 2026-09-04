@@ -1,51 +1,51 @@
 <script setup lang="ts">
-import type { Bien, Statut } from "~/types";
+import type { Property, Status } from "~/types";
 import type { Score } from "~/composables/useScore";
-import { STATUTS } from "~/composables/useBiens";
+import { STATUSES } from "~/composables/useProperties";
 
 useHead({ title: "Mes biens — Hovly" });
 
-const { biens, refresh, prixMensuel, prixM2, setStatut, supprimer } =
-  useBiens();
+const { biens, refresh, monthlyPrice, pricePerSqm, setStatus, remove } =
+  useProperties();
 
-const bienASupprimer = ref<Bien | null>(null);
-const suppressionEnCours = ref(false);
-const { annoncer: annoncerToast } = useToast();
+const propertyToDelete = ref<Property | null>(null);
+const deleting = ref(false);
+const { announce } = useToast();
 
-function demanderSuppression(id: string) {
-  bienASupprimer.value = biens.value.find((b) => b.id === id) ?? null;
+function requestDelete(id: string) {
+  propertyToDelete.value = biens.value.find((b) => b.id === id) ?? null;
 }
 
-async function confirmerSuppression() {
-  const b = bienASupprimer.value;
+async function confirmDelete() {
+  const b = propertyToDelete.value;
   if (!b) return;
-  suppressionEnCours.value = true;
-  await supprimer(b.id);
-  suppressionEnCours.value = false;
-  bienASupprimer.value = null;
+  deleting.value = true;
+  await remove(b.id);
+  deleting.value = false;
+  propertyToDelete.value = null;
 
   if (biens.value.some((x) => x.id === b.id)) {
-    annoncerToast("Suppression impossible. Réessaie.", "erreur");
+    announce("Suppression impossible. Réessaie.", "erreur");
   } else {
-    annoncerToast(`« ${b.titre} » supprimé.`);
+    announce(`« ${b.titre} » supprimé.`);
   }
 }
 
 const { pending } = useAsyncData("biens", () => refresh(), { server: false });
 
-const VUES = [
-  { value: "liste", label: "Liste" },
-  { value: "grille", label: "Grille" },
-  { value: "carte", label: "Carte" },
+const VIEWS = [
+  { value: "list", label: "Liste" },
+  { value: "grid", label: "Grille" },
+  { value: "map", label: "Carte" },
 ] as const;
 
-const vue = ref<(typeof VUES)[number]["value"]>("liste");
+const viewMode = ref<(typeof VIEWS)[number]["value"]>("list");
 const selection = ref<string | null>(null);
-const bienSurvole = ref<string | null>(null);
+const hoveredId = ref<string | null>(null);
 
-const filtreStatut = ref<Statut | "tous">("tous");
-const recherche = ref("");
-const triClef = ref<
+const statusFilter = ref<Status | "tous">("tous");
+const search = ref("");
+const sortKey = ref<
   | "date"
   | "prix"
   | "surface"
@@ -55,83 +55,83 @@ const triClef = ref<
   | "cout_reel"
   | "trajet"
 >("date");
-const triAsc = ref(false);
+const sortAsc = ref(false);
 
 const { preferences } = usePreferences();
 
-const { calculer: coutDe } = useCoutReel();
-const { retenu: trajetDe, refresh: refreshTrajets } = useTrajets();
-useAsyncData("trajets-dashboard", () => refreshTrajets(), { server: false });
+const { calculate: costOf } = useActualCost();
+const { selected: commuteFor, refresh: refreshCommutes } = useCommutes();
+useAsyncData("trajets-dashboard", () => refreshCommutes(), { server: false });
 
-const trajetSec = (b: Bien) =>
-  trajetDe(b.id)?.duree_s ?? Number.POSITIVE_INFINITY;
+const commuteSeconds = (b: Property) =>
+  commuteFor(b.id)?.duree_s ?? Number.POSITIVE_INFINITY;
 
-const contexteScore = computed(() => representants(biens.value));
-const scoreDe = (b: Bien) =>
-  scoreBien(b, contexteScore.value, preferences.value);
+const scoreContext = computed(() => representatives(biens.value));
+const scoreOf = (b: Property) =>
+  scoreProperty(b, scoreContext.value, preferences.value);
 
-const groupesDoublons = computed(() =>
-  grouperDoublons(biens.value.filter((b) => b.actif))
+const duplicateGroups = computed(() =>
+  groupDuplicates(biens.value.filter((b) => b.actif))
 );
 
 const {
-  selection: selectionComparaison,
-  nombre: nbCompares,
-  complet: selectionComplete,
+  selection: comparisonSelection,
+  count: compareCount,
+  full: selectionComplete,
   comparable,
-  vider: viderComparaison,
-} = useComparateur();
+  clear: clearComparison,
+} = useComparator();
 
-const { creer: creerPartage } = usePartages();
-const partageOuvert = ref(false);
-const partageEnCours = ref(false);
-const partageErreur = ref("");
-const partageLien = ref<string | null>(null);
+const { create: createShare } = useShares();
+const shareOpen = ref(false);
+const sharing = ref(false);
+const shareError = ref("");
+const shareLink = ref<string | null>(null);
 
-async function creerLienPartage(titre: string) {
-  partageEnCours.value = true;
-  partageErreur.value = "";
+async function createShareLink(title: string) {
+  sharing.value = true;
+  shareError.value = "";
   try {
-    const partage = await creerPartage(
-      selectionComparaison.value,
-      titre || undefined
+    const share = await createShare(
+      comparisonSelection.value,
+      title || undefined
     );
-    partageLien.value = `${window.location.origin}/partage/${partage.token}`;
+    shareLink.value = `${window.location.origin}/partage/${share.token}`;
   } catch {
-    partageErreur.value = "Impossible de créer le lien. Réessaie.";
+    shareError.value = "Impossible de créer le lien. Réessaie.";
   } finally {
-    partageEnCours.value = false;
+    sharing.value = false;
   }
 }
 
-function fermerPartage() {
-  const avaitLien = partageLien.value !== null;
-  partageOuvert.value = false;
-  partageLien.value = null;
-  if (avaitLien) viderComparaison();
+function closeShare() {
+  const hadLink = shareLink.value !== null;
+  shareOpen.value = false;
+  shareLink.value = null;
+  if (hadLink) clearComparison();
 }
-const doublonsParId = computed(() => {
+const duplicatesById = computed(() => {
   const map = new Map<string, number>();
-  for (const groupe of groupesDoublons.value) {
-    for (const b of groupe) map.set(b.id, groupe.length);
+  for (const group of duplicateGroups.value) {
+    for (const b of group) map.set(b.id, group.length);
   }
   return map;
 });
 
-const { zone, dansZone, effacer: effacerZone } = useZoneCarte();
+const { zone, inZone, clear: clearZone } = useMapZone();
 
-const biensAffiches = computed(() => {
+const displayedProperties = computed(() => {
   let list = biens.value.filter((b) => b.actif);
 
-  if (filtreStatut.value !== "tous") {
-    list = list.filter((b) => b.statut === filtreStatut.value);
+  if (statusFilter.value !== "tous") {
+    list = list.filter((b) => b.statut === statusFilter.value);
   }
 
   if (zone.value) {
-    list = list.filter(dansZone);
+    list = list.filter(inZone);
   }
 
-  const q = recherche.value.trim().toLowerCase();
+  const q = search.value.trim().toLowerCase();
   if (q) {
     list = list.filter(
       (b) =>
@@ -141,30 +141,30 @@ const biensAffiches = computed(() => {
     );
   }
 
-  const dir = triAsc.value ? 1 : -1;
+  const dir = sortAsc.value ? 1 : -1;
 
-  if (triClef.value === "trajet") {
-    const avec = list.filter((b) => Number.isFinite(trajetSec(b)));
-    const sans = list.filter((b) => !Number.isFinite(trajetSec(b)));
-    avec.sort((a, b) => (trajetSec(a) - trajetSec(b)) * dir);
-    return [...avec, ...sans];
+  if (sortKey.value === "trajet") {
+    const withCommute = list.filter((b) => Number.isFinite(commuteSeconds(b)));
+    const without = list.filter((b) => !Number.isFinite(commuteSeconds(b)));
+    withCommute.sort((a, b) => (commuteSeconds(a) - commuteSeconds(b)) * dir);
+    return [...withCommute, ...without];
   }
 
-  if (triClef.value === "visite") {
-    const avec = list.filter((b) => b.visite_le);
-    const sans = list.filter((b) => !b.visite_le);
-    avec.sort(
+  if (sortKey.value === "visite") {
+    const withVisit = list.filter((b) => b.visite_le);
+    const without = list.filter((b) => !b.visite_le);
+    withVisit.sort(
       (a, b) =>
         (new Date(a.visite_le!).getTime() - new Date(b.visite_le!).getTime()) *
         dir
     );
-    return [...avec, ...sans];
+    return [...withVisit, ...without];
   }
 
   return [...list].sort((a, b) => {
     let va: number;
     let vb: number;
-    switch (triClef.value) {
+    switch (sortKey.value) {
       case "prix":
         va = a.prix;
         vb = b.prix;
@@ -174,16 +174,16 @@ const biensAffiches = computed(() => {
         vb = b.surface;
         break;
       case "prix_m2":
-        va = prixM2(a);
-        vb = prixM2(b);
+        va = pricePerSqm(a);
+        vb = pricePerSqm(b);
         break;
       case "score":
-        va = scoreDe(a).total;
-        vb = scoreDe(b).total;
+        va = scoreOf(a).total;
+        vb = scoreOf(b).total;
         break;
       case "cout_reel":
-        va = coutDe(a).total;
-        vb = coutDe(b).total;
+        va = costOf(a).total;
+        vb = costOf(b).total;
         break;
       default:
         va = new Date(a.created_at).getTime();
@@ -193,64 +193,64 @@ const biensAffiches = computed(() => {
   });
 });
 
-const PAR_PAGE = 12;
+const PER_PAGE = 12;
 const page = ref(1);
 
-const biensPage = computed(() =>
-  biensAffiches.value.slice((page.value - 1) * PAR_PAGE, page.value * PAR_PAGE)
+const pagedProperties = computed(() =>
+  displayedProperties.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE)
 );
 
-watch([recherche, filtreStatut, triClef, triAsc, zone], () => {
+watch([search, statusFilter, sortKey, sortAsc, zone], () => {
   page.value = 1;
 });
 
-watch(biensAffiches, (liste) => {
-  const nbPages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
-  if (page.value > nbPages) page.value = nbPages;
+watch(displayedProperties, (list) => {
+  const pageCount = Math.max(1, Math.ceil(list.length / PER_PAGE));
+  if (page.value > pageCount) page.value = pageCount;
 });
 
 const stats = computed(() => {
-  const actifs = biens.value.filter((b) => b.actif);
+  const active = biens.value.filter((b) => b.actif);
   // La fourchette ne mélange pas loyers et prix de vente : locations en
   // priorité, achats seulement si la liste n'en contient que ça.
-  const locations = actifs.filter((b) => !estAchat(b));
-  const groupe = locations.length ? locations : actifs;
-  const prix = groupe.map(prixMensuel).filter((p) => p > 0);
-  const meilleur = actifs.reduce<{ score: Score; bien: Bien } | null>(
-    (best, b) => {
-      const score = scoreDe(b);
-      return !best || score.total > best.score.total
+  const rentals = active.filter((b) => !isPurchase(b));
+  const group = rentals.length ? rentals : active;
+  const prices = group.map(monthlyPrice).filter((p) => p > 0);
+  const best = active.reduce<{ score: Score; bien: Property } | null>(
+    (top, b) => {
+      const score = scoreOf(b);
+      return !top || score.total > top.score.total
         ? { score, bien: b }
-        : best;
+        : top;
     },
     null
   );
 
   return {
-    total: actifs.length,
-    prixMin: prix.length ? Math.min(...prix) : 0,
-    prixMax: prix.length ? Math.max(...prix) : 0,
-    fourchetteLabel: locations.length ? "locations" : "achats",
-    meilleur,
-    coups: actifs.filter((b) => b.statut === "coup_de_coeur").length,
+    total: active.length,
+    priceMin: prices.length ? Math.min(...prices) : 0,
+    priceMax: prices.length ? Math.max(...prices) : 0,
+    rangeLabel: rentals.length ? "locations" : "achats",
+    best,
+    favorites: active.filter((b) => b.statut === "coup_de_coeur").length,
   };
 });
 
-const compteurs = computed(() => {
-  const actifs = biens.value.filter((b) => b.actif);
-  const parStatut = Object.fromEntries(
-    STATUTS.map((s) => [s.value, 0])
-  ) as Record<Statut, number>;
-  for (const b of actifs) parStatut[b.statut]++;
-  return { tous: actifs.length, ...parStatut };
+const counts = computed(() => {
+  const active = biens.value.filter((b) => b.actif);
+  const byStatus = Object.fromEntries(
+    STATUSES.map((s) => [s.value, 0])
+  ) as Record<Status, number>;
+  for (const b of active) byStatus[b.statut]++;
+  return { tous: active.length, ...byStatus };
 });
 
-function toggleTri(clef: typeof triClef.value) {
-  if (triClef.value === clef) {
-    triAsc.value = !triAsc.value;
+function toggleSort(key: typeof sortKey.value) {
+  if (sortKey.value === key) {
+    sortAsc.value = !sortAsc.value;
   } else {
-    triClef.value = clef;
-    triAsc.value = false;
+    sortKey.value = key;
+    sortAsc.value = false;
   }
 }
 
@@ -303,22 +303,22 @@ function toggleTri(clef: typeof triClef.value) {
             >
               Fourchette
               <span class="font-normal normal-case"
-                >({{ stats.fourchetteLabel }})</span
+                >({{ stats.rangeLabel }})</span
               >
             </dt>
             <dd
-              v-if="stats.prixMax"
+              v-if="stats.priceMax"
               class="mt-1.5 text-2xl font-light tabular-nums"
             >
-              {{ formaterNombre(stats.prixMin) }} – {{ formaterNombre(stats.prixMax) }}
+              {{ formatNumber(stats.priceMin) }} – {{ formatNumber(stats.priceMax) }}
               <span class="text-base text-stone">€</span>
             </dd>
             <dd v-else class="mt-1.5 text-3xl font-light text-stone">—</dd>
           </div>
 
           <component
-            :is="stats.meilleur ? 'NuxtLink' : 'div'"
-            :to="stats.meilleur ? `/bien/${stats.meilleur.bien.id}` : undefined"
+            :is="stats.best ? 'NuxtLink' : 'div'"
+            :to="stats.best ? `/bien/${stats.best.bien.id}` : undefined"
             class="tuile group block rounded-2xl bg-white px-5 py-4"
             style="--i: 2"
           >
@@ -327,22 +327,22 @@ function toggleTri(clef: typeof triClef.value) {
             >
               Meilleur score
             </dt>
-            <dd v-if="stats.meilleur" class="mt-1.5 flex items-baseline gap-2">
+            <dd v-if="stats.best" class="mt-1.5 flex items-baseline gap-2">
               <span class="text-3xl font-light tabular-nums">{{
-                stats.meilleur.score.total
+                stats.best.score.total
               }}</span>
               <span
                 class="text-sm font-medium"
-                :class="stats.meilleur.score.couleur"
-                >{{ stats.meilleur.score.label }}</span
+                :class="stats.best.score.color"
+                >{{ stats.best.score.label }}</span
               >
             </dd>
             <dd v-else class="mt-1.5 text-3xl font-light text-stone">—</dd>
             <p
-              v-if="stats.meilleur"
+              v-if="stats.best"
               class="truncate text-xs text-stone transition group-hover:text-ink"
             >
-              {{ stats.meilleur.bien.titre }}
+              {{ stats.best.bien.titre }}
             </p>
           </component>
 
@@ -353,16 +353,16 @@ function toggleTri(clef: typeof triClef.value) {
               Coups de cœur
             </dt>
             <dd class="mt-1.5 text-3xl font-light tabular-nums">
-              {{ stats.coups }}
+              {{ stats.favorites }}
             </dd>
           </div>
         </dl>
       </section>
 
-      <ProchainesVisites :biens="biens" class="mt-6" />
+      <UpcomingVisits :biens="biens" class="mt-6" />
 
       <div
-        v-if="groupesDoublons.length"
+        v-if="duplicateGroups.length"
         class="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-brand-deep/30 bg-brand-light px-4 py-3"
       >
         <span
@@ -371,8 +371,8 @@ function toggleTri(clef: typeof triClef.value) {
         >
         <p class="text-sm text-ink">
           <span class="font-semibold">
-            {{ groupesDoublons.length }}
-            bien{{ groupesDoublons.length > 1 ? "s" : "" }} en double
+            {{ duplicateGroups.length }}
+            bien{{ duplicateGroups.length > 1 ? "s" : "" }} en double
           </span>
           — la même annonce publiée sur plusieurs sites. Elles ne comptent
           qu’une fois dans le calcul du prix médian.
@@ -385,7 +385,7 @@ function toggleTri(clef: typeof triClef.value) {
         <div class="flex flex-wrap items-center gap-3 p-3">
           <div class="relative min-w-[200px] flex-1">
             <input
-              v-model="recherche"
+              v-model="search"
               type="search"
               placeholder="Rechercher un bien, une ville…"
               class="h-10 w-full rounded-full border border-hairline bg-surface-soft pl-10 pr-9 text-sm outline-none transition focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20"
@@ -401,10 +401,10 @@ function toggleTri(clef: typeof triClef.value) {
               <path d="m21 21-4.3-4.3" />
             </svg>
             <button
-              v-if="recherche"
+              v-if="search"
               class="absolute right-3 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full text-stone transition hover:bg-surface hover:text-ink"
               aria-label="Effacer la recherche"
-              @click="recherche = ''"
+              @click="search = ''"
             >
               ×
             </button>
@@ -416,20 +416,20 @@ function toggleTri(clef: typeof triClef.value) {
             <span
               class="pastille absolute inset-y-1 rounded-full bg-ink"
               :style="{
-                width: `calc((100% - 0.5rem) / ${VUES.length})`,
-                transform: `translateX(calc(${VUES.findIndex(
-                  (v) => v.value === vue
+                width: `calc((100% - 0.5rem) / ${VIEWS.length})`,
+                transform: `translateX(calc(${VIEWS.findIndex(
+                  (v) => v.value === viewMode
                 )} * 100%))`,
               }"
             />
             <button
-              v-for="v in VUES"
+              v-for="v in VIEWS"
               :key="v.value"
               class="relative z-10 flex-1 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition"
               :class="
-                vue === v.value ? 'text-white' : 'text-steel hover:text-ink'
+                viewMode === v.value ? 'text-white' : 'text-steel hover:text-ink'
               "
-              @click="vue = v.value"
+              @click="viewMode = v.value"
             >
               {{ v.label }}
             </button>
@@ -445,35 +445,35 @@ function toggleTri(clef: typeof triClef.value) {
             <button
               class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
               :class="
-                filtreStatut === 'tous'
+                statusFilter === 'tous'
                   ? 'bg-ink text-white'
                   : 'border border-hairline bg-white text-steel hover:bg-surface'
               "
-              @click="filtreStatut = 'tous'"
+              @click="statusFilter = 'tous'"
             >
               Tous
               <span
                 class="rounded-full px-1.5 text-[11px] tabular-nums"
-                :class="filtreStatut === 'tous' ? 'bg-white/20' : 'bg-surface'"
-                >{{ compteurs.tous }}</span
+                :class="statusFilter === 'tous' ? 'bg-white/20' : 'bg-surface'"
+                >{{ counts.tous }}</span
               >
             </button>
             <button
-              v-for="s in STATUTS"
+              v-for="s in STATUSES"
               :key="s.value"
               class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
               :class="
-                filtreStatut === s.value
+                statusFilter === s.value
                   ? 'bg-ink text-white'
                   : 'border border-hairline bg-white text-steel hover:bg-surface'
               "
-              @click="filtreStatut = s.value"
+              @click="statusFilter = s.value"
             >
               {{ s.label }}
               <span
                 class="rounded-full px-1.5 text-[11px] tabular-nums"
-                :class="filtreStatut === s.value ? 'bg-white/20' : 'bg-surface'"
-                >{{ compteurs[s.value] }}</span
+                :class="statusFilter === s.value ? 'bg-white/20' : 'bg-surface'"
+                >{{ counts[s.value] }}</span
               >
             </button>
           </div>
@@ -481,13 +481,13 @@ function toggleTri(clef: typeof triClef.value) {
           <button
             v-if="zone"
             class="filtre flex items-center gap-1.5 whitespace-nowrap rounded-full border border-blue/30 bg-blue/10 px-3.5 py-1.5 text-sm font-medium text-blue transition hover:bg-blue/15"
-            @click="effacerZone"
+            @click="clearZone"
           >
             Zone de la carte active
             <span class="text-blue/70">✕</span>
           </button>
 
-          <SelecteurAncreTrajet class="ml-auto" />
+          <CommuteAnchorPicker class="ml-auto" />
         </div>
       </div>
 
@@ -520,7 +520,7 @@ function toggleTri(clef: typeof triClef.value) {
       </div>
 
       <div
-        v-else-if="!compteurs.tous"
+        v-else-if="!counts.tous"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
         <div
@@ -555,16 +555,16 @@ function toggleTri(clef: typeof triClef.value) {
       </div>
 
       <div
-        v-else-if="!biensAffiches.length"
+        v-else-if="!displayedProperties.length"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-16 text-center"
       >
         <p class="text-slate">Aucun bien ne correspond à ce filtre.</p>
         <button
           class="mt-3 text-sm font-medium text-blue hover:underline"
           @click="
-            recherche = '';
-            filtreStatut = 'tous';
-            effacerZone();
+            search = '';
+            statusFilter = 'tous';
+            clearZone();
           "
         >
           Réinitialiser les filtres
@@ -572,20 +572,20 @@ function toggleTri(clef: typeof triClef.value) {
       </div>
 
       <div
-        v-else-if="vue === 'carte'"
+        v-else-if="viewMode === 'map'"
         class="mt-5 flex flex-col gap-5 lg:flex-row lg:items-stretch"
       >
         <div class="min-w-0 lg:flex-1">
           <ClientOnly>
-            <CarteBiens
+            <PropertyMap
               class="h-[70vh]"
-              hauteur="100%"
-              :biens="biensAffiches"
+              height="100%"
+              :biens="displayedProperties"
               :selection="selection"
-              :survole="bienSurvole"
+              :survole="hoveredId"
               :zone="zone"
               @select="selection = $event"
-              @zone-changee="zone = $event"
+              @zone-changed="zone = $event"
             />
             <template #fallback>
               <div
@@ -595,61 +595,61 @@ function toggleTri(clef: typeof triClef.value) {
           </ClientOnly>
         </div>
 
-        <GrilleBiens
+        <PropertyGrid
           class="lg:h-[70vh] lg:w-[360px] lg:shrink-0 lg:overflow-y-auto"
           compact
-          :biens="biensPage"
-          :score="scoreDe"
-          :prix-mensuel="prixMensuel"
-          :prix-m2="prixM2"
+          :biens="pagedProperties"
+          :score="scoreOf"
+          :monthly-price="monthlyPrice"
+          :price-per-sqm="pricePerSqm"
           :page="page"
-          :total="biensAffiches.length"
-          :par-page="PAR_PAGE"
+          :total="displayedProperties.length"
+          :per-page="PER_PAGE"
           @update:page="page = $event"
-          @supprimer="demanderSuppression"
-          @survole="bienSurvole = $event"
+          @supprimer="requestDelete"
+          @survole="hoveredId = $event"
         />
       </div>
 
-      <GrilleBiens
-        v-else-if="vue === 'grille'"
+      <PropertyGrid
+        v-else-if="viewMode === 'grid'"
         class="mt-5"
-        :biens="biensPage"
-        :score="scoreDe"
-        :prix-mensuel="prixMensuel"
-        :prix-m2="prixM2"
+        :biens="pagedProperties"
+        :score="scoreOf"
+        :monthly-price="monthlyPrice"
+        :price-per-sqm="pricePerSqm"
         :page="page"
-        :total="biensAffiches.length"
-        :par-page="PAR_PAGE"
+        :total="displayedProperties.length"
+        :per-page="PER_PAGE"
         @update:page="page = $event"
-        @supprimer="demanderSuppression"
+        @supprimer="requestDelete"
       />
 
-      <ListeBiens
+      <PropertyList
         v-else
         class="mt-5"
-        :biens="biensPage"
-        :score="scoreDe"
-        :doublons="doublonsParId"
-        :tri-clef="triClef"
-        :tri-asc="triAsc"
+        :biens="pagedProperties"
+        :score="scoreOf"
+        :doublons="duplicatesById"
+        :sort-key="sortKey"
+        :sort-asc="sortAsc"
         :page="page"
-        :total="biensAffiches.length"
-        :par-page="PAR_PAGE"
-        @tri="toggleTri"
+        :total="displayedProperties.length"
+        :per-page="PER_PAGE"
+        @sort="toggleSort"
         @update:page="page = $event"
-        @supprimer="demanderSuppression"
-        @statut="setStatut"
+        @supprimer="requestDelete"
+        @statut="setStatus"
       />
 
       <Transition name="barre-cmp">
         <div
-          v-if="nbCompares"
+          v-if="compareCount"
           class="barre-cmp fixed inset-x-0 z-30 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-center gap-3 rounded-full border border-hairline bg-white/95 px-4 py-2.5 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-3"
         >
           <span class="text-sm font-medium">
-            {{ nbCompares }} bien{{ nbCompares > 1 ? "s" : "" }} sélectionné{{
-              nbCompares > 1 ? "s" : ""
+            {{ compareCount }} bien{{ compareCount > 1 ? "s" : "" }} sélectionné{{
+              compareCount > 1 ? "s" : ""
             }}
             <span v-if="selectionComplete" class="text-stone"
               >(max atteint)</span
@@ -657,13 +657,13 @@ function toggleTri(clef: typeof triClef.value) {
           </span>
           <button
             class="text-sm font-medium text-steel transition hover:text-ink"
-            @click="viderComparaison"
+            @click="clearComparison"
           >
             Vider
           </button>
           <button
             class="rounded-full border border-hairline px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface"
-            @click="partageOuvert = true"
+            @click="shareOpen = true"
           >
             Partager
           </button>
@@ -681,25 +681,25 @@ function toggleTri(clef: typeof triClef.value) {
         </div>
       </Transition>
 
-      <ModalConfirmationSuppression
-        :ouvert="bienASupprimer !== null"
-        titre="Supprimer ce bien ?"
-        :nom="bienASupprimer?.titre"
-        :sous-ligne="bienASupprimer?.ville"
+      <DeleteConfirmationModal
+        :open="propertyToDelete !== null"
+        title="Supprimer ce bien ?"
+        :name="propertyToDelete?.titre"
+        :subline="propertyToDelete?.ville"
         message="Le bien et son historique seront définitivement supprimés."
-        :en-cours="suppressionEnCours"
-        @annuler="bienASupprimer = null"
-        @confirmer="confirmerSuppression"
+        :loading="deleting"
+        @cancel="propertyToDelete = null"
+        @confirm="confirmDelete"
       />
 
-      <ModalPartage
-        :ouvert="partageOuvert"
-        :nb-biens="nbCompares"
-        :en-cours="partageEnCours"
-        :erreur="partageErreur"
-        :lien="partageLien"
-        @creer="creerLienPartage"
-        @fermer="fermerPartage"
+      <ShareModal
+        :open="shareOpen"
+        :property-count="compareCount"
+        :loading="sharing"
+        :error="shareError"
+        :link="shareLink"
+        @create="createShareLink"
+        @close="closeShare"
       />
     </main>
   </div>

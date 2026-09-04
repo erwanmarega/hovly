@@ -1,16 +1,16 @@
-import { MOTIF_FICHE } from '../../utils/scrape/liste'
+import { LISTING_PATTERN } from '../../utils/scrape/listing'
 import { detecterSource } from '../../utils/scrape/source'
-import { assertTailleCorps, validerUrlSource } from '../../utils/validation'
+import { assertBodySize, validateSourceUrl } from '../../utils/validation'
 
-export const MAX_RECHERCHES = 10
+export const MAX_SEARCHES = 10
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertTailleCorps(event)
+  assertBodySize(event)
   const client = await db(event)
   const body = await readBody(event)
 
-  const url = validerUrlSource(body?.url)
+  const url = validateSourceUrl(body?.url)
 
   const source = detecterSource(url)
   if (!source) {
@@ -22,9 +22,9 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const chemin = new URL(url).pathname
+  const path = new URL(url).pathname
 
-  if (MOTIF_FICHE[source].test(chemin)) {
+  if (LISTING_PATTERN[source].test(path)) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Annonce, pas une liste',
@@ -38,18 +38,18 @@ export default defineEventHandler(async (event) => {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
 
-  if ((count ?? 0) >= MAX_RECHERCHES) {
+  if ((count ?? 0) >= MAX_SEARCHES) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Trop de veilles',
-      message: `Maximum ${MAX_RECHERCHES} veilles. Supprimes-en une pour en créer une nouvelle.`
+      message: `Maximum ${MAX_SEARCHES} veilles. Supprimes-en une pour en créer une nouvelle.`
     })
   }
 
   const { data, error } = await client
     .from('recherches')
     .insert({
-      ...champsVeille(body),
+      ...watchFields(body),
       user_id: user.id,
       label: String(body?.label ?? '').trim().slice(0, 60) || `Veille ${source}`,
       url,

@@ -1,123 +1,123 @@
 <script setup lang="ts">
-import type { Recherche } from '~/types'
+import type { SavedSearch } from '~/types'
 
 useHead({ title: 'Veilles — Hovly' })
 
 const route = useRoute()
 const {
-  recherches,
-  resultats,
-  nouveaux,
+  searches,
+  results,
+  newCount,
   refresh,
-  creer,
-  modifier,
-  supprimer,
-  scanner,
-  chargerResultats,
-  garder,
-  ignorer
-} = useVeilles()
+  create,
+  update,
+  remove,
+  scan,
+  loadResults,
+  keep,
+  ignore
+} = useWatches()
 
 const { pending } = useAsyncData('veilles', () => refresh(), { server: false })
 
-const formulaireOuvert = ref(false)
-const urlInitiale = ref(String(route.query.url ?? ''))
-const creation = ref(false)
-const erreurCreation = ref('')
+const formOpen = ref(false)
+const initialUrl = ref(String(route.query.url ?? ''))
+const creating = ref(false)
+const createError = ref('')
 
-const ouverte = ref<string | null>(String(route.query.recherche ?? '') || null)
-const scanEnCours = ref<string | null>(null)
-const resultatOccupe = ref<string | null>(null)
+const open = ref<string | null>(String(route.query.recherche ?? '') || null)
+const scanning = ref<string | null>(null)
+const busyResult = ref<string | null>(null)
 const message = ref('')
-const messageEstErreur = ref(false)
+const messageIsError = ref(false)
 
-if (urlInitiale.value) formulaireOuvert.value = true
+if (initialUrl.value) formOpen.value = true
 
-function annoncer(texte: string, erreur = false) {
-  message.value = texte
-  messageEstErreur.value = erreur
+function announce(text: string, error = false) {
+  message.value = text
+  messageIsError.value = error
 }
 
-const erreurLisible = (e: unknown) => messageErreur(e, 'Une erreur est survenue.')
+const readableError = (e: unknown) => errorMessage(e, 'Une erreur est survenue.')
 
-async function basculer(id: string) {
-  if (ouverte.value === id) {
-    ouverte.value = null
+async function toggle(id: string) {
+  if (open.value === id) {
+    open.value = null
     return
   }
-  ouverte.value = id
-  if (!resultats.value[id]) {
-    await chargerResultats(id, 'nouveau').catch(() => annoncer('Chargement impossible.', true))
+  open.value = id
+  if (!results.value[id]) {
+    await loadResults(id, 'nouveau').catch(() => announce('Chargement impossible.', true))
   }
 }
 
-async function creerVeille(payload: Partial<Recherche>) {
-  creation.value = true
-  erreurCreation.value = ''
+async function createWatch(payload: Partial<SavedSearch>) {
+  creating.value = true
+  createError.value = ''
   try {
-    const r = await creer(payload)
-    formulaireOuvert.value = false
-    urlInitiale.value = ''
-    annoncer(`Veille « ${r.label} » créée. Premier scan en cours…`)
-    await lancerScan(r.id)
+    const r = await create(payload)
+    formOpen.value = false
+    initialUrl.value = ''
+    announce(`Veille « ${r.label} » créée. Premier scan en cours…`)
+    await runScan(r.id)
   } catch (e) {
-    erreurCreation.value = erreurLisible(e)
+    createError.value = readableError(e)
   }
-  creation.value = false
+  creating.value = false
 }
 
-async function lancerScan(id: string) {
-  scanEnCours.value = id
+async function runScan(id: string) {
+  scanning.value = id
   try {
-    const resume = await scanner(id)
-    ouverte.value = id
-    annoncer(
-      resume.nouvelles.length
-        ? `${resume.nouvelles.length} nouveauté(s) sur ${resume.trouvees} annonce(s) lues.`
-        : `Aucune nouveauté — ${resume.trouvees} annonce(s) lues, ${resume.connues} déjà connue(s), ${resume.filtrees} hors filtres.`
+    const summary = await scan(id)
+    open.value = id
+    announce(
+      summary.nouvelles.length
+        ? `${summary.nouvelles.length} nouveauté(s) sur ${summary.trouvees} annonce(s) lues.`
+        : `Aucune nouveauté — ${summary.trouvees} annonce(s) lues, ${summary.connues} déjà connue(s), ${summary.filtrees} hors filtres.`
     )
   } catch (e) {
     await refresh()
-    annoncer(erreurLisible(e), true)
+    announce(readableError(e), true)
   }
-  scanEnCours.value = null
+  scanning.value = null
 }
 
-async function basculerPause(id: string, active: boolean) {
-  await modifier(id, { active }).catch(() => annoncer('Modification impossible.', true))
+async function togglePause(id: string, active: boolean) {
+  await update(id, { active }).catch(() => announce('Modification impossible.', true))
 }
 
-const rechercheASupprimer = ref<Recherche | null>(null)
-const suppressionEnCours = ref(false)
+const searchToDelete = ref<SavedSearch | null>(null)
+const deleting = ref(false)
 
-function demanderSuppression(id: string) {
-  rechercheASupprimer.value = recherches.value.find((x) => x.id === id) ?? null
+function requestDelete(id: string) {
+  searchToDelete.value = searches.value.find((x) => x.id === id) ?? null
 }
 
-async function confirmerSuppression() {
-  const r = rechercheASupprimer.value
+async function confirmDelete() {
+  const r = searchToDelete.value
   if (!r) return
-  suppressionEnCours.value = true
-  await supprimer(r.id).catch(() => annoncer('Suppression impossible.', true))
-  suppressionEnCours.value = false
-  rechercheASupprimer.value = null
+  deleting.value = true
+  await remove(r.id).catch(() => announce('Suppression impossible.', true))
+  deleting.value = false
+  searchToDelete.value = null
 }
 
-async function garderResultat(rechercheId: string, resultatId: string) {
-  resultatOccupe.value = resultatId
+async function keepResult(searchId: string, resultId: string) {
+  busyResult.value = resultId
   try {
-    const bien = await garder(rechercheId, resultatId)
-    annoncer(`« ${bien.titre} » ajouté à tes biens.`)
+    const bien = await keep(searchId, resultId)
+    announce(`« ${bien.titre} » ajouté à tes biens.`)
   } catch (e) {
-    annoncer(erreurLisible(e), true)
+    announce(readableError(e), true)
   }
-  resultatOccupe.value = null
+  busyResult.value = null
 }
 
-async function ignorerResultat(rechercheId: string, resultatId: string) {
-  resultatOccupe.value = resultatId
-  await ignorer(rechercheId, resultatId).catch(() => annoncer('Action impossible.', true))
-  resultatOccupe.value = null
+async function ignoreResult(searchId: string, resultId: string) {
+  busyResult.value = resultId
+  await ignore(searchId, resultId).catch(() => announce('Action impossible.', true))
+  busyResult.value = null
 }
 </script>
 
@@ -126,7 +126,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
-      <FilAriane
+      <BreadcrumbTrail
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Veilles' }]"
       />
@@ -152,22 +152,22 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
           </div>
 
           <button
-            v-if="!formulaireOuvert"
+            v-if="!formOpen"
             class="action flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white"
-            @click="formulaireOuvert = true"
+            @click="formOpen = true"
           >
             <span class="text-base leading-none">+</span>
             Nouvelle veille
           </button>
         </div>
 
-        <div v-if="recherches.length" class="relative mt-7 flex flex-wrap gap-6 text-ink">
+        <div v-if="searches.length" class="relative mt-7 flex flex-wrap gap-6 text-ink">
           <p>
-            <span class="text-2xl font-semibold tabular-nums">{{ recherches.length }}</span>
+            <span class="text-2xl font-semibold tabular-nums">{{ searches.length }}</span>
             <span class="ml-1.5 text-sm text-ink/60">veille(s)</span>
           </p>
           <p>
-            <span class="text-2xl font-semibold tabular-nums">{{ nouveaux }}</span>
+            <span class="text-2xl font-semibold tabular-nums">{{ newCount }}</span>
             <span class="ml-1.5 text-sm text-ink/60">nouveauté(s) en attente</span>
           </p>
         </div>
@@ -176,19 +176,19 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
       <p
         v-if="message"
         class="mt-5 rounded-xl px-4 py-3 text-sm"
-        :class="messageEstErreur ? 'bg-coral/20 text-[#600000]' : 'bg-teal/30 text-[#0a4a42]'"
+        :class="messageIsError ? 'bg-coral/20 text-[#600000]' : 'bg-teal/30 text-[#0a4a42]'"
       >
         {{ message }}
       </p>
 
-      <FormulaireVeille
-        v-if="formulaireOuvert"
+      <WatchForm
+        v-if="formOpen"
         class="mt-5"
-        :url-initiale="urlInitiale"
-        :en-cours="creation"
-        :erreur="erreurCreation"
-        @soumettre="creerVeille"
-        @annuler="formulaireOuvert = false"
+        :initial-url="initialUrl"
+        :loading="creating"
+        :error="createError"
+        @submit="createWatch"
+        @cancel="formOpen = false"
       />
 
       <div v-if="pending" class="mt-6 space-y-3">
@@ -196,7 +196,7 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
       </div>
 
       <div
-        v-else-if="!recherches.length && !formulaireOuvert"
+        v-else-if="!searches.length && !formOpen"
         class="mt-6 rounded-2xl border border-dashed border-hairline-strong bg-white p-10 text-center"
       >
         <h2 class="font-medium text-ink">Aucune veille pour l'instant</h2>
@@ -206,51 +206,51 @@ async function ignorerResultat(rechercheId: string, resultatId: string) {
         </p>
         <button
           class="mt-5 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition hover:bg-black"
-          @click="formulaireOuvert = true"
+          @click="formOpen = true"
         >
           Créer ma première veille
         </button>
       </div>
 
       <div v-else class="mt-6 space-y-3">
-        <CarteVeille
-          v-for="r in recherches"
+        <WatchCard
+          v-for="r in searches"
           :key="r.id"
-          :recherche="r"
-          :ouverte="ouverte === r.id"
-          :scan-en-cours="scanEnCours === r.id"
-          @basculer="basculer"
-          @scanner="lancerScan"
-          @pause="basculerPause"
-          @supprimer="demanderSuppression"
+          :search="r"
+          :open="open === r.id"
+          :scanning="scanning === r.id"
+          @toggle="toggle"
+          @scan="runScan"
+          @pause="togglePause"
+          @remove="requestDelete"
         >
-          <div v-if="!resultats[r.id]" class="h-16 animate-pulse rounded-xl bg-white" />
+          <div v-if="!results[r.id]" class="h-16 animate-pulse rounded-xl bg-white" />
 
-          <p v-else-if="!resultats[r.id]?.length" class="px-1 py-3 text-center text-sm text-stone">
+          <p v-else-if="!results[r.id]?.length" class="px-1 py-3 text-center text-sm text-stone">
             Rien en attente. Le prochain scan te préviendra.
           </p>
 
           <div v-else class="space-y-2.5">
-            <CarteResultat
-              v-for="res in resultats[r.id]"
+            <ResultCard
+              v-for="res in results[r.id]"
               :key="res.id"
-              :resultat="res"
-              :occupe="resultatOccupe === res.id"
-              @garder="garderResultat(r.id, $event)"
-              @ignorer="ignorerResultat(r.id, $event)"
+              :result="res"
+              :busy="busyResult === res.id"
+              @keep="keepResult(r.id, $event)"
+              @ignore="ignoreResult(r.id, $event)"
             />
           </div>
-        </CarteVeille>
+        </WatchCard>
       </div>
 
-      <ModalConfirmationSuppression
-        :ouvert="rechercheASupprimer !== null"
-        titre="Supprimer cette veille ?"
-        :nom="rechercheASupprimer?.label"
+      <DeleteConfirmationModal
+        :open="searchToDelete !== null"
+        title="Supprimer cette veille ?"
+        :name="searchToDelete?.label"
         message="La veille et ses résultats en attente seront définitivement supprimés."
-        :en-cours="suppressionEnCours"
-        @annuler="rechercheASupprimer = null"
-        @confirmer="confirmerSuppression"
+        :loading="deleting"
+        @cancel="searchToDelete = null"
+        @confirm="confirmDelete"
       />
     </main>
   </div>

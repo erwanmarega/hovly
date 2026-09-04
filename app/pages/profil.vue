@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import type { Ancre, DPE, Preferences } from '~/types'
+import type { Anchor, DPE, Preferences } from '~/types'
 
 useHead({ title: 'Mon profil — Hovly' })
 
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
-const { biens, refresh } = useBiens()
-const { annoncer: annoncerToast } = useToast()
+const { biens, refresh } = useProperties()
+const { announce } = useToast()
 
 useAsyncData('biens-profil', () => refresh(), { server: false })
 
 const email = computed(() => user.value?.email ?? '')
 const provider = computed(() => user.value?.app_metadata?.provider ?? 'email')
-const initiale = computed(() =>
+const initial = computed(() =>
   (fullName.value || email.value || '?').charAt(0).toUpperCase()
 )
-const membreDepuis = computed(() => {
+const memberSince = computed(() => {
   const d = user.value?.created_at
   if (!d) return ''
   return new Date(d).toLocaleDateString('fr-FR', {
@@ -25,47 +25,47 @@ const membreDepuis = computed(() => {
   })
 })
 
-const actifs = computed(() => biens.value.filter((b) => b.actif))
+const active = computed(() => biens.value.filter((b) => b.actif))
 const stats = computed(() => ({
-  suivis: actifs.value.length,
-  coups: actifs.value.filter((b) => b.statut === 'coup_de_coeur').length,
-  villes: new Set(actifs.value.map((b) => b.ville).filter(Boolean)).size,
-  archives: biens.value.length - actifs.value.length
+  tracked: active.value.length,
+  favorites: active.value.filter((b) => b.statut === 'coup_de_coeur').length,
+  cities: new Set(active.value.map((b) => b.ville).filter(Boolean)).size,
+  archived: biens.value.length - active.value.length
 }))
 
-const tuiles = computed(() => [
-  { label: 'Biens suivis', valeur: stats.value.suivis },
-  { label: 'Coups de cœur', valeur: stats.value.coups },
-  { label: 'Villes', valeur: stats.value.villes },
-  { label: 'Archivés', valeur: stats.value.archives }
+const tiles = computed(() => [
+  { label: 'Biens suivis', value: stats.value.tracked },
+  { label: 'Coups de cœur', value: stats.value.favorites },
+  { label: 'Villes', value: stats.value.cities },
+  { label: 'Archivés', value: stats.value.archived }
 ])
 
 const SECTIONS = [
-  { id: 'criteres', label: 'Mes critères' },
-  { id: 'trajets', label: 'Points d’ancrage' },
+  { id: 'criteria', label: 'Mes critères' },
+  { id: 'commutes', label: 'Points d’ancrage' },
   { id: 'notifications', label: 'Notifications' },
-  { id: 'partages', label: 'Mes partages' },
-  { id: 'compte', label: 'Compte & sécurité' }
+  { id: 'shares', label: 'Mes partages' },
+  { id: 'account', label: 'Compte & sécurité' }
 ]
 
-const { partages, refresh: refreshPartages, revoquer: revoquerPartageApi } = usePartages()
-useAsyncData('partages-profil', () => refreshPartages(), { server: false })
+const { shares, refresh: refreshShares, revoke: revokeShareApi } = useShares()
+useAsyncData('partages-profil', () => refreshShares(), { server: false })
 
-function formatDateCourte(iso: string) {
+function formatShortDate(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-async function copierLienPartage(token: string) {
+async function copyShareLink(token: string) {
   await navigator.clipboard.writeText(`${window.location.origin}/partage/${token}`)
-  annoncerToast('Lien copié.')
+  announce('Lien copié.')
 }
 
-async function revoquerPartage(id: string) {
+async function revokeShare(id: string) {
   try {
-    await revoquerPartageApi(id)
-    annoncerToast('Partage révoqué.')
+    await revokeShareApi(id)
+    announce('Partage révoqué.')
   } catch {
-    annoncerToast('Impossible de révoquer. Réessaie.', 'erreur')
+    announce('Impossible de révoquer. Réessaie.', 'erreur')
   }
 }
 
@@ -80,119 +80,119 @@ async function saveName() {
   savingName.value = true
   const { error } = await supabase.auth.updateUser({ data: { full_name: fullName.value } })
   savingName.value = false
-  annoncerToast(error ? 'Erreur. Réessaie.' : 'Nom mis à jour.', error ? 'erreur' : 'succes')
+  announce(error ? 'Erreur. Réessaie.' : 'Nom mis à jour.', error ? 'erreur' : 'succes')
 }
 
 const newPassword = ref('')
-const motDePasseVisible = ref(false)
+const passwordVisible = ref(false)
 const savingPwd = ref(false)
 
-const forceMotDePasse = computed(() => {
+const passwordStrength = computed(() => {
   const p = newPassword.value
-  if (!p) return { niveau: 0, label: '', couleur: '' }
+  if (!p) return { level: 0, label: '', color: '' }
   let n = 0
   if (p.length >= 6) n++
   if (p.length >= 10) n++
   if (/[A-Z]/.test(p) && /[a-z]/.test(p)) n++
   if (/\d/.test(p)) n++
   if (/[^\w\s]/.test(p)) n++
-  const echelle = [
-    { label: 'Trop court', couleur: 'bg-coral-soft' },
-    { label: 'Faible', couleur: 'bg-coral-soft' },
-    { label: 'Correct', couleur: 'bg-brand-deep' },
-    { label: 'Bon', couleur: 'bg-brand-deep' },
-    { label: 'Solide', couleur: 'bg-teal-deep' },
-    { label: 'Excellent', couleur: 'bg-teal-deep' }
+  const scale = [
+    { label: 'Trop court', color: 'bg-coral-soft' },
+    { label: 'Faible', color: 'bg-coral-soft' },
+    { label: 'Correct', color: 'bg-brand-deep' },
+    { label: 'Bon', color: 'bg-brand-deep' },
+    { label: 'Solide', color: 'bg-teal-deep' },
+    { label: 'Excellent', color: 'bg-teal-deep' }
   ]
-  return { niveau: n, ...echelle[n]! }
+  return { level: n, ...scale[n]! }
 })
 
 async function savePassword() {
   if (newPassword.value.length < 6) {
-    annoncerToast('6 caractères minimum.', 'erreur')
+    announce('6 caractères minimum.', 'erreur')
     return
   }
   savingPwd.value = true
   const { error } = await supabase.auth.updateUser({ password: newPassword.value })
   savingPwd.value = false
-  annoncerToast(error ? error.message : 'Mot de passe modifié.', error ? 'erreur' : 'succes')
+  announce(error ? error.message : 'Mot de passe modifié.', error ? 'erreur' : 'succes')
   if (!error) newPassword.value = ''
 }
 
-const { couvrir } = useRideau()
+const { cover } = useCurtain()
 
 async function logout() {
-  await couvrir(async () => {
+  await cover(async () => {
     await supabase.auth.signOut()
     await navigateTo('/login')
   })
 }
 
-const { preferences, personnalise, enregistrement, enregistrer, reinitialiser } = usePreferences()
+const { preferences, customized, saving, save, reset } = usePreferences()
 
 const DPE_OPTIONS: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
-const brouillon = reactive<Preferences>({ ...PREFERENCES_DEFAUT })
-watchEffect(() => Object.assign(brouillon, preferences.value))
+const draft = reactive<Preferences>({ ...DEFAULT_PREFERENCES })
+watchEffect(() => Object.assign(draft, preferences.value))
 
-const repartition = computed(() => {
-  const somme = brouillon.poidsPrix + brouillon.poidsDpe + brouillon.poidsCharges
-  if (!somme) return { prix: 0, dpe: 0, charges: 0 }
+const weightSplit = computed(() => {
+  const sum = draft.poidsPrix + draft.poidsDpe + draft.poidsCharges
+  if (!sum) return { prix: 0, dpe: 0, charges: 0 }
   return {
-    prix: Math.round((brouillon.poidsPrix / somme) * 100),
-    dpe: Math.round((brouillon.poidsDpe / somme) * 100),
-    charges: Math.round((brouillon.poidsCharges / somme) * 100)
+    prix: Math.round((draft.poidsPrix / sum) * 100),
+    dpe: Math.round((draft.poidsDpe / sum) * 100),
+    charges: Math.round((draft.poidsCharges / sum) * 100)
   }
 })
 
-const apercu = computed(() => {
-  const actifsAvecScore = actifs.value.map((b) => scoreBien(b, biens.value, brouillon))
-  if (!actifsAvecScore.length) return null
-  const hors = actifsAvecScore.filter((s) => s.criteres.some((c) => !c.ok)).length
+const preview = computed(() => {
+  const scoredActive = active.value.map((b) => scoreProperty(b, biens.value, draft))
+  if (!scoredActive.length) return null
+  const outOfCriteria = scoredActive.filter((s) => s.criteria.some((c) => !c.ok)).length
   return {
-    moyenne: Math.round(actifsAvecScore.reduce((s, x) => s + x.total, 0) / actifsAvecScore.length),
-    hors
+    average: Math.round(scoredActive.reduce((s, x) => s + x.total, 0) / scoredActive.length),
+    outOfCriteria
   }
 })
 
 const {
-  calcul: calculTrajets,
-  erreur: erreurTrajets,
-  calculer: calculerTrajets,
-  calculable: trajetsCalculables,
-  chargerEtat: chargerEtatTrajets
-} = useTrajets()
+  calculating: calculatingCommutes,
+  error: commutesError,
+  calculate: calculateCommutes,
+  calculable: commutesCalculable,
+  loadModesState: loadCommuteModes
+} = useCommutes()
 
-onMounted(chargerEtatTrajets)
+onMounted(loadCommuteModes)
 
-async function enregistrerPrefs() {
-  const ok = await enregistrer({ ...brouillon })
-  annoncerToast(ok ? 'Critères enregistrés.' : 'Erreur. Réessaie.', ok ? 'succes' : 'erreur')
+async function savePreferences() {
+  const ok = await save({ ...draft })
+  announce(ok ? 'Critères enregistrés.' : 'Erreur. Réessaie.', ok ? 'succes' : 'erreur')
 }
 
-async function majAncres(ancres: Ancre[]) {
-  brouillon.ancres = ancres
-  const ok = await enregistrer({ ...brouillon })
-  annoncerToast(
+async function updateAnchors(anchors: Anchor[]) {
+  draft.ancres = anchors
+  const ok = await save({ ...draft })
+  announce(
     ok ? 'Points d’ancrage enregistrés.' : 'Enregistrement impossible.',
     ok ? 'succes' : 'erreur'
   )
 }
 
-async function majTrajets() {
-  const ok = await enregistrer({ ...brouillon })
+async function updateCommutes() {
+  const ok = await save({ ...draft })
   if (!ok) {
-    annoncerToast('Enregistrement impossible.', 'erreur')
+    announce('Enregistrement impossible.', 'erreur')
     return
   }
-  const fait = await calculerTrajets()
-  if (fait) annoncerToast('Trajets à jour.')
+  const done = await calculateCommutes()
+  if (done) announce('Trajets à jour.')
 }
 
-async function reinitialiserPrefs() {
-  await reinitialiser()
-  Object.assign(brouillon, PREFERENCES_DEFAUT)
-  annoncerToast('Critères réinitialisés.')
+async function resetPreferences() {
+  await reset()
+  Object.assign(draft, DEFAULT_PREFERENCES)
+  announce('Critères réinitialisés.')
 }
 
 const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone mb-1.5'
@@ -205,7 +205,7 @@ const inputCls =
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-6xl px-6 py-8">
-      <FilAriane
+      <BreadcrumbTrail
         class="mb-5"
         :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Mon profil' }]"
       />
@@ -220,7 +220,7 @@ const inputCls =
           <div
             class="avatar grid size-20 shrink-0 place-items-center rounded-3xl bg-ink-deep text-3xl font-bold text-brand"
           >
-            {{ initiale }}
+            {{ initial }}
           </div>
           <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">Mon compte</p>
@@ -228,7 +228,7 @@ const inputCls =
               {{ fullName || 'Mon profil' }}
             </h1>
             <p class="mt-1 truncate text-ink/60">
-              {{ email }}<span v-if="membreDepuis" class="text-ink/45"> · membre depuis le {{ membreDepuis }}</span>
+              {{ email }}<span v-if="memberSince" class="text-ink/45"> · membre depuis le {{ memberSince }}</span>
             </p>
           </div>
 
@@ -247,13 +247,13 @@ const inputCls =
 
         <dl class="relative mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div
-            v-for="(t, i) in tuiles"
+            v-for="(t, i) in tiles"
             :key="t.label"
             class="tuile rounded-2xl bg-white px-5 py-4"
             :style="{ '--i': i }"
           >
             <dt class="text-[11px] font-semibold uppercase tracking-wider text-stone">{{ t.label }}</dt>
-            <dd class="mt-1.5 text-3xl font-light tabular-nums">{{ t.valeur }}</dd>
+            <dd class="mt-1.5 text-3xl font-light tabular-nums">{{ t.value }}</dd>
           </div>
         </dl>
       </section>
@@ -288,7 +288,7 @@ const inputCls =
 
         <div class="space-y-6">
           <section
-            id="criteres"
+            id="criteria"
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex flex-wrap items-start gap-4">
@@ -309,7 +309,7 @@ const inputCls =
                     </p>
                   </div>
                   <span
-                    v-if="personnalise"
+                    v-if="customized"
                     class="rounded-full bg-teal/40 px-3 py-1 text-xs font-semibold text-[#0a4a42]"
                   >
                     Score personnalisé actif
@@ -330,16 +330,16 @@ const inputCls =
                 <div class="mt-4 space-y-4">
                   <div
 v-for="axe in [
-                    { cle: 'poidsPrix' as const, label: 'Prix au m²', part: repartition.prix },
-                    { cle: 'poidsDpe' as const, label: 'Performance énergétique', part: repartition.dpe },
-                    { cle: 'poidsCharges' as const, label: 'Charges', part: repartition.charges }
+                    { cle: 'poidsPrix' as const, label: 'Prix au m²', part: weightSplit.prix },
+                    { cle: 'poidsDpe' as const, label: 'Performance énergétique', part: weightSplit.dpe },
+                    { cle: 'poidsCharges' as const, label: 'Charges', part: weightSplit.charges }
                   ]" :key="axe.cle">
                     <div class="flex items-center justify-between text-sm">
                       <span class="font-medium">{{ axe.label }}</span>
                       <span class="tabular-nums text-stone">{{ axe.part }} %</span>
                     </div>
                     <input
-                      v-model.number="brouillon[axe.cle]"
+                      v-model.number="draft[axe.cle]"
                       type="range"
                       min="0"
                       max="100"
@@ -353,12 +353,12 @@ v-for="axe in [
                   Les trois poids sont ramenés à 100 % au calcul du score.
                 </p>
 
-                <div v-if="apercu" class="mt-5 rounded-2xl bg-surface px-4 py-3 text-sm">
+                <div v-if="preview" class="mt-5 rounded-2xl bg-surface px-4 py-3 text-sm">
                   <p class="text-slate">
-                    Sur tes {{ stats.suivis }} biens : score moyen
-                    <span class="font-semibold text-ink">{{ apercu.moyenne }}</span>
-                    <template v-if="apercu.hors">
-                      , <span class="font-semibold text-ink">{{ apercu.hors }}</span> hors critères
+                    Sur tes {{ stats.tracked }} biens : score moyen
+                    <span class="font-semibold text-ink">{{ preview.average }}</span>
+                    <template v-if="preview.outOfCriteria">
+                      , <span class="font-semibold text-ink">{{ preview.outOfCriteria }}</span> hors critères
                     </template>
                   </p>
                 </div>
@@ -376,7 +376,7 @@ v-for="axe in [
                   <div>
                     <label :class="labelCls">Budget max €/mois (location)</label>
                     <input
-                      v-model.number="brouillon.budgetMax"
+                      v-model.number="draft.budgetMax"
                       type="number"
                       min="0"
                       placeholder="—"
@@ -386,7 +386,7 @@ v-for="axe in [
                   <div>
                     <label :class="labelCls">Surface min m²</label>
                     <input
-                      v-model.number="brouillon.surfaceMin"
+                      v-model.number="draft.surfaceMin"
                       type="number"
                       min="0"
                       placeholder="—"
@@ -396,7 +396,7 @@ v-for="axe in [
                   <div>
                     <label :class="labelCls">Pièces min</label>
                     <input
-                      v-model.number="brouillon.piecesMin"
+                      v-model.number="draft.piecesMin"
                       type="number"
                       min="0"
                       placeholder="—"
@@ -405,7 +405,7 @@ v-for="axe in [
                   </div>
                   <div>
                     <label :class="labelCls">DPE min</label>
-                    <select v-model="brouillon.dpeMin" :class="inputCls">
+                    <select v-model="draft.dpeMin" :class="inputCls">
                       <option :value="null">Peu importe</option>
                       <option v-for="d in DPE_OPTIONS" :key="d" :value="d">{{ d }} ou mieux</option>
                     </select>
@@ -424,16 +424,16 @@ v-for="axe in [
                     <div>
                       <label :class="labelCls">Prix du kWh (c€)</label>
                       <input
-                        v-model.number="brouillon.prixKwh"
+                        v-model.number="draft.prixKwh"
                         type="number"
                         min="1"
-                        :placeholder="String(PRIX_KWH_DEFAUT)"
+                        :placeholder="String(DEFAULT_KWH_PRICE)"
                         :class="inputCls"
                       >
                     </div>
                     <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate">
                       <input
-                        v-model="brouillon.chauffageDansCharges"
+                        v-model="draft.chauffageDansCharges"
                         type="checkbox"
                         class="size-4 cursor-pointer accent-ink"
                       >
@@ -455,7 +455,7 @@ v-for="axe in [
                     <div>
                       <label :class="labelCls">Budget d'achat max €</label>
                       <input
-                        v-model.number="brouillon.budgetAchatMax"
+                        v-model.number="draft.budgetAchatMax"
                         type="number"
                         min="0"
                         placeholder="—"
@@ -465,7 +465,7 @@ v-for="axe in [
                     <div>
                       <label :class="labelCls">Apport €</label>
                       <input
-                        v-model.number="brouillon.apport"
+                        v-model.number="draft.apport"
                         type="number"
                         min="0"
                         placeholder="0"
@@ -475,22 +475,22 @@ v-for="axe in [
                     <div>
                       <label :class="labelCls">Taux d'emprunt %</label>
                       <input
-                        v-model.number="brouillon.tauxEmprunt"
+                        v-model.number="draft.tauxEmprunt"
                         type="number"
                         min="0"
                         step="0.05"
-                        :placeholder="String(TAUX_DEFAUT)"
+                        :placeholder="String(DEFAULT_RATE)"
                         :class="inputCls"
                       >
                     </div>
                     <div>
                       <label :class="labelCls">Durée années</label>
                       <input
-                        v-model.number="brouillon.dureeEmpruntAns"
+                        v-model.number="draft.dureeEmpruntAns"
                         type="number"
                         min="1"
                         max="30"
-                        :placeholder="String(DUREE_DEFAUT_ANS)"
+                        :placeholder="String(DEFAULT_DURATION_YEARS)"
                         :class="inputCls"
                       >
                     </div>
@@ -501,15 +501,15 @@ v-for="axe in [
 
             <div class="mt-7 flex flex-wrap items-center gap-3 border-t border-hairline-soft pt-5">
               <button
-                :disabled="enregistrement"
+                :disabled="saving"
                 class="action rounded-full bg-ink px-6 py-3 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
-                @click="enregistrerPrefs"
+                @click="savePreferences"
               >
-                {{ enregistrement ? 'Enregistrement…' : 'Enregistrer mes critères' }}
+                {{ saving ? "Enregistrement…" : "Enregistrer mes critères" }}
               </button>
               <button
                 class="rounded-full border border-hairline-strong bg-white px-6 py-3 text-sm font-medium text-ink transition hover:bg-surface"
-                @click="reinitialiserPrefs"
+                @click="resetPreferences"
               >
                 Réinitialiser
               </button>
@@ -517,7 +517,7 @@ v-for="axe in [
           </section>
 
           <section
-            id="trajets"
+            id="commutes"
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex flex-wrap items-start gap-4">
@@ -536,14 +536,14 @@ v-for="axe in [
                     </p>
                   </div>
                   <button
-                    v-if="trajetsCalculables"
-                    :disabled="calculTrajets || enregistrement"
+                    v-if="commutesCalculable"
+                    :disabled="calculatingCommutes || saving"
                     class="action rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
-                    @click="majTrajets"
+                    @click="updateCommutes"
                   >
-                    {{ calculTrajets ? 'Calcul…' : 'Calculer les trajets' }}
+                    {{ calculatingCommutes ? "Calcul…" : "Calculer les trajets" }}
                   </button>
-                  <p v-else-if="brouillon.ancres.length" class="max-w-xs text-xs text-stone">
+                  <p v-else-if="draft.ancres.length" class="max-w-xs text-xs text-stone">
                     Calcul indisponible : la clé <code>ORS_API_KEY</code> (voiture, vélo, marche)
                     n’est pas configurée sur le serveur. Les transports en commun, eux, ne
                     demandent aucune clé.
@@ -552,15 +552,15 @@ v-for="axe in [
               </div>
             </div>
 
-            <ReglageAncres
+            <AnchorSettings
               class="mt-6"
-              :ancres="brouillon.ancres"
-              @update:ancres="majAncres"
+              :anchors="draft.ancres"
+              @update:anchors="updateAnchors"
             />
 
-            <p v-if="erreurTrajets" class="mt-3 text-xs text-[#600000]">{{ erreurTrajets }}</p>
+            <p v-if="commutesError" class="mt-3 text-xs text-[#600000]">{{ commutesError }}</p>
 
-            <MentionTransitous class="mt-3" />
+            <TransitousNotice class="mt-3" />
           </section>
 
           <section
@@ -581,11 +581,11 @@ v-for="axe in [
                 </p>
               </div>
             </div>
-            <ReglagePush class="mt-6" />
+            <PushSettings class="mt-6" />
           </section>
 
           <section
-            id="partages"
+            id="shares"
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex items-start gap-4">
@@ -605,13 +605,13 @@ v-for="axe in [
               </div>
             </div>
 
-            <p v-if="!partages.length" class="mt-6 text-sm text-stone">
+            <p v-if="!shares.length" class="mt-6 text-sm text-stone">
               Aucun partage actif. Sélectionne des biens sur ton dashboard puis clique « Partager ».
             </p>
 
             <ul v-else class="mt-6 space-y-3">
               <li
-                v-for="p in partages"
+                v-for="p in shares"
                 :key="p.id"
                 class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3"
               >
@@ -621,19 +621,19 @@ v-for="axe in [
                   </p>
                   <p class="mt-0.5 text-xs text-stone">
                     {{ p.nb_biens }} bien{{ p.nb_biens > 1 ? 's' : '' }} · créé le
-                    {{ formatDateCourte(p.cree_le) }}
+                    {{ formatShortDate(p.cree_le) }}
                   </p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <button
                     class="rounded-full border border-hairline bg-white px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface"
-                    @click="copierLienPartage(p.token)"
+                    @click="copyShareLink(p.token)"
                   >
                     Copier le lien
                   </button>
                   <button
                     class="rounded-full px-3 py-1.5 text-xs font-medium text-[#600000] transition hover:bg-coral/20"
-                    @click="revoquerPartage(p.id)"
+                    @click="revokeShare(p.id)"
                   >
                     Révoquer
                   </button>
@@ -642,7 +642,7 @@ v-for="axe in [
             </ul>
           </section>
 
-          <div id="compte" class="grid scroll-mt-6 gap-6 lg:grid-cols-2">
+          <div id="account" class="grid scroll-mt-6 gap-6 lg:grid-cols-2">
             <section class="rounded-feature border border-hairline-soft bg-white p-6 md:p-8">
               <div class="flex items-start gap-4">
                 <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-surface text-steel">
@@ -679,7 +679,7 @@ v-for="axe in [
               <dl class="mt-5 space-y-2 border-t border-hairline-soft pt-4 text-sm">
                 <div class="flex items-center justify-between">
                   <dt class="text-stone">Membre depuis</dt>
-                  <dd class="font-medium">{{ membreDepuis || '—' }}</dd>
+                  <dd class="font-medium">{{ memberSince || "—" }}</dd>
                 </div>
                 <div class="flex items-center justify-between">
                   <dt class="text-stone">Méthode de connexion</dt>
@@ -713,7 +713,7 @@ v-for="axe in [
                   <div class="relative flex-1">
                     <input
                       v-model="newPassword"
-                      :type="motDePasseVisible ? 'text' : 'password'"
+                      :type="passwordVisible ? 'text' : 'password'"
                       autocomplete="new-password"
                       placeholder="••••••••"
                       :class="[inputCls, 'pr-11']"
@@ -721,8 +721,8 @@ v-for="axe in [
                     <button
                       type="button"
                       class="absolute right-3 top-1/2 -translate-y-1/2 text-stone transition hover:text-ink"
-                      :aria-label="motDePasseVisible ? 'Masquer' : 'Afficher'"
-                      @click="motDePasseVisible = !motDePasseVisible"
+                      :aria-label="passwordVisible ? 'Masquer' : 'Afficher'"
+                      @click="passwordVisible = !passwordVisible"
                     >
                       <svg
                         class="size-4"
@@ -732,13 +732,13 @@ v-for="axe in [
                         stroke-width="2"
                       >
                         <path
-                          v-if="!motDePasseVisible"
+                          v-if="!passwordVisible"
                           d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
                         />
-                        <circle v-if="!motDePasseVisible" cx="12" cy="12" r="3" />
+                        <circle v-if="!passwordVisible" cx="12" cy="12" r="3" />
                         <path v-else d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2" />
                         <path
-                          v-if="motDePasseVisible"
+                          v-if="passwordVisible"
                           d="M9.9 5.2A9.5 9.5 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.2 6.2A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 3.5-.65"
                         />
                       </svg>
@@ -759,10 +759,10 @@ v-for="axe in [
                       v-for="n in 5"
                       :key="n"
                       class="h-1 flex-1 rounded-full transition-all duration-300"
-                      :class="n <= forceMotDePasse.niveau ? forceMotDePasse.couleur : 'bg-hairline'"
+                      :class="n <= passwordStrength.level ? passwordStrength.color : 'bg-hairline'"
                     />
                   </div>
-                  <p class="mt-1.5 text-xs text-stone">{{ forceMotDePasse.label }}</p>
+                  <p class="mt-1.5 text-xs text-stone">{{ passwordStrength.label }}</p>
                 </div>
               </div>
 

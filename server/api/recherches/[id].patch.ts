@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
-  const patch = champsVeille(body ?? {})
+  const patch = watchFields(body ?? {})
   if (!Object.keys(patch).length) {
     throw createError({ statusCode: 400, statusMessage: 'Aucun champ à mettre à jour' })
   }

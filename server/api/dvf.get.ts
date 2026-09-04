@@ -1,9 +1,9 @@
-import type { MarcheQuartier } from '~/types'
+import type { NeighborhoodMarket } from '~/types'
 import type { TypeLocalDvf } from '../utils/dvf'
 
-const JOUR_MS = 24 * 3600 * 1000
-const TTL_DONNEES = 30 * JOUR_MS // DVF bouge lentement
-const TTL_VIDE = 3 * JOUR_MS // API en panne ou échantillon faible : on retente vite
+const DAY_MS = 24 * 3600 * 1000
+const DATA_TTL = 30 * DAY_MS // DVF bouge lentement
+const EMPTY_TTL = 3 * DAY_MS // API en panne ou échantillon faible : on retente vite
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
@@ -14,29 +14,29 @@ export default defineEventHandler(async (event) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     throw createError({ statusCode: 400, statusMessage: 'Coordonnées invalides' })
   }
-  const typeLocal: TypeLocalDvf = q.type === 'maison' ? 'Maison' : 'Appartement'
+  const localType: TypeLocalDvf = q.type === 'maison' ? 'Maison' : 'Appartement'
 
   const client = serviceDb(event)
-  const cle = cleCache(lat, lon, typeLocal)
+  const key = cacheKey(lat, lon, localType)
 
   const { data: cache } = await client
     .from('marche_quartier')
     .select('donnees, calcule_le')
-    .eq('cle', cle)
+    .eq('cle', key)
     .maybeSingle()
 
   if (cache) {
     const age = Date.now() - +new Date(cache.calcule_le)
-    const ttl = cache.donnees ? TTL_DONNEES : TTL_VIDE
-    if (age < ttl) return { marche: cache.donnees as MarcheQuartier | null }
+    const ttl = cache.donnees ? DATA_TTL : EMPTY_TTL
+    if (age < ttl) return { market: cache.donnees as NeighborhoodMarket | null }
   }
 
-  const ventes = await ventesProches(lat, lon, typeLocal)
-  const marche = statistiquesMarche(ventes)
+  const sales = await nearbySales(lat, lon, localType)
+  const market = marketStatistics(sales)
 
   await client
     .from('marche_quartier')
-    .upsert({ cle, donnees: marche, calcule_le: new Date().toISOString() })
+    .upsert({ cle: key, donnees: market, calcule_le: new Date().toISOString() })
 
-  return { marche }
+  return { market }
 })

@@ -1,32 +1,32 @@
-import type { Bien } from '~/types'
-import type { AlerteCreee, CheckResume, ResumeEnvois } from '~/types/check'
+import type { Property } from '~/types'
+import type { CreatedAlert, CheckSummary, SendSummary } from '~/types/check'
 import { scrapeUrl } from './scrape'
-import { envoyerAlerteEmail } from './email'
-import { envoyerAlertePush, pushDisponible } from './push'
+import { sendAlertEmail } from './email'
+import { sendAlertPush, pushAvailable } from './push'
 
-export type { AlerteCreee, CheckResume, ResumeEnvois }
+export type { CreatedAlert, CheckSummary, SendSummary }
 
 // Un re-scrape peut produire un prix aberrant (repli regex sur une page mal
 // rendue). Au-delà d'un ratio ×0,5–×2 la variation est considérée suspecte :
 // mieux vaut rater une vraie grosse baisse que persister un prix fantaisiste.
-export function prixPlausible(ancien: number, nouveau: number): boolean {
-  if (ancien <= 0) return true
-  const ratio = nouveau / ancien
+export function isPricePlausible(previous: number, updated: number): boolean {
+  if (previous <= 0) return true
+  const ratio = updated / previous
   return ratio >= 0.5 && ratio <= 2
 }
 
-export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckResume> {
-  const resume: CheckResume = { verifies: 0, baisses: 0, supprimes: 0, erreurs: 0, alertes: [] }
+export async function checkProperties(client: any, biens: Property[]): Promise<CheckSummary> {
+  const summary: CheckSummary = { checked: 0, priceDrops: 0, removed: 0, errors: 0, alerts: [] }
 
   for (const bien of biens) {
     let res
     try {
       res = await scrapeUrl(bien.url_source)
     } catch {
-      resume.erreurs++
+      summary.errors++
       continue
     }
-    resume.verifies++
+    summary.checked++
 
     if (res.indisponible) {
       await client.from('biens').update({ actif: false }).eq('id', bien.id)
@@ -36,8 +36,8 @@ export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckRe
         ancien_prix: bien.prix,
         nouveau_prix: null
       })
-      resume.supprimes++
-      resume.alertes.push({
+      summary.removed++
+      summary.alerts.push({
         bien_id: bien.id,
         type: 'annonce_supprimee',
         ancien_prix: bien.prix,
@@ -47,92 +47,92 @@ export async function verifierBiens(client: any, biens: Bien[]): Promise<CheckRe
       continue
     }
 
-    const nouveauPrix = res.data.prix ?? null
-    if (nouveauPrix == null) continue
+    const newPrice = res.data.prix ?? null
+    if (newPrice == null) continue
 
-    if (!prixPlausible(bien.prix, nouveauPrix)) {
+    if (!isPricePlausible(bien.prix, newPrice)) {
       console.warn('[check] prix aberrant ignoré', {
         bien_id: bien.id,
-        ancien: bien.prix,
-        nouveau: nouveauPrix
+        previous: bien.prix,
+        updated: newPrice
       })
       continue
     }
 
-    if (nouveauPrix === bien.prix) continue
+    if (newPrice === bien.prix) continue
 
-    await client.from('prix_historique').insert({ bien_id: bien.id, prix: nouveauPrix })
+    await client.from('prix_historique').insert({ bien_id: bien.id, prix: newPrice })
 
-    if (nouveauPrix < bien.prix) {
+    if (newPrice < bien.prix) {
       await client.from('alertes').insert({
         bien_id: bien.id,
         type: 'baisse_prix',
         ancien_prix: bien.prix,
-        nouveau_prix: nouveauPrix
+        nouveau_prix: newPrice
       })
-      await client.from('biens').update({ prix: nouveauPrix }).eq('id', bien.id)
-      resume.baisses++
-      resume.alertes.push({
+      await client.from('biens').update({ prix: newPrice }).eq('id', bien.id)
+      summary.priceDrops++
+      summary.alerts.push({
         bien_id: bien.id,
         type: 'baisse_prix',
         ancien_prix: bien.prix,
-        nouveau_prix: nouveauPrix,
+        nouveau_prix: newPrice,
         titre: bien.titre
       })
-    } else if (nouveauPrix !== bien.prix) {
-      await client.from('biens').update({ prix: nouveauPrix }).eq('id', bien.id)
+    } else if (newPrice !== bien.prix) {
+      await client.from('biens').update({ prix: newPrice }).eq('id', bien.id)
     }
   }
 
-  return resume
+  return summary
 }
 
-export async function notifier(
+export async function notify(
   email: string | null,
-  resume: CheckResume
-): Promise<ResumeEnvois> {
-  const envois: ResumeEnvois = { envoyes: 0, echecs: 0, raisons: [] }
-  if (resume.alertes.length === 0) return envois
+  summary: CheckSummary
+): Promise<SendSummary> {
+  const emails: SendSummary = { sent: 0, failed: 0, reasons: [] }
+  if (summary.alerts.length === 0) return emails
 
   if (!email) {
-    console.warn('[check]', resume.alertes.length, 'alerte(s) sans adresse email destinataire')
-    envois.echecs = resume.alertes.length
-    envois.raisons.push('aucune adresse email')
-    return envois
+    console.warn('[check]', summary.alerts.length, 'alerte(s) sans adresse email destinataire')
+    emails.failed = summary.alerts.length
+    emails.reasons.push('aucune adresse email')
+    return emails
   }
 
-  for (const a of resume.alertes) {
-    const res = await envoyerAlerteEmail(email, a).catch((e: Error) => ({
+  for (const a of summary.alerts) {
+    const res = await sendAlertEmail(email, a).catch((e: Error) => ({
       envoye: false,
       raison: e.message
     }))
     if (res.envoye) {
-      envois.envoyes++
+      emails.sent++
     } else {
-      envois.echecs++
-      if (res.raison && !envois.raisons.includes(res.raison)) envois.raisons.push(res.raison)
+      emails.failed++
+      if (res.raison && !emails.reasons.includes(res.raison)) emails.reasons.push(res.raison)
     }
   }
-  return envois
+  return emails
 }
 
-export async function notifierPush(
+export async function notifyPush(
   client: any,
   userId: string,
-  resume: CheckResume
-): Promise<ResumeEnvois> {
-  const envois: ResumeEnvois = { envoyes: 0, echecs: 0, raisons: [] }
-  if (resume.alertes.length === 0 || !pushDisponible()) return envois
+  summary: CheckSummary
+): Promise<SendSummary> {
+  const emails: SendSummary = { sent: 0, failed: 0, reasons: [] }
+  if (summary.alerts.length === 0 || !pushAvailable()) return emails
 
-  for (const a of resume.alertes) {
-    const res = await envoyerAlertePush(client, userId, a).catch((e: Error) => ({
-      envoyes: 0,
-      echecs: 1,
-      raisons: [e.message]
+  for (const a of summary.alerts) {
+    const res = await sendAlertPush(client, userId, a).catch((e: Error) => ({
+      sent: 0,
+      failed: 1,
+      reasons: [e.message]
     }))
-    envois.envoyes += res.envoyes
-    envois.echecs += res.echecs
-    for (const r of res.raisons) if (!envois.raisons.includes(r)) envois.raisons.push(r)
+    emails.sent += res.sent
+    emails.failed += res.failed
+    for (const r of res.reasons) if (!emails.reasons.includes(r)) emails.reasons.push(r)
   }
-  return envois
+  return emails
 }

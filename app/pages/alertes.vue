@@ -1,59 +1,59 @@
 <script setup lang="ts">
-import type { Alerte } from "~/types";
+import type { Alert } from "~/types";
 
 useHead({ title: "Alertes — Hovly" });
 
-const { alertes, nonVues, refresh, marquerLues, verifierMaintenant } =
-  useAlertes();
+const { alerts, unread, refresh, markAllRead, checkNow } =
+  useAlerts();
 
 const { pending } = useAsyncData("alertes", () => refresh(), { server: false });
 
-const FILTRES = [
-  { value: "toutes", label: "Toutes" },
-  { value: "non_lues", label: "Non lues" },
+const FILTERS = [
+  { value: "all", label: "Toutes" },
+  { value: "unread", label: "Non lues" },
   { value: "baisse_prix", label: "Baisses" },
   { value: "annonce_supprimee", label: "Disparues" },
 ] as const;
 
-const filtre = ref<(typeof FILTRES)[number]["value"]>("toutes");
+const filter = ref<(typeof FILTERS)[number]["value"]>("all");
 
 const checking = ref(false);
 const checkMsg = ref("");
 const checkErr = ref(false);
 
 const stats = computed(() => {
-  const baisses = alertes.value.filter((a) => a.type === "baisse_prix");
+  const drops = alerts.value.filter((a) => a.type === "baisse_prix");
   return {
-    total: alertes.value.length,
-    nonLues: nonVues.value,
-    baisses: baisses.length,
-    supprimees: alertes.value.filter((a) => a.type === "annonce_supprimee")
+    total: alerts.value.length,
+    unread: unread.value,
+    drops: drops.length,
+    removed: alerts.value.filter((a) => a.type === "annonce_supprimee")
       .length,
   };
 });
 
-const compteurs = computed(() => ({
-  toutes: alertes.value.length,
-  non_lues: nonVues.value,
-  baisse_prix: stats.value.baisses,
-  annonce_supprimee: stats.value.supprimees,
+const counts = computed(() => ({
+  all: alerts.value.length,
+  unread: unread.value,
+  baisse_prix: stats.value.drops,
+  annonce_supprimee: stats.value.removed,
 }));
 
-const filtrees = computed(() => {
-  if (filtre.value === "toutes") return alertes.value;
-  if (filtre.value === "non_lues") return alertes.value.filter((a) => !a.vue);
-  return alertes.value.filter((a) => a.type === filtre.value);
+const filtered = computed(() => {
+  if (filter.value === "all") return alerts.value;
+  if (filter.value === "unread") return alerts.value.filter((a) => !a.vue);
+  return alerts.value.filter((a) => a.type === filter.value);
 });
 
-function cleJour(iso: string) {
+function dayKey(iso: string) {
   const d = new Date(iso);
-  const aujourdhui = new Date();
-  const hier = new Date(aujourdhui);
-  hier.setDate(hier.getDate() - 1);
-  const memeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
-  if (memeJour(d, aujourdhui)) return "Aujourd'hui";
-  if (memeJour(d, hier)) return "Hier";
+  if (sameDay(d, today)) return "Aujourd'hui";
+  if (sameDay(d, yesterday)) return "Hier";
   return d.toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
@@ -61,36 +61,36 @@ function cleJour(iso: string) {
   });
 }
 
-const groupes = computed(() => {
-  const map = new Map<string, Alerte[]>();
-  for (const a of filtrees.value) {
-    const cle = cleJour(a.envoyee_le);
-    const liste = map.get(cle) ?? [];
-    liste.push(a);
-    map.set(cle, liste);
+const groups = computed(() => {
+  const map = new Map<string, Alert[]>();
+  for (const a of filtered.value) {
+    const key = dayKey(a.envoyee_le);
+    const list = map.get(key) ?? [];
+    list.push(a);
+    map.set(key, list);
   }
   return [...map.entries()];
 });
 
-async function lancerVerif() {
+async function runCheck() {
   checking.value = true;
   checkMsg.value = "";
   checkErr.value = false;
   try {
-    const r = await verifierMaintenant();
+    const r = await checkNow();
     const base =
-      r.alertes.length > 0
-        ? `${r.baisses} baisse(s), ${r.supprimes} annonce(s) disparue(s) sur ${r.verifies} bien(s) vérifié(s).`
-        : `Aucun changement sur ${r.verifies} bien(s) vérifié(s).`;
-    const mails = r.envois?.echecs
-      ? ` ${r.envois.echecs} email(s) non envoyé(s) : ${r.envois.raisons.join(
+      r.alerts.length > 0
+        ? `${r.priceDrops} baisse(s), ${r.removed} annonce(s) disparue(s) sur ${r.checked} bien(s) vérifié(s).`
+        : `Aucun changement sur ${r.checked} bien(s) vérifié(s).`;
+    const emailMsg = r.emails?.failed
+      ? ` ${r.emails.failed} email(s) non envoyé(s) : ${r.emails.reasons.join(
           ", "
         )}.`
-      : r.envois?.envoyes
-      ? ` ${r.envois.envoyes} email(s) envoyé(s).`
+      : r.emails?.sent
+      ? ` ${r.emails.sent} email(s) envoyé(s).`
       : "";
-    checkMsg.value = base + mails;
-    checkErr.value = !!r.envois?.echecs || r.erreurs > 0;
+    checkMsg.value = base + emailMsg;
+    checkErr.value = !!r.emails?.failed || r.errors > 0;
   } catch {
     checkErr.value = true;
     checkMsg.value =
@@ -105,7 +105,7 @@ async function lancerVerif() {
     <TheNavbar width="max-w-7xl" />
 
     <main class="mx-auto max-w-7xl px-6 py-8">
-      <FilAriane
+      <BreadcrumbTrail
         class="mb-5"
         :items="[
           { label: 'Mes biens', to: '/dashboard' },
@@ -141,16 +141,16 @@ async function lancerVerif() {
 
           <div class="flex flex-wrap items-center gap-2.5">
             <button
-              v-if="nonVues > 0"
+              v-if="unread > 0"
               class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink"
-              @click="marquerLues"
+              @click="markAllRead"
             >
               Tout marquer comme lu
             </button>
             <button
               :disabled="checking"
               class="action flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-              @click="lancerVerif"
+              @click="runCheck"
             >
               <span
                 v-if="checking"
@@ -192,7 +192,7 @@ async function lancerVerif() {
               Non lues
             </dt>
             <dd class="mt-1.5 text-3xl font-light tabular-nums">
-              {{ stats.nonLues }}
+              {{ stats.unread }}
             </dd>
           </div>
         </dl>
@@ -212,27 +212,27 @@ async function lancerVerif() {
         </p>
       </Transition>
 
-      <ReglagePush class="mt-6" />
+      <PushSettings class="mt-6" />
 
       <div
         class="mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-hairline-soft bg-white p-3"
       >
         <button
-          v-for="f in FILTRES"
+          v-for="f in FILTERS"
           :key="f.value"
           class="filtre flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition"
           :class="
-            filtre === f.value
+            filter === f.value
               ? 'bg-ink text-white'
               : 'border border-hairline bg-white text-steel hover:bg-surface'
           "
-          @click="filtre = f.value"
+          @click="filter = f.value"
         >
           {{ f.label }}
           <span
             class="rounded-full px-1.5 text-[11px] tabular-nums"
-            :class="filtre === f.value ? 'bg-white/20' : 'bg-surface'"
-            >{{ compteurs[f.value] }}</span
+            :class="filter === f.value ? 'bg-white/20' : 'bg-surface'"
+            >{{ counts[f.value] }}</span
           >
         </button>
       </div>
@@ -259,7 +259,7 @@ async function lancerVerif() {
       </div>
 
       <div
-        v-else-if="!alertes.length"
+        v-else-if="!alerts.length"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-20 text-center"
       >
         <div
@@ -288,38 +288,38 @@ async function lancerVerif() {
       </div>
 
       <div
-        v-else-if="!filtrees.length"
+        v-else-if="!filtered.length"
         class="mt-5 rounded-feature border border-hairline-soft bg-white py-16 text-center"
       >
         <p class="text-slate">Aucune alerte dans ce filtre.</p>
         <button
           class="mt-3 text-sm font-medium text-blue hover:underline"
-          @click="filtre = 'toutes'"
+          @click="filter = 'all'"
         >
           Voir toutes les alertes
         </button>
       </div>
 
       <div v-else class="mt-5 space-y-7">
-        <section v-for="[jour, liste] in groupes" :key="jour">
+        <section v-for="[day, list] in groups" :key="day">
           <div class="mb-2.5 flex items-center gap-3">
             <h2
               class="text-xs font-semibold uppercase tracking-wider text-stone"
             >
-              {{ jour }}
+              {{ day }}
             </h2>
             <span class="h-px flex-1 bg-hairline-soft" />
-            <span class="text-xs text-stone">{{ liste.length }}</span>
+            <span class="text-xs text-stone">{{ list.length }}</span>
           </div>
 
           <ul class="space-y-2.5">
             <li
-              v-for="(a, i) in liste"
+              v-for="(a, i) in list"
               :key="a.id"
               class="alerte"
               :style="{ '--i': i }"
             >
-              <LigneAlerte :alerte="a" />
+              <AlertRow :alert="a" />
             </li>
           </ul>
         </section>

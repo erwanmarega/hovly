@@ -13,13 +13,13 @@ const route = useRoute();
 
 const userEmail = computed(() => user.value?.email ?? "");
 
-const { nonVues, refresh: refreshAlertes } = useAlertes();
+const { unread: nonVues, refresh: refreshAlertes } = useAlerts();
 useAsyncData("nav-alertes", () => refreshAlertes(), {
   server: false,
   immediate: !!user.value,
 });
 
-const { nouveaux: nouveauxVeilles, refresh: refreshVeilles } = useVeilles();
+const { newCount: nouveauxVeilles, refresh: refreshVeilles } = useWatches();
 useAsyncData("nav-veilles", () => refreshVeilles(), {
   server: false,
   immediate: !!user.value,
@@ -35,7 +35,7 @@ useHead({
   bodyAttrs: { class: computed(() => (user.value ? "a-nav-mobile" : "")) },
 });
 
-const { couvrir } = useRideau();
+const { cover: couvrir } = useCurtain();
 
 async function logout() {
   await couvrir(async () => {
@@ -141,7 +141,7 @@ async function logout() {
             <span class="text-base leading-none">+</span>
             <span class="hidden sm:inline">Ajouter un bien</span>
           </NuxtLink>
-          <CentreNotifications />
+          <NotificationCenter />
           <NuxtLink
             to="/profil"
             class="grid size-9 place-items-center rounded-full bg-brand text-sm font-bold text-ink hover:opacity-90 transition"

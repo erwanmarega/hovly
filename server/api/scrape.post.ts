@@ -1,17 +1,17 @@
 import { scrapeUrl } from '../utils/scrape'
 import { assertRateLimitForUser, QUOTAS } from '../utils/rate-limit'
-import { assertTailleCorps, validerUrlSource } from '../utils/validation'
+import { assertBodySize, validateSourceUrl } from '../utils/validation'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
-  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapeHeure)
-  assertTailleCorps(event)
+  assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapePerHour)
+  assertBodySize(event)
 
   const { url } = await readBody(event)
-  const urlValidee = validerUrlSource(url)
+  const validatedUrl = validateSourceUrl(url)
 
   try {
-    const { data } = await scrapeUrl(urlValidee)
+    const { data } = await scrapeUrl(validatedUrl)
     return data
   } catch (e: any) {
     if (e?.statusCode) throw e

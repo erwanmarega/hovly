@@ -1,29 +1,29 @@
-import type { Bien, SiteSource } from '~/types'
+import type { Property, SiteSource } from '~/types'
 import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
 import {
-  extraire,
-  extraireLeboncoin,
-  extraireCentury21,
-  extraireOrpi,
-  estPageRecherche,
+  extract,
+  extractLeboncoin,
+  extractCentury21,
+  extractOrpi,
+  isSearchPage,
   type PageData
 } from './extract'
 import { detecterSource } from './source'
-import { detecterTransaction } from './transaction'
-import { detecterTypeBien } from './type-bien'
+import { detectTransaction } from './transaction'
+import { detectPropertyType } from './property-type'
 import { htmlToPageData } from './html'
 import { scrapeViaApi, apiKey } from './fetch-api'
-import { assertHostnamePublique } from '../validation'
+import { assertPublicHostname } from '../validation'
 
 export interface ScrapeResult {
   source: SiteSource
-  data: Partial<Bien>
+  data: Partial<Property>
   indisponible: boolean
 }
 
-const SITES_PROTEGES: SiteSource[] = ['leboncoin']
+const PROTECTED_SITES: SiteSource[] = ['leboncoin']
 
-const MOTS_BLOQUE = [
+const BLOCKED_WORDS = [
   'enable js and disable any ad blocker',
   'verifying you are human',
   'captcha-delivery',
@@ -32,7 +32,7 @@ const MOTS_BLOQUE = [
   'unusual traffic'
 ]
 
-const MOTS_INDISPONIBLE = [
+const UNAVAILABLE_WORDS = [
   'page indisponible',
   'annonce supprimée',
   'annonce expirée',
@@ -41,14 +41,14 @@ const MOTS_INDISPONIBLE = [
   'cette annonce a été'
 ]
 
-function finaliser(raw: PageData, source: SiteSource, url: string, status: number): ScrapeResult {
+function finalize(raw: PageData, source: SiteSource, url: string, status: number): ScrapeResult {
   const bodyLower = raw.bodyText.toLowerCase()
 
-  const bloque =
+  const blocked =
     status === 403 ||
     status === 429 ||
-    MOTS_BLOQUE.some((m) => bodyLower.includes(m))
-  if (bloque) {
+    BLOCKED_WORDS.some((m) => bodyLower.includes(m))
+  if (blocked) {
     throw createError({
       statusCode: 423,
       statusMessage: 'Anti-bot',
@@ -57,7 +57,7 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
     })
   }
 
-  if (estPageRecherche(raw)) {
+  if (isSearchPage(raw)) {
     throw createError({
       statusCode: 422,
       statusMessage: 'Page de recherche',
@@ -69,31 +69,31 @@ function finaliser(raw: PageData, source: SiteSource, url: string, status: numbe
     })
   }
 
-  const data = extraire(raw)
+  const data = extract(raw)
 
-  const specifique =
+  const specific =
     source === 'leboncoin'
-      ? extraireLeboncoin(raw.nextData)
+      ? extractLeboncoin(raw.nextData)
       : source === 'century21'
-        ? extraireCentury21(raw)
+        ? extractCentury21(raw)
         : source === 'orpi'
-          ? extraireOrpi(raw.estateData)
+          ? extractOrpi(raw.estateData)
           : null
 
-  if (specifique) {
-    for (const [k, v] of Object.entries(specifique)) {
+  if (specific) {
+    for (const [k, v] of Object.entries(specific)) {
       if (v != null && v !== '') (data as any)[k] = v
     }
   }
   data.url_source = url
   data.site_source = source
-  data.transaction = detecterTransaction(url, data.prix ?? null)
-  data.type_bien = detecterTypeBien(data.titre ?? '')
+  data.transaction = detectTransaction(url, data.prix ?? null)
+  data.type_bien = detectPropertyType(data.titre ?? '')
 
   const indisponible =
     status === 404 ||
     status === 410 ||
-    MOTS_INDISPONIBLE.some((m) => bodyLower.includes(m))
+    UNAVAILABLE_WORDS.some((m) => bodyLower.includes(m))
 
   return { source, data, indisponible }
 }
@@ -108,7 +108,7 @@ async function scrapeViaApiExtract(url: string, source: SiteSource): Promise<Scr
         "Annonce protégée par un anti-bot. Impossible d'extraire automatiquement — saisis les infos manuellement."
     })
   }
-  return finaliser(htmlToPageData(html), source, url, 200)
+  return finalize(htmlToPageData(html), source, url, 200)
 }
 
 async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<ScrapeResult> {
@@ -149,7 +149,7 @@ async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<Scr
         document.querySelectorAll('meta[property="og:image"]')
       ).map((m) => m.getAttribute('content') || '')
 
-      const plusGrande = (srcset: string) => {
+      const largestSrc = (srcset: string) => {
         const parts = srcset
           .split(',')
           .map((p) => p.trim().split(/\s+/))
@@ -167,13 +167,13 @@ async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<Scr
           el.getAttribute('data-src') ||
           el.getAttribute('data-lazy-src') ||
           el.getAttribute('data-original') ||
-          plusGrande(el.getAttribute('srcset') || '') ||
+          largestSrc(el.getAttribute('srcset') || '') ||
           el.src ||
           ''
         if (cand) domImages.push(cand)
       })
       document.querySelectorAll('source[srcset]').forEach((s) => {
-        const u = plusGrande(s.getAttribute('srcset') || '')
+        const u = largestSrc(s.getAttribute('srcset') || '')
         if (u) domImages.push(u)
       })
 
@@ -207,7 +207,7 @@ async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<Scr
       }
     })
 
-    return finaliser(raw, source, url, status)
+    return finalize(raw, source, url, status)
   } finally {
     await context.close()
   }
@@ -218,9 +218,9 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   if (!source) {
     throw createError({ statusCode: 422, statusMessage: 'Source non supportée' })
   }
-  await assertHostnamePublique(new URL(url).hostname)
+  await assertPublicHostname(new URL(url).hostname)
 
-  if (SITES_PROTEGES.includes(source)) {
+  if (PROTECTED_SITES.includes(source)) {
     return scrapeViaApiExtract(url, source)
   }
 
