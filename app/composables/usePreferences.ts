@@ -38,7 +38,7 @@ function validAnchors(raw: unknown): Anchor[] {
   return out
 }
 
-function normalize(raw: unknown): Preferences {
+export function normalize(raw: unknown): Preferences {
   const p = (raw ?? {}) as Partial<Preferences>
   const number = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null)
 

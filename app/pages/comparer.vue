@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Property } from '~/types'
+import { SOURCE_LABELS } from '~/types'
 
 useHead({ title: 'Comparer — Hovly' })
 
@@ -8,12 +9,36 @@ const { pending } = useAsyncData('biens-comparer', () => refresh(), { server: fa
 
 const { selection, remove, clear } = useComparator()
 const { preferences } = usePreferences()
+const { announce } = useToast()
 
 const { create: createShare } = useShares()
 const shareOpen = ref(false)
 const sharing = ref(false)
 const shareError = ref('')
 const shareLink = ref<string | null>(null)
+
+const downloadingPdf = ref(false)
+
+async function downloadPdf() {
+  downloadingPdf.value = true
+  try {
+    const blob = await $fetch<Blob>('/api/comparaison/pdf', {
+      method: 'POST',
+      body: { ids: selection.value },
+      responseType: 'blob'
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'comparaison-hovly.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch {
+    announce('Impossible de générer le PDF. Réessaie.', 'erreur')
+  } finally {
+    downloadingPdf.value = false
+  }
+}
 
 async function createShareLink(title: string) {
   sharing.value = true
@@ -69,16 +94,6 @@ const winner = computed(() => {
   })
   return { bien: selected.value[idx]!, score: scores.value[idx]!, index: idx }
 })
-
-const sourceLabels: Record<string, string> = {
-  seloger: 'SeLoger',
-  leboncoin: 'Leboncoin',
-  pap: 'PAP',
-  'logic-immo': 'Logic-Immo',
-  bienici: 'Bien’ici',
-  century21: 'Century 21',
-  orpi: 'Orpi'
-}
 </script>
 
 <template>
@@ -122,6 +137,14 @@ const sourceLabels: Record<string, string> = {
               @click="shareOpen = true"
             >
               Partager
+            </button>
+            <button
+              v-if="selected.length >= 2"
+              class="action rounded-full border border-ink/15 bg-white px-4 py-2.5 text-sm font-medium text-ink disabled:opacity-60"
+              :disabled="downloadingPdf"
+              @click="downloadPdf"
+            >
+              {{ downloadingPdf ? "Génération…" : "Télécharger en PDF" }}
             </button>
             <button
               v-if="selected.length"
@@ -238,7 +261,7 @@ const sourceLabels: Record<string, string> = {
 
                     <p class="mt-1 flex items-center gap-1.5 text-xs font-normal text-stone">
                       <SourceLogo :source="b.site_source" :with-name="false" :size="14" />
-                      {{ sourceLabels[b.site_source] }} · {{ b.ville }}
+                      {{ SOURCE_LABELS[b.site_source] }} · {{ b.ville }}
                     </p>
                     <div class="mt-2">
                       <StatusBadge :status="b.statut" />

@@ -1,203 +1,229 @@
 <script setup lang="ts">
-import type { Anchor, DPE, Preferences } from '~/types'
+import type { Anchor, DPE, Preferences } from "~/types";
 
-useHead({ title: 'Mon profil — Hovly' })
+useHead({ title: "Mon profil — Hovly" });
 
-const supabase = useSupabaseClient()
-const user = useSupabaseUser()
-const { biens, refresh } = useProperties()
-const { announce } = useToast()
+const supabase = useSupabaseClient();
+const user = useSupabaseUser();
+const { biens, refresh } = useProperties();
+const { announce } = useToast();
 
-useAsyncData('biens-profil', () => refresh(), { server: false })
+useAsyncData("biens-profil", () => refresh(), { server: false });
 
-const email = computed(() => user.value?.email ?? '')
-const provider = computed(() => user.value?.app_metadata?.provider ?? 'email')
+const email = computed(() => user.value?.email ?? "");
+const provider = computed(() => user.value?.app_metadata?.provider ?? "email");
 const initial = computed(() =>
-  (fullName.value || email.value || '?').charAt(0).toUpperCase()
-)
+  (fullName.value || email.value || "?").charAt(0).toUpperCase()
+);
 const memberSince = computed(() => {
-  const d = user.value?.created_at
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-})
+  const d = user.value?.created_at;
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+});
 
-const active = computed(() => biens.value.filter((b) => b.actif))
+const active = computed(() => biens.value.filter((b) => b.actif));
 const stats = computed(() => ({
   tracked: active.value.length,
-  favorites: active.value.filter((b) => b.statut === 'coup_de_coeur').length,
+  favorites: active.value.filter((b) => b.statut === "coup_de_coeur").length,
   cities: new Set(active.value.map((b) => b.ville).filter(Boolean)).size,
-  archived: biens.value.length - active.value.length
-}))
+  archived: biens.value.length - active.value.length,
+}));
 
 const tiles = computed(() => [
-  { label: 'Biens suivis', value: stats.value.tracked },
-  { label: 'Coups de cœur', value: stats.value.favorites },
-  { label: 'Villes', value: stats.value.cities },
-  { label: 'Archivés', value: stats.value.archived }
-])
+  { label: "Biens suivis", value: stats.value.tracked },
+  { label: "Coups de cœur", value: stats.value.favorites },
+  { label: "Villes", value: stats.value.cities },
+  { label: "Archivés", value: stats.value.archived },
+]);
 
 const SECTIONS = [
-  { id: 'criteria', label: 'Mes critères' },
-  { id: 'commutes', label: 'Points d’ancrage' },
-  { id: 'notifications', label: 'Notifications' },
-  { id: 'shares', label: 'Mes partages' },
-  { id: 'account', label: 'Compte & sécurité' }
-]
+  { id: "criteria", label: "Mes critères" },
+  { id: "commutes", label: "Points d’ancrage" },
+  { id: "notifications", label: "Notifications" },
+  { id: "shares", label: "Mes partages" },
+  { id: "account", label: "Compte & sécurité" },
+];
 
-const { shares, refresh: refreshShares, revoke: revokeShareApi } = useShares()
-useAsyncData('partages-profil', () => refreshShares(), { server: false })
+const { shares, refresh: refreshShares, revoke: revokeShareApi } = useShares();
+useAsyncData("partages-profil", () => refreshShares(), { server: false });
 
 function formatShortDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 async function copyShareLink(token: string) {
-  await navigator.clipboard.writeText(`${window.location.origin}/partage/${token}`)
-  announce('Lien copié.')
+  await navigator.clipboard.writeText(
+    `${window.location.origin}/partage/${token}`
+  );
+  announce("Lien copié.");
 }
 
 async function revokeShare(id: string) {
   try {
-    await revokeShareApi(id)
-    announce('Partage révoqué.')
+    await revokeShareApi(id);
+    announce("Partage révoqué.");
   } catch {
-    announce('Impossible de révoquer. Réessaie.', 'erreur')
+    announce("Impossible de révoquer. Réessaie.", "erreur");
   }
 }
 
-const fullName = ref('')
+const fullName = ref("");
 watchEffect(() => {
-  fullName.value = (user.value?.user_metadata?.full_name as string) ?? ''
-})
+  fullName.value = (user.value?.user_metadata?.full_name as string) ?? "";
+});
 
-const savingName = ref(false)
+const savingName = ref(false);
 
 async function saveName() {
-  savingName.value = true
-  const { error } = await supabase.auth.updateUser({ data: { full_name: fullName.value } })
-  savingName.value = false
-  announce(error ? 'Erreur. Réessaie.' : 'Nom mis à jour.', error ? 'erreur' : 'succes')
+  savingName.value = true;
+  const { error } = await supabase.auth.updateUser({
+    data: { full_name: fullName.value },
+  });
+  savingName.value = false;
+  announce(
+    error ? "Erreur. Réessaie." : "Nom mis à jour.",
+    error ? "erreur" : "succes"
+  );
 }
 
-const newPassword = ref('')
-const passwordVisible = ref(false)
-const savingPwd = ref(false)
+const newPassword = ref("");
+const passwordVisible = ref(false);
+const savingPwd = ref(false);
 
 const passwordStrength = computed(() => {
-  const p = newPassword.value
-  if (!p) return { level: 0, label: '', color: '' }
-  let n = 0
-  if (p.length >= 6) n++
-  if (p.length >= 10) n++
-  if (/[A-Z]/.test(p) && /[a-z]/.test(p)) n++
-  if (/\d/.test(p)) n++
-  if (/[^\w\s]/.test(p)) n++
+  const p = newPassword.value;
+  if (!p) return { level: 0, label: "", color: "" };
+  let n = 0;
+  if (p.length >= 6) n++;
+  if (p.length >= 10) n++;
+  if (/[A-Z]/.test(p) && /[a-z]/.test(p)) n++;
+  if (/\d/.test(p)) n++;
+  if (/[^\w\s]/.test(p)) n++;
   const scale = [
-    { label: 'Trop court', color: 'bg-coral-soft' },
-    { label: 'Faible', color: 'bg-coral-soft' },
-    { label: 'Correct', color: 'bg-brand-deep' },
-    { label: 'Bon', color: 'bg-brand-deep' },
-    { label: 'Solide', color: 'bg-teal-deep' },
-    { label: 'Excellent', color: 'bg-teal-deep' }
-  ]
-  return { level: n, ...scale[n]! }
-})
+    { label: "Trop court", color: "bg-coral-soft" },
+    { label: "Faible", color: "bg-coral-soft" },
+    { label: "Correct", color: "bg-brand-deep" },
+    { label: "Bon", color: "bg-brand-deep" },
+    { label: "Solide", color: "bg-teal-deep" },
+    { label: "Excellent", color: "bg-teal-deep" },
+  ];
+  return { level: n, ...scale[n]! };
+});
 
 async function savePassword() {
   if (newPassword.value.length < 6) {
-    announce('6 caractères minimum.', 'erreur')
-    return
+    announce("6 caractères minimum.", "erreur");
+    return;
   }
-  savingPwd.value = true
-  const { error } = await supabase.auth.updateUser({ password: newPassword.value })
-  savingPwd.value = false
-  announce(error ? error.message : 'Mot de passe modifié.', error ? 'erreur' : 'succes')
-  if (!error) newPassword.value = ''
+  savingPwd.value = true;
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword.value,
+  });
+  savingPwd.value = false;
+  announce(
+    error ? error.message : "Mot de passe modifié.",
+    error ? "erreur" : "succes"
+  );
+  if (!error) newPassword.value = "";
 }
 
-const { cover } = useCurtain()
+const { cover } = useCurtain();
 
 async function logout() {
   await cover(async () => {
-    await supabase.auth.signOut()
-    await navigateTo('/login')
-  })
+    await supabase.auth.signOut();
+    await navigateTo("/");
+  });
 }
 
-const { preferences, customized, saving, save, reset } = usePreferences()
+const { preferences, customized, saving, save, reset } = usePreferences();
 
-const DPE_OPTIONS: DPE[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+const DPE_OPTIONS: DPE[] = ["A", "B", "C", "D", "E", "F", "G"];
 
-const draft = reactive<Preferences>({ ...DEFAULT_PREFERENCES })
-watchEffect(() => Object.assign(draft, preferences.value))
+const draft = reactive<Preferences>({ ...DEFAULT_PREFERENCES });
+watchEffect(() => Object.assign(draft, preferences.value));
 
 const weightSplit = computed(() => {
-  const sum = draft.poidsPrix + draft.poidsDpe + draft.poidsCharges
-  if (!sum) return { prix: 0, dpe: 0, charges: 0 }
+  const sum = draft.poidsPrix + draft.poidsDpe + draft.poidsCharges;
+  if (!sum) return { prix: 0, dpe: 0, charges: 0 };
   return {
     prix: Math.round((draft.poidsPrix / sum) * 100),
     dpe: Math.round((draft.poidsDpe / sum) * 100),
-    charges: Math.round((draft.poidsCharges / sum) * 100)
-  }
-})
+    charges: Math.round((draft.poidsCharges / sum) * 100),
+  };
+});
 
 const preview = computed(() => {
-  const scoredActive = active.value.map((b) => scoreProperty(b, biens.value, draft))
-  if (!scoredActive.length) return null
-  const outOfCriteria = scoredActive.filter((s) => s.criteria.some((c) => !c.ok)).length
+  const scoredActive = active.value.map((b) =>
+    scoreProperty(b, biens.value, draft)
+  );
+  if (!scoredActive.length) return null;
+  const outOfCriteria = scoredActive.filter((s) =>
+    s.criteria.some((c) => !c.ok)
+  ).length;
   return {
-    average: Math.round(scoredActive.reduce((s, x) => s + x.total, 0) / scoredActive.length),
-    outOfCriteria
-  }
-})
+    average: Math.round(
+      scoredActive.reduce((s, x) => s + x.total, 0) / scoredActive.length
+    ),
+    outOfCriteria,
+  };
+});
 
 const {
   calculating: calculatingCommutes,
   error: commutesError,
   calculate: calculateCommutes,
   calculable: commutesCalculable,
-  loadModesState: loadCommuteModes
-} = useCommutes()
+  loadModesState: loadCommuteModes,
+} = useCommutes();
 
-onMounted(loadCommuteModes)
+onMounted(loadCommuteModes);
 
 async function savePreferences() {
-  const ok = await save({ ...draft })
-  announce(ok ? 'Critères enregistrés.' : 'Erreur. Réessaie.', ok ? 'succes' : 'erreur')
+  const ok = await save({ ...draft });
+  announce(
+    ok ? "Critères enregistrés." : "Erreur. Réessaie.",
+    ok ? "succes" : "erreur"
+  );
 }
 
 async function updateAnchors(anchors: Anchor[]) {
-  draft.ancres = anchors
-  const ok = await save({ ...draft })
+  draft.ancres = anchors;
+  const ok = await save({ ...draft });
   announce(
-    ok ? 'Points d’ancrage enregistrés.' : 'Enregistrement impossible.',
-    ok ? 'succes' : 'erreur'
-  )
+    ok ? "Points d’ancrage enregistrés." : "Enregistrement impossible.",
+    ok ? "succes" : "erreur"
+  );
 }
 
 async function updateCommutes() {
-  const ok = await save({ ...draft })
+  const ok = await save({ ...draft });
   if (!ok) {
-    announce('Enregistrement impossible.', 'erreur')
-    return
+    announce("Enregistrement impossible.", "erreur");
+    return;
   }
-  const done = await calculateCommutes()
-  if (done) announce('Trajets à jour.')
+  const done = await calculateCommutes();
+  if (done) announce("Trajets à jour.");
 }
 
 async function resetPreferences() {
-  await reset()
-  Object.assign(draft, DEFAULT_PREFERENCES)
-  announce('Critères réinitialisés.')
+  await reset();
+  Object.assign(draft, DEFAULT_PREFERENCES);
+  announce("Critères réinitialisés.");
 }
 
-const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-stone mb-1.5'
+const labelCls =
+  "block text-xs font-semibold uppercase tracking-wide text-stone mb-1.5";
 const inputCls =
-  'h-11 w-full rounded-xl border border-hairline-strong bg-white px-4 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20'
+  "h-11 w-full rounded-xl border border-hairline-strong bg-white px-4 text-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/20";
 </script>
 
 <template>
@@ -207,7 +233,10 @@ const inputCls =
     <main class="mx-auto max-w-6xl px-6 py-8">
       <BreadcrumbTrail
         class="mb-5"
-        :items="[{ label: 'Mes biens', to: '/dashboard' }, { label: 'Mon profil' }]"
+        :items="[
+          { label: 'Mes biens', to: '/dashboard' },
+          { label: 'Mon profil' },
+        ]"
       />
 
       <section
@@ -223,12 +252,21 @@ const inputCls =
             {{ initial }}
           </div>
           <div class="min-w-0">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">Mon compte</p>
-            <h1 class="mt-1.5 truncate text-3xl font-light tracking-tight text-ink md:text-4xl">
-              {{ fullName || 'Mon profil' }}
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/50"
+            >
+              Mon compte
+            </p>
+            <h1
+              class="mt-1.5 truncate text-3xl font-light tracking-tight text-ink md:text-4xl"
+            >
+              {{ fullName || "Mon profil" }}
             </h1>
             <p class="mt-1 truncate text-ink/60">
-              {{ email }}<span v-if="memberSince" class="text-ink/45"> · membre depuis le {{ memberSince }}</span>
+              {{ email
+              }}<span v-if="memberSince" class="text-ink/45">
+                · membre depuis le {{ memberSince }}</span
+              >
             </p>
           </div>
 
@@ -236,7 +274,13 @@ const inputCls =
             class="deco ml-auto flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white"
             @click="logout"
           >
-            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <path d="m16 17 5-5-5-5" />
               <path d="M21 12H9" />
@@ -252,8 +296,14 @@ const inputCls =
             class="tuile rounded-2xl bg-white px-5 py-4"
             :style="{ '--i': i }"
           >
-            <dt class="text-[11px] font-semibold uppercase tracking-wider text-stone">{{ t.label }}</dt>
-            <dd class="mt-1.5 text-3xl font-light tabular-nums">{{ t.value }}</dd>
+            <dt
+              class="text-[11px] font-semibold uppercase tracking-wider text-stone"
+            >
+              {{ t.label }}
+            </dt>
+            <dd class="mt-1.5 text-3xl font-light tabular-nums">
+              {{ t.value }}
+            </dd>
           </div>
         </dl>
       </section>
@@ -271,9 +321,13 @@ const inputCls =
         </a>
       </nav>
 
-      <div class="mt-6 lg:mt-8 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
+      <div
+        class="mt-6 lg:mt-8 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10"
+      >
         <nav class="sticky top-6 hidden self-start lg:block">
-          <p class="text-xs font-semibold uppercase tracking-wide text-stone">Réglages</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+            Réglages
+          </p>
           <ul class="mt-3 space-y-1">
             <li v-for="s in SECTIONS" :key="s.id">
               <a
@@ -292,8 +346,16 @@ const inputCls =
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex flex-wrap items-start gap-4">
-              <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-brand-light text-ink">
-                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <span
+                class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-brand-light text-ink"
+              >
+                <svg
+                  class="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0" />
                   <circle cx="16" cy="6" r="2" />
                   <circle cx="8" cy="12" r="2" />
@@ -303,7 +365,11 @@ const inputCls =
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 class="text-lg font-medium tracking-tight text-ink-deep">Mes critères</h2>
+                    <h2
+                      class="text-lg font-medium tracking-tight text-ink-deep"
+                    >
+                      Mes critères
+                    </h2>
                     <p class="mt-1 text-sm text-slate">
                       Le score Hovly s’adapte à ce qui compte pour toi.
                     </p>
@@ -314,7 +380,10 @@ const inputCls =
                   >
                     Score personnalisé actif
                   </span>
-                  <span v-else class="rounded-full bg-surface px-3 py-1 text-xs font-medium text-stone">
+                  <span
+                    v-else
+                    class="rounded-full bg-surface px-3 py-1 text-xs font-medium text-stone"
+                  >
                     Réglages par défaut
                   </span>
                 </div>
@@ -323,20 +392,26 @@ const inputCls =
 
             <div class="mt-7 grid gap-8 lg:grid-cols-2">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-stone"
+                >
                   Ce qui compte le plus
                 </p>
 
                 <div class="mt-4 space-y-4">
                   <div
-v-for="axe in [
+                    v-for="axe in [
                     { cle: 'poidsPrix' as const, label: 'Prix au m²', part: weightSplit.prix },
                     { cle: 'poidsDpe' as const, label: 'Performance énergétique', part: weightSplit.dpe },
                     { cle: 'poidsCharges' as const, label: 'Charges', part: weightSplit.charges }
-                  ]" :key="axe.cle">
+                  ]"
+                    :key="axe.cle"
+                  >
                     <div class="flex items-center justify-between text-sm">
                       <span class="font-medium">{{ axe.label }}</span>
-                      <span class="tabular-nums text-stone">{{ axe.part }} %</span>
+                      <span class="tabular-nums text-stone"
+                        >{{ axe.part }} %</span
+                      >
                     </div>
                     <input
                       v-model.number="draft[axe.cle]"
@@ -345,7 +420,7 @@ v-for="axe in [
                       max="100"
                       step="5"
                       class="curseur mt-2 w-full"
-                    >
+                    />
                   </div>
                 </div>
 
@@ -353,19 +428,30 @@ v-for="axe in [
                   Les trois poids sont ramenés à 100 % au calcul du score.
                 </p>
 
-                <div v-if="preview" class="mt-5 rounded-2xl bg-surface px-4 py-3 text-sm">
+                <div
+                  v-if="preview"
+                  class="mt-5 rounded-2xl bg-surface px-4 py-3 text-sm"
+                >
                   <p class="text-slate">
                     Sur tes {{ stats.tracked }} biens : score moyen
-                    <span class="font-semibold text-ink">{{ preview.average }}</span>
+                    <span class="font-semibold text-ink">{{
+                      preview.average
+                    }}</span>
                     <template v-if="preview.outOfCriteria">
-                      , <span class="font-semibold text-ink">{{ preview.outOfCriteria }}</span> hors critères
+                      ,
+                      <span class="font-semibold text-ink">{{
+                        preview.outOfCriteria
+                      }}</span>
+                      hors critères
                     </template>
                   </p>
                 </div>
               </div>
 
               <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-stone"
+                >
                   Mes minimums
                 </p>
                 <p class="mt-1 text-xs text-stone">
@@ -374,14 +460,16 @@ v-for="axe in [
 
                 <div class="mt-4 grid grid-cols-2 gap-4">
                   <div>
-                    <label :class="labelCls">Budget max €/mois (location)</label>
+                    <label :class="labelCls"
+                      >Budget max €/mois (location)</label
+                    >
                     <input
                       v-model.number="draft.budgetMax"
                       type="number"
                       min="0"
                       placeholder="—"
                       :class="inputCls"
-                    >
+                    />
                   </div>
                   <div>
                     <label :class="labelCls">Surface min m²</label>
@@ -391,7 +479,7 @@ v-for="axe in [
                       min="0"
                       placeholder="—"
                       :class="inputCls"
-                    >
+                    />
                   </div>
                   <div>
                     <label :class="labelCls">Pièces min</label>
@@ -401,23 +489,28 @@ v-for="axe in [
                       min="0"
                       placeholder="—"
                       :class="inputCls"
-                    >
+                    />
                   </div>
                   <div>
                     <label :class="labelCls">DPE min</label>
                     <select v-model="draft.dpeMin" :class="inputCls">
                       <option :value="null">Peu importe</option>
-                      <option v-for="d in DPE_OPTIONS" :key="d" :value="d">{{ d }} ou mieux</option>
+                      <option v-for="d in DPE_OPTIONS" :key="d" :value="d">
+                        {{ d }} ou mieux
+                      </option>
                     </select>
                   </div>
                 </div>
 
                 <div class="mt-6 border-t border-hairline-soft pt-5">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+                  <p
+                    class="text-xs font-semibold uppercase tracking-wide text-stone"
+                  >
                     Calcul du coût réel
                   </p>
                   <p class="mt-1 text-xs text-stone">
-                    Loyer + charges + énergie estimée depuis le DPE + assurance habitation.
+                    Loyer + charges + énergie estimée depuis le DPE + assurance
+                    habitation.
                   </p>
 
                   <div class="mt-4 grid grid-cols-2 items-end gap-4">
@@ -429,26 +522,31 @@ v-for="axe in [
                         min="1"
                         :placeholder="String(DEFAULT_KWH_PRICE)"
                         :class="inputCls"
-                      >
+                      />
                     </div>
-                    <label class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate">
+                    <label
+                      class="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-slate"
+                    >
                       <input
                         v-model="draft.chauffageDansCharges"
                         type="checkbox"
                         class="size-4 cursor-pointer accent-ink"
-                      >
+                      />
                       Chauffage compris dans les charges
                     </label>
                   </div>
                 </div>
 
                 <div class="mt-6 border-t border-hairline-soft pt-5">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-stone">
+                  <p
+                    class="text-xs font-semibold uppercase tracking-wide text-stone"
+                  >
                     Achat
                   </p>
                   <p class="mt-1 text-xs text-stone">
-                    Budget vérifié par le score pour les biens en vente, et hypothèses de la
-                    mensualité estimée (prix + frais de notaire − apport).
+                    Budget vérifié par le score pour les biens en vente, et
+                    hypothèses de la mensualité estimée (prix + frais de notaire
+                    − apport).
                   </p>
 
                   <div class="mt-4 grid grid-cols-2 gap-4">
@@ -460,7 +558,7 @@ v-for="axe in [
                         min="0"
                         placeholder="—"
                         :class="inputCls"
-                      >
+                      />
                     </div>
                     <div>
                       <label :class="labelCls">Apport €</label>
@@ -470,7 +568,7 @@ v-for="axe in [
                         min="0"
                         placeholder="0"
                         :class="inputCls"
-                      >
+                      />
                     </div>
                     <div>
                       <label :class="labelCls">Taux d'emprunt %</label>
@@ -481,7 +579,7 @@ v-for="axe in [
                         step="0.05"
                         :placeholder="String(DEFAULT_RATE)"
                         :class="inputCls"
-                      >
+                      />
                     </div>
                     <div>
                       <label :class="labelCls">Durée années</label>
@@ -492,14 +590,16 @@ v-for="axe in [
                         max="30"
                         :placeholder="String(DEFAULT_DURATION_YEARS)"
                         :class="inputCls"
-                      >
+                      />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="mt-7 flex flex-wrap items-center gap-3 border-t border-hairline-soft pt-5">
+            <div
+              class="mt-7 flex flex-wrap items-center gap-3 border-t border-hairline-soft pt-5"
+            >
               <button
                 :disabled="saving"
                 class="action rounded-full bg-ink px-6 py-3 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
@@ -521,8 +621,16 @@ v-for="axe in [
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex flex-wrap items-start gap-4">
-              <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-teal text-[#0a4a42]">
-                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <span
+                class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-teal text-[#0a4a42]"
+              >
+                <svg
+                  class="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
@@ -530,9 +638,14 @@ v-for="axe in [
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 class="text-lg font-medium tracking-tight text-ink-deep">Mes points d’ancrage</h2>
+                    <h2
+                      class="text-lg font-medium tracking-tight text-ink-deep"
+                    >
+                      Mes points d’ancrage
+                    </h2>
                     <p class="mt-1 text-sm text-slate">
-                      Boulot, école, gare : Hovly calcule le temps de trajet depuis chaque bien.
+                      Boulot, école, gare : Hovly calcule le temps de trajet
+                      depuis chaque bien.
                     </p>
                   </div>
                   <button
@@ -541,11 +654,17 @@ v-for="axe in [
                     class="action rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
                     @click="updateCommutes"
                   >
-                    {{ calculatingCommutes ? "Calcul…" : "Calculer les trajets" }}
+                    {{
+                      calculatingCommutes ? "Calcul…" : "Calculer les trajets"
+                    }}
                   </button>
-                  <p v-else-if="draft.ancres.length" class="max-w-xs text-xs text-stone">
-                    Calcul indisponible : la clé <code>ORS_API_KEY</code> (voiture, vélo, marche)
-                    n’est pas configurée sur le serveur. Les transports en commun, eux, ne
+                  <p
+                    v-else-if="draft.ancres.length"
+                    class="max-w-xs text-xs text-stone"
+                  >
+                    Calcul indisponible : la clé
+                    <code>ORS_API_KEY</code> (voiture, vélo, marche) n’est pas
+                    configurée sur le serveur. Les transports en commun, eux, ne
                     demandent aucune clé.
                   </p>
                 </div>
@@ -558,7 +677,9 @@ v-for="axe in [
               @update:anchors="updateAnchors"
             />
 
-            <p v-if="commutesError" class="mt-3 text-xs text-[#600000]">{{ commutesError }}</p>
+            <p v-if="commutesError" class="mt-3 text-xs text-[#600000]">
+              {{ commutesError }}
+            </p>
 
             <TransitousNotice class="mt-3" />
           </section>
@@ -568,16 +689,27 @@ v-for="axe in [
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex items-start gap-4">
-              <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-rose text-ink">
-                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <span
+                class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-rose text-ink"
+              >
+                <svg
+                  class="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                   <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                 </svg>
               </span>
               <div class="min-w-0">
-                <h2 class="text-lg font-medium tracking-tight text-ink-deep">Notifications</h2>
+                <h2 class="text-lg font-medium tracking-tight text-ink-deep">
+                  Notifications
+                </h2>
                 <p class="mt-1 text-sm text-slate">
-                  Les alertes arrivent par email. Active le push pour être prévenu sur cet appareil.
+                  Les alertes arrivent par email. Active le push pour être
+                  prévenu sur cet appareil.
                 </p>
               </div>
             </div>
@@ -589,8 +721,16 @@ v-for="axe in [
             class="scroll-mt-6 rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
           >
             <div class="flex items-start gap-4">
-              <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-teal text-[#0a4a42]">
-                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <span
+                class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-teal text-[#0a4a42]"
+              >
+                <svg
+                  class="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <circle cx="18" cy="5" r="3" />
                   <circle cx="6" cy="12" r="3" />
                   <circle cx="18" cy="19" r="3" />
@@ -598,15 +738,19 @@ v-for="axe in [
                 </svg>
               </span>
               <div class="min-w-0">
-                <h2 class="text-lg font-medium tracking-tight text-ink-deep">Mes partages</h2>
+                <h2 class="text-lg font-medium tracking-tight text-ink-deep">
+                  Mes partages
+                </h2>
                 <p class="mt-1 text-sm text-slate">
-                  Liens de lecture seule créés depuis une sélection sur ton dashboard.
+                  Liens de lecture seule créés depuis une sélection sur ton
+                  dashboard.
                 </p>
               </div>
             </div>
 
             <p v-if="!shares.length" class="mt-6 text-sm text-stone">
-              Aucun partage actif. Sélectionne des biens sur ton dashboard puis clique « Partager ».
+              Aucun partage actif. Sélectionne des biens sur ton dashboard puis
+              clique « Partager ».
             </p>
 
             <ul v-else class="mt-6 space-y-3">
@@ -617,10 +761,11 @@ v-for="axe in [
               >
                 <div class="min-w-0">
                   <p class="truncate text-sm font-medium text-ink">
-                    {{ p.titre || 'Sans titre' }}
+                    {{ p.titre || "Sans titre" }}
                   </p>
                   <p class="mt-0.5 text-xs text-stone">
-                    {{ p.nb_biens }} bien{{ p.nb_biens > 1 ? 's' : '' }} · créé le
+                    {{ p.nb_biens }} bien{{ p.nb_biens > 1 ? "s" : "" }} · créé
+                    le
                     {{ formatShortDate(p.cree_le) }}
                   </p>
                 </div>
@@ -643,16 +788,28 @@ v-for="axe in [
           </section>
 
           <div id="account" class="grid scroll-mt-6 gap-6 lg:grid-cols-2">
-            <section class="rounded-feature border border-hairline-soft bg-white p-6 md:p-8">
+            <section
+              class="rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
+            >
               <div class="flex items-start gap-4">
-                <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-surface text-steel">
-                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <span
+                  class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-surface text-steel"
+                >
+                  <svg
+                    class="size-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </span>
                 <div class="min-w-0">
-                  <h2 class="text-lg font-medium tracking-tight text-ink-deep">Informations</h2>
+                  <h2 class="text-lg font-medium tracking-tight text-ink-deep">
+                    Informations
+                  </h2>
                   <p class="mt-1 text-sm text-slate">Ton identité sur Hovly.</p>
                 </div>
               </div>
@@ -660,23 +817,35 @@ v-for="axe in [
               <div class="mt-6">
                 <label :class="labelCls">Nom affiché</label>
                 <div class="flex gap-2.5">
-                  <input v-model="fullName" type="text" placeholder="Ton nom" :class="[inputCls, 'flex-1']">
+                  <input
+                    v-model="fullName"
+                    type="text"
+                    placeholder="Ton nom"
+                    :class="[inputCls, 'flex-1']"
+                  />
                   <button
                     :disabled="savingName"
                     class="action h-11 shrink-0 rounded-full bg-ink px-5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
                     @click="saveName"
                   >
-                    {{ savingName ? '…' : 'Enregistrer' }}
+                    {{ savingName ? "…" : "Enregistrer" }}
                   </button>
                 </div>
               </div>
 
               <div class="mt-5">
                 <label :class="labelCls">Email</label>
-                <input :value="email" type="email" disabled :class="[inputCls, 'bg-surface text-steel']">
+                <input
+                  :value="email"
+                  type="email"
+                  disabled
+                  :class="[inputCls, 'bg-surface text-steel']"
+                />
               </div>
 
-              <dl class="mt-5 space-y-2 border-t border-hairline-soft pt-4 text-sm">
+              <dl
+                class="mt-5 space-y-2 border-t border-hairline-soft pt-4 text-sm"
+              >
                 <div class="flex items-center justify-between">
                   <dt class="text-stone">Membre depuis</dt>
                   <dd class="font-medium">{{ memberSince || "—" }}</dd>
@@ -696,14 +865,26 @@ v-for="axe in [
               class="rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
             >
               <div class="flex items-start gap-4">
-                <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-coral text-[#600000]">
-                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <span
+                  class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-coral text-[#600000]"
+                >
+                  <svg
+                    class="size-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
                   </svg>
                 </span>
                 <div class="min-w-0">
-                  <h2 class="text-lg font-medium tracking-tight text-ink-deep">Sécurité</h2>
-                  <p class="mt-1 text-sm text-slate">Mot de passe de ton compte.</p>
+                  <h2 class="text-lg font-medium tracking-tight text-ink-deep">
+                    Sécurité
+                  </h2>
+                  <p class="mt-1 text-sm text-slate">
+                    Mot de passe de ton compte.
+                  </p>
                 </div>
               </div>
 
@@ -717,7 +898,7 @@ v-for="axe in [
                       autocomplete="new-password"
                       placeholder="••••••••"
                       :class="[inputCls, 'pr-11']"
-                    >
+                    />
                     <button
                       type="button"
                       class="absolute right-3 top-1/2 -translate-y-1/2 text-stone transition hover:text-ink"
@@ -736,7 +917,10 @@ v-for="axe in [
                           d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
                         />
                         <circle v-if="!passwordVisible" cx="12" cy="12" r="3" />
-                        <path v-else d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2" />
+                        <path
+                          v-else
+                          d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2"
+                        />
                         <path
                           v-if="passwordVisible"
                           d="M9.9 5.2A9.5 9.5 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.2 6.2A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 3.5-.65"
@@ -749,7 +933,7 @@ v-for="axe in [
                     class="action h-11 shrink-0 rounded-full bg-ink px-5 text-sm font-medium text-white transition hover:bg-black disabled:opacity-60"
                     @click="savePassword"
                   >
-                    {{ savingPwd ? '…' : 'Changer' }}
+                    {{ savingPwd ? "…" : "Changer" }}
                   </button>
                 </div>
 
@@ -759,16 +943,24 @@ v-for="axe in [
                       v-for="n in 5"
                       :key="n"
                       class="h-1 flex-1 rounded-full transition-all duration-300"
-                      :class="n <= passwordStrength.level ? passwordStrength.color : 'bg-hairline'"
+                      :class="
+                        n <= passwordStrength.level
+                          ? passwordStrength.color
+                          : 'bg-hairline'
+                      "
                     />
                   </div>
-                  <p class="mt-1.5 text-xs text-stone">{{ passwordStrength.label }}</p>
+                  <p class="mt-1.5 text-xs text-stone">
+                    {{ passwordStrength.label }}
+                  </p>
                 </div>
               </div>
 
-              <p class="mt-5 border-t border-hairline-soft pt-4 text-xs text-stone">
-                Change de mot de passe si tu penses qu’il a pu être compromis. Tu resteras connecté sur
-                cet appareil.
+              <p
+                class="mt-5 border-t border-hairline-soft pt-4 text-xs text-stone"
+              >
+                Change de mot de passe si tu penses qu’il a pu être compromis.
+                Tu resteras connecté sur cet appareil.
               </p>
             </section>
 
@@ -777,16 +969,27 @@ v-for="axe in [
               class="rounded-feature border border-hairline-soft bg-white p-6 md:p-8"
             >
               <div class="flex items-start gap-4">
-                <span class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-coral text-[#600000]">
-                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <span
+                  class="pastille grid size-11 shrink-0 place-items-center rounded-full bg-coral text-[#600000]"
+                >
+                  <svg
+                    class="size-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
                   </svg>
                 </span>
                 <div class="min-w-0">
-                  <h2 class="text-lg font-medium tracking-tight text-ink-deep">Sécurité</h2>
+                  <h2 class="text-lg font-medium tracking-tight text-ink-deep">
+                    Sécurité
+                  </h2>
                   <p class="mt-1 text-sm text-slate">
-                    Ton compte utilise la connexion <span class="font-medium capitalize">{{ provider }}</span>.
-                    Le mot de passe se gère directement chez ce fournisseur.
+                    Ton compte utilise la connexion
+                    <span class="font-medium capitalize">{{ provider }}</span
+                    >. Le mot de passe se gère directement chez ce fournisseur.
                   </p>
                 </div>
               </div>
@@ -815,8 +1018,11 @@ v-for="axe in [
 }
 
 .quadrillage {
-  background-image:
-    linear-gradient(to right, rgb(5 0 56 / 6%) 1px, transparent 1px),
+  background-image: linear-gradient(
+      to right,
+      rgb(5 0 56 / 6%) 1px,
+      transparent 1px
+    ),
     linear-gradient(to bottom, rgb(5 0 56 / 6%) 1px, transparent 1px);
   background-size: 46px 46px;
   mask-image: radial-gradient(circle at 25% 0%, black, transparent 75%);
@@ -873,8 +1079,7 @@ v-for="axe in [
 
 .deco,
 .action {
-  transition:
-    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.3s ease;
 }
 .deco:hover,

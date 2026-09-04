@@ -173,6 +173,7 @@ processus Nuxt) :
 | `POST /api/check` | 5/min, 20/h |
 | `PATCH /api/resultats/:id` | 10/min, 50/h |
 | `POST /api/partages` | 10/min, 30/h |
+| `POST /api/comparaison/pdf` | 5/min, 20/h |
 
 Autres limites et validations :
 

@@ -199,5 +199,8 @@ export const QUOTAS = {
   checkPerHour: { windowMs: 60 * 60_000, max: 20 },
   /** Création d'un lien de partage. */
   share: { windowMs: 60_000, max: 10 },
-  sharePerHour: { windowMs: 60 * 60_000, max: 30 }
+  sharePerHour: { windowMs: 60 * 60_000, max: 30 },
+  /** Export PDF d'une comparaison (rendu Playwright, coûteux). */
+  pdfExport: { windowMs: 60_000, max: 5 },
+  pdfExportPerHour: { windowMs: 60 * 60_000, max: 20 }
 } as const

@@ -68,6 +68,16 @@ export type SiteSource =
   | 'century21'
   | 'orpi'
 
+export const SOURCE_LABELS: Record<SiteSource, string> = {
+  seloger: 'SeLoger',
+  leboncoin: 'Leboncoin',
+  pap: 'PAP',
+  'logic-immo': 'Logic-Immo',
+  bienici: 'Bien’ici',
+  century21: 'Century 21',
+  orpi: 'Orpi'
+}
+
 export type VisitRating = 'bon' | 'moyen' | 'mauvais'
 
 export interface Checklist {
