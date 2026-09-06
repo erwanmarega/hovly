@@ -36,6 +36,9 @@ export { DEFAULT_PHOTO }
  *  qui créeraient des milliers de lignes et les coûts de scraping associés. */
 export const MAX_ACTIVE_PROPERTIES = 100
 
+/** Nombre maximum de biens supprimables en une seule requête de suppression en masse. */
+export const MAX_BULK_DELETE = 50
+
 /**
  * Insère un bien, amorce son historique de prix et le géocode.
  * Partagé par l'ajout manuel et la conversion d'un résultat de veille.

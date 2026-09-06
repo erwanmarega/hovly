@@ -76,6 +76,25 @@ export function useProperties() {
     }
   }
 
+  /** Retourne les ids effectivement supprimés : le serveur peut en écarter
+   *  certains (déjà supprimés ailleurs, ou hors policy RLS). */
+  async function removeMany(ids: string[]): Promise<string[]> {
+    const snapshot = biens.value
+    biens.value = biens.value.filter((x) => !ids.includes(x.id))
+    try {
+      const { deleted } = await $fetch<{ deleted: string[] }>('/api/biens', {
+        method: 'DELETE',
+        body: { ids }
+      })
+      const kept = snapshot.filter((x) => ids.includes(x.id) && !deleted.includes(x.id))
+      if (kept.length) biens.value = [...biens.value, ...kept]
+      return deleted
+    } catch {
+      biens.value = snapshot
+      return []
+    }
+  }
+
   return {
     biens,
     refresh,
@@ -85,6 +104,7 @@ export function useProperties() {
     setNote,
     update,
     remove,
+    removeMany,
     add
   }
 }

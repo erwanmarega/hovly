@@ -37,6 +37,11 @@ const { active: hasActiveCommutes, selectedAnchor } = useCommutes()
 const costs = computed(() => new Map(props.biens.map((b) => [b.id, costOf(b)])))
 
 const { full: selectionComplete, isSelected, toggle, incompatible } = useComparator()
+const {
+  active: deleteMode,
+  isSelected: isMarkedForDelete,
+  toggle: toggleDeleteMark
+} = useDeleteSelection()
 
 const SORTS = computed<{ value: SortKey, label: string }[]>(() => {
   const sorts: { value: SortKey, label: string }[] = [
@@ -96,10 +101,11 @@ const upward = (i: number) => props.biens.length > 3 && i >= props.biens.length 
           :monthly-price="monthlyPrice(b)"
           :price-per-sqm="pricePerSqm(b)"
           :doublons="doublons.get(b.id)"
-          :selectionne="isSelected(b.id)"
-          :selection-bloquee="selectionComplete"
-          :selection-incompatible="incompatible(b)"
-          @basculer="toggle"
+          :selectionne="deleteMode ? isMarkedForDelete(b.id) : isSelected(b.id)"
+          :selection-bloquee="!deleteMode && selectionComplete"
+          :selection-incompatible="!deleteMode && incompatible(b)"
+          :selection-purpose="deleteMode ? 'supprimer' : 'comparer'"
+          @basculer="(bien) => (deleteMode ? toggleDeleteMark(bien.id) : toggle(bien))"
           @supprimer="emit('supprimer', $event)"
           @statut="(id, s) => emit('statut', id, s)"
         />
@@ -138,11 +144,11 @@ const upward = (i: number) => props.biens.length > 3 && i >= props.biens.length 
           <input
             type="checkbox"
             class="size-4 shrink-0 cursor-pointer accent-ink"
-            :checked="isSelected(b.id)"
-            :disabled="!isSelected(b.id) && (selectionComplete || incompatible(b))"
-            :title="!isSelected(b.id) && incompatible(b) ? 'Comparaison possible uniquement entre biens de même type (location ou achat)' : undefined"
-            :aria-label="`Comparer ${b.titre}`"
-            @change="toggle(b)"
+            :checked="deleteMode ? isMarkedForDelete(b.id) : isSelected(b.id)"
+            :disabled="!deleteMode && !isSelected(b.id) && (selectionComplete || incompatible(b))"
+            :title="!deleteMode && !isSelected(b.id) && incompatible(b) ? 'Comparaison possible uniquement entre biens de même type (location ou achat)' : undefined"
+            :aria-label="`${deleteMode ? 'Sélectionner' : 'Comparer'} ${b.titre}`"
+            @change="deleteMode ? toggleDeleteMark(b.id) : toggle(b)"
           >
 
           <NuxtLink :to="`/bien/${b.id}`" class="group flex min-w-0 flex-1 items-center gap-3.5">

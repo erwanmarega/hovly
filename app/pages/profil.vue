@@ -116,7 +116,7 @@ const passwordStrength = computed(() => {
     { label: "Excellent", color: "bg-teal-deep" },
   ];
   return { level: n, ...scale[n]! };
-});
+}); 
 
 async function savePassword() {
   if (newPassword.value.length < 6) {
@@ -714,6 +714,7 @@ const inputCls =
               </div>
             </div>
             <PushSettings class="mt-6" />
+            <InstallApp class="mt-3" variant="line" />
           </section>
 
           <section

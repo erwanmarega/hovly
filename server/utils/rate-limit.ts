@@ -202,5 +202,8 @@ export const QUOTAS = {
   sharePerHour: { windowMs: 60 * 60_000, max: 30 },
   /** Export PDF d'une comparaison (rendu Playwright, coûteux). */
   pdfExport: { windowMs: 60_000, max: 5 },
-  pdfExportPerHour: { windowMs: 60 * 60_000, max: 20 }
+  pdfExportPerHour: { windowMs: 60 * 60_000, max: 20 },
+  /** Suppression en masse de biens. */
+  bulkDelete: { windowMs: 60_000, max: 5 },
+  bulkDeletePerHour: { windowMs: 60 * 60_000, max: 20 }
 } as const

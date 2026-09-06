@@ -2,16 +2,20 @@
 import type { Property, Status } from "~/types";
 import type { Score } from "~/composables/useScore";
 
-defineProps<{
-  bien: Property;
-  score: Score;
-  monthlyPrice: number;
-  pricePerSqm: number;
-  doublons?: number;
-  selectionne?: boolean;
-  selectionBloquee?: boolean;
-  selectionIncompatible?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    bien: Property;
+    score: Score;
+    monthlyPrice: number;
+    pricePerSqm: number;
+    doublons?: number;
+    selectionne?: boolean;
+    selectionBloquee?: boolean;
+    selectionIncompatible?: boolean;
+    selectionPurpose?: "comparer" | "supprimer";
+  }>(),
+  { selectionPurpose: "comparer" }
+);
 
 const emit = defineEmits<{
   basculer: [bien: Property];
@@ -28,7 +32,7 @@ const emit = defineEmits<{
         class="size-5 cursor-pointer accent-ink"
         :checked="selectionne"
         :disabled="!selectionne && (selectionBloquee || selectionIncompatible)"
-        :aria-label="`Comparer ${bien.titre}`"
+        :aria-label="`${selectionPurpose === 'supprimer' ? 'Sélectionner' : 'Comparer'} ${bien.titre}`"
         @change="emit('basculer', bien)"
       />
     </label>

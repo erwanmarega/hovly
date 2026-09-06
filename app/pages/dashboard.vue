@@ -5,7 +5,7 @@ import { STATUSES } from "~/composables/useProperties";
 
 useHead({ title: "Mes biens — Hovly" });
 
-const { biens, refresh, monthlyPrice, pricePerSqm, setStatus, remove } =
+const { biens, refresh, monthlyPrice, pricePerSqm, setStatus, remove, removeMany } =
   useProperties();
 
 const propertyToDelete = ref<Property | null>(null);
@@ -29,6 +29,49 @@ async function confirmDelete() {
   } else {
     announce(`« ${b.titre} » supprimé.`);
   }
+}
+
+const {
+  active: deleteMode,
+  selection: deleteSelection,
+  count: deleteCount,
+  clear: clearDeleteSelection,
+  enable: enableDeleteMode,
+  disable: disableDeleteMode,
+} = useDeleteSelection();
+
+const bulkDeleteConfirm = ref(false);
+const bulkDeleting = ref(false);
+const bulkDeleteIds = ref<string[]>([]);
+const bulkDeleteSource = ref<"compare" | "delete" | null>(null);
+
+function requestBulkDelete(source: "compare" | "delete") {
+  const ids = source === "delete" ? deleteSelection.value : comparisonSelection.value;
+  if (!ids.length) return;
+  bulkDeleteIds.value = ids;
+  bulkDeleteSource.value = source;
+  bulkDeleteConfirm.value = true;
+}
+
+async function confirmBulkDelete() {
+  bulkDeleting.value = true;
+  const total = bulkDeleteIds.value.length;
+  const deleted = await removeMany(bulkDeleteIds.value);
+  bulkDeleting.value = false;
+  bulkDeleteConfirm.value = false;
+
+  if (deleted.length) {
+    announce(
+      `${deleted.length} bien${deleted.length > 1 ? "s" : ""} supprimé${deleted.length > 1 ? "s" : ""}.`
+    );
+  }
+  if (deleted.length < total) {
+    announce("Certains biens n'ont pas pu être supprimés.", "erreur");
+  }
+
+  if (bulkDeleteSource.value === "delete") disableDeleteMode();
+  else clearComparison();
+  bulkDeleteSource.value = null;
 }
 
 const { pending } = useAsyncData("biens", () => refresh(), { server: false });
@@ -435,6 +478,19 @@ function toggleSort(key: typeof sortKey.value) {
               {{ v.label }}
             </button>
           </div>
+
+          <button
+            v-if="viewMode === 'list'"
+            class="filtre shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition"
+            :class="
+              deleteMode
+                ? 'bg-ink text-white'
+                : 'border border-hairline bg-white text-steel hover:bg-surface'
+            "
+            @click="deleteMode ? disableDeleteMode() : enableDeleteMode()"
+          >
+            {{ deleteMode ? "Annuler la sélection" : "Sélectionner" }}
+          </button>
         </div>
 
         <div
@@ -645,7 +701,40 @@ function toggleSort(key: typeof sortKey.value) {
 
       <Transition name="barre-cmp">
         <div
-          v-if="compareCount"
+          v-if="deleteMode"
+          class="barre-cmp fixed inset-x-0 z-30 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-center gap-3 rounded-full border border-hairline bg-white/95 px-4 py-2.5 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-3"
+        >
+          <span class="text-sm font-medium">
+            {{ deleteCount }} bien{{ deleteCount > 1 ? "s" : "" }} sélectionné{{
+              deleteCount > 1 ? "s" : ""
+            }}
+          </span>
+          <button
+            class="text-sm font-medium text-steel transition hover:text-ink"
+            @click="clearDeleteSelection"
+          >
+            Vider
+          </button>
+          <button
+            class="rounded-full px-4 py-2 text-sm font-medium transition"
+            :class="
+              deleteCount
+                ? 'bg-[#600000] text-white hover:bg-[#4a0000]'
+                : 'pointer-events-none bg-surface text-stone'
+            "
+            @click="requestBulkDelete('delete')"
+          >
+            Supprimer{{ deleteCount ? ` (${deleteCount})` : "" }}
+          </button>
+          <button
+            class="rounded-full border border-hairline px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface"
+            @click="disableDeleteMode"
+          >
+            Annuler
+          </button>
+        </div>
+        <div
+          v-else-if="compareCount"
           class="barre-cmp fixed inset-x-0 z-30 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-center gap-3 rounded-full border border-hairline bg-white/95 px-4 py-2.5 shadow-[0_12px_40px_rgba(5,0,56,0.16)] backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-3"
         >
           <span class="text-sm font-medium">
@@ -671,6 +760,12 @@ function toggleSort(key: typeof sortKey.value) {
           >
             Partager
           </button>
+          <button
+            class="rounded-full border border-hairline px-4 py-2 text-sm font-medium text-[#600000] transition hover:bg-coral"
+            @click="requestBulkDelete('compare')"
+          >
+            Supprimer
+          </button>
           <NuxtLink
             :to="comparable ? '/comparer' : ''"
             class="rounded-full px-4 py-2 text-sm font-medium transition"
@@ -694,6 +789,16 @@ function toggleSort(key: typeof sortKey.value) {
         :loading="deleting"
         @cancel="propertyToDelete = null"
         @confirm="confirmDelete"
+      />
+
+      <DeleteConfirmationModal
+        :open="bulkDeleteConfirm"
+        title="Supprimer ces biens ?"
+        :name="`${bulkDeleteIds.length} bien${bulkDeleteIds.length > 1 ? 's' : ''} sélectionné${bulkDeleteIds.length > 1 ? 's' : ''}`"
+        message="Ces biens et leur historique seront définitivement supprimés."
+        :loading="bulkDeleting"
+        @cancel="bulkDeleteConfirm = false"
+        @confirm="confirmBulkDelete"
       />
 
       <ShareModal
