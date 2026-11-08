@@ -2,6 +2,7 @@
 #
 #   check  : lint, typecheck, tests unitaires (en parallèle)
 #   build  : images Docker web + cron, poussées dans le Container Registry GitLab
+#   deploy : l'image web du commit part en production sur Railway (manuel)
 #
 # Les images ne sont poussées que sur `main` et sur les tags. Sur une merge
 # request, elles sont seulement construites, pour vérifier que le Dockerfile
@@ -19,6 +20,7 @@ workflow:
 stages:
   - check
   - build
+  - deploy
 
 variables:
   # Valeurs factices : `nuxt prepare` (postinstall) et les tests ont seulement
@@ -128,3 +130,37 @@ docker:cron:
   variables:
     IMAGE_NAME: cron
     DOCKERFILE: Dockerfile.cron
+
+# ---------------------------------------------------------------------------
+# deploy : production sur Railway
+# ---------------------------------------------------------------------------
+#
+# Déploie l'image construite et testée par CETTE pipeline (tag = SHA du commit),
+# jamais `latest` : GitLab sait exactement quelle version tourne, et le bouton
+# « Re-deploy » d'un ancien déploiement (Operate → Environments) sert de rollback.
+
+deploy:production:
+  stage: deploy
+  image: alpine:3.21
+  needs: [docker:web]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      # La pipeline reste verte tant que personne n'a cliqué sur « deploy »
+      allow_failure: true
+  environment:
+    name: production
+    url: https://hovly-production.up.railway.app
+  # Deux déploiements ne peuvent jamais tourner en même temps
+  resource_group: production
+  interruptible: false
+  variables:
+    # Identifiants Railway (pas des secrets : inutiles sans RAILWAY_TOKEN)
+    RAILWAY_ENVIRONMENT_ID: d8685284-4291-41da-a35d-5d25333e4148
+    RAILWAY_SERVICE_ID: c6ddb971-8854-4eb2-bddf-0fd16d5efe91
+    DEPLOY_IMAGE: $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA
+    DEPLOY_URL: https://hovly-production.up.railway.app/login
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - sh scripts/deploy-railway.sh
