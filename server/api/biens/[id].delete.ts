@@ -1,7 +1,7 @@
 export default defineEventHandler(async (event) => {
   await requireUser(event)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
 
   const { error } = await client.from('biens').delete().eq('id', id)
 

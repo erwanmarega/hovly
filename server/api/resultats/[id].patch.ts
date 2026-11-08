@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   assertRateLimitForUser(event, user.id, QUOTAS.scrape, QUOTAS.scrapePerHour)
   assertBodySize(event)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
   const body = await readBody(event)
   const state = body?.etat
 

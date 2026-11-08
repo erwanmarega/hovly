@@ -3,7 +3,7 @@ import { currentStatus } from '~/utils/applications'
 export default defineEventHandler(async (event) => {
   await requireUser(event)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
 
   // La RLS limite la lecture aux étapes des biens de l'utilisateur.
   const { data: step } = await client

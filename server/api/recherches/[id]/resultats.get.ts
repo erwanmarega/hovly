@@ -3,7 +3,7 @@ const STATES = ['nouveau', 'garde', 'ignore']
 export default defineEventHandler(async (event) => {
   await requireUser(event)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
   const state = getQuery(event).etat as string | undefined
 
   let query = client

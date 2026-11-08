@@ -1,7 +1,7 @@
 import { isIP } from 'node:net'
 import { lookup } from 'node:dns/promises'
 import type { H3Event } from 'h3'
-import { createError } from 'h3'
+import { createError, getRouterParam } from 'h3'
 
 /** Longueur maximale acceptée pour une URL source. */
 export const MAX_URL_LENGTH = 2048
@@ -170,4 +170,17 @@ export function cleanText(value: unknown, maxLength: number): string | null {
   const text = String(value).trim()
   if (!text) return null
   return text.slice(0, maxLength)
+}
+
+/**
+ * Lit un paramètre de route obligatoire (`/api/biens/:id` → `id`).
+ * `getRouterParam()` renvoie `string | undefined` ; ici, un paramètre absent ou
+ * vide lève une 400 au lieu de laisser passer `undefined` jusqu'à la requête SQL.
+ */
+export function requireRouterParam(event: H3Event, name = 'id'): string {
+  const value = getRouterParam(event, name)
+  if (!value) {
+    throw createError({ statusCode: 400, statusMessage: `Paramètre « ${name} » manquant` })
+  }
+  return value
 }

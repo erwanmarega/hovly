@@ -8,7 +8,7 @@ import {
   stepLabel,
   validateStep
 } from '../app/utils/applications'
-import { gapPercent } from '../app/composables/useMarket'
+import { gapPercent } from '../app/utils/market'
 import type { NeighborhoodMarket } from '../app/types'
 
 const market = { mediane: 5000 } as NeighborhoodMarket
@@ -180,7 +180,7 @@ describe('POST /api/biens/:id/demarches', () => {
     vi.stubGlobal('defineEventHandler', (fn: any) => fn)
     vi.stubGlobal('requireUser', vi.fn(async () => ({ id: 'u1' })))
     vi.stubGlobal('db', vi.fn(async () => client))
-    vi.stubGlobal('getRouterParam', () => 'b1')
+    vi.stubGlobal('requireRouterParam', () => 'b1')
     vi.stubGlobal('createError', (e: any) => Object.assign(new Error(e.statusMessage), e))
     return { insert, update }
   }

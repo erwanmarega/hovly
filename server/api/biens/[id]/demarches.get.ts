@@ -1,7 +1,7 @@
 export default defineEventHandler(async (event) => {
   await requireUser(event)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
 
   const { data, error } = await client
     .from('demarches')

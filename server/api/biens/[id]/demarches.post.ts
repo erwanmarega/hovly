@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   await requireUser(event)
   assertBodySize(event)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
   const body = await readBody(event)
 
   // La RLS limite la lecture aux biens de l'utilisateur : preuve d'appartenance.

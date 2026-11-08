@@ -10,7 +10,7 @@ export default defineEventHandler(async (event): Promise<PublicShare> => {
   // routes d'un même segment de chemin : `[id].delete.ts` dans ce même dossier
   // impose le nom de param `id` pour tout `/api/partages/:param`, quelle que
   // soit la méthode HTTP du fichier qui le dessert.
-  const token = getRouterParam(event, 'id')
+  const token = requireRouterParam(event)
   const client = serviceDb(event)
 
   const { data: partage, error: lookupError } = await client

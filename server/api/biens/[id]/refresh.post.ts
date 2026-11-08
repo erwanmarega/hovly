@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   assertRateLimitForUser(event, user.id, QUOTAS.refresh, QUOTAS.refreshPerHour)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
 
   const { data: bien, error } = await client.from('biens').select('*').eq('id', id).single()
   if (error || !bien) {

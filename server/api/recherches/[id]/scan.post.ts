@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   assertRateLimitForUser(event, user.id, QUOTAS.scan, QUOTAS.scanPerHour)
   const client = await db(event)
-  const id = getRouterParam(event, 'id')
+  const id = requireRouterParam(event)
 
   const { data: search, error } = await client
     .from('recherches')

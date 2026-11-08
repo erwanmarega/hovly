@@ -2,7 +2,7 @@ import type { Anchor, Property, TravelMode, Commute } from '~/types'
 import { durationsToAnchor, batches, routingAvailable } from '../../utils/routage'
 import { assertRateLimitForUser, QUOTAS } from '../../utils/rate-limit'
 import { assertBodySize } from '../../utils/validation'
-import { MAX_ANCHORS } from '~/composables/usePreferences'
+import { MAX_ANCHORS } from '~/utils/preferences'
 
 const MODES: TravelMode[] = ['voiture', 'velo', 'marche', 'transport']
 
