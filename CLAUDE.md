@@ -108,6 +108,14 @@ de traduction, pour des raisons de risque/coût plutôt que de règle :
 
 ### Composables
 
+**Logique pure partagée avec le serveur → `app/utils/`, jamais dans un composable.**
+Le serveur (`server/`) n'a pas les auto-imports Vue/Nuxt (`useState`, `computed`...) :
+s'il importe un fichier de `app/composables/`, tout le fichier est typé sans eux et
+le typecheck casse. Les calculs utilisés des deux côtés vivent donc dans `app/utils/`
+(`comparator.ts`, `actual-cost.ts`, `preferences.ts`, `commutes.ts`, `market.ts`,
+`properties.ts`), avec des imports explicites ; le composable ne garde que l'état.
+`useScore.ts` et `useDuplicates.ts` restent dans `composables/` car ils sont purs.
+
 - `useProperties` — état + CRUD des biens, helpers `monthlyPrice` / `pricePerSqm`.
 - `useAlerts` — état alertes (`useState` partagé), `unread`, refresh, `checkNow`,
   `markRead(id)` pour un marquage individuel (en plus du `markAllRead` global).

@@ -1,10 +1,12 @@
+import type { DirectiveBinding } from 'vue'
+
 export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.directive('reveal', {
     getSSRProps() {
       return {}
     },
 
-    mounted(el: HTMLElement, binding: { value?: string; modifiers: Record<string, boolean> }) {
+    mounted(el: HTMLElement, binding: DirectiveBinding<string | undefined>) {
       if (!binding.modifiers.group) el.classList.add('reveal')
       if (binding.value) el.style.transitionDelay = binding.value
 

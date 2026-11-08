@@ -1,7 +1,7 @@
 import type { Browser } from 'playwright'
 import type { Property, Status } from '~/types'
 import { SOURCE_LABELS } from '~/types'
-import type { ComparisonRow } from '~/composables/useComparator'
+import type { ComparisonRow } from '~/utils/comparator'
 import type { Score } from '~/composables/useScore'
 import { isDefaultPhoto } from '~/utils/photos'
 import { getBrowser, guardContextAgainstSsrf } from './scrape/browser'

@@ -8,7 +8,7 @@ import {
   marketStatistics,
   cacheKey
 } from '../server/utils/dvf'
-import { looksLikeSale, pricePerSqm, gapPercent } from '~/composables/useMarket'
+import { looksLikeSale, pricePerSqm, gapPercent } from '~/utils/market'
 import type { NeighborhoodMarket } from '~/types'
 
 let fetchMock: MockInstance<typeof fetch>

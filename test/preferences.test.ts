@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { scoreProperty, isCustomized, DEFAULT_PREFERENCES } from '../app/composables/useScore'
-import { shouldSync } from '../app/composables/usePreferences'
+import { shouldSync } from '../app/utils/preferences'
 import type { Property, Preferences } from '../app/types'
 
 function bien(over: Partial<Property> = {}): Property {

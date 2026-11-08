@@ -1,6 +1,6 @@
 import type { Property, DPE, Preferences } from '~/types'
-import { isPurchase } from './useProperties'
-import { pricePerSqm } from './useMarket'
+import { isPurchase } from '~/utils/properties'
+import { pricePerSqm } from '~/utils/market'
 
 export interface ScorePart {
   label: string

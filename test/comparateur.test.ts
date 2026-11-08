@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { compare, MAX_COMPARISON } from '../app/composables/useComparator'
+import { compare, MAX_COMPARISON } from '../app/utils/comparator'
 import { scoreProperty } from '../app/composables/useScore'
 import {
   DEFAULT_DURATION_YEARS,
   NOTARY_FEES,
   DEFAULT_RATE,
   monthlyLoanPayment
-} from '../app/composables/useActualCost'
+} from '../app/utils/actual-cost'
 import type { Property } from '../app/types'
 
 let compteur = 0

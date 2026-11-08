@@ -1,5 +1,5 @@
 import type { ApplicationStep, ApplicationStepType, NeighborhoodMarket, Property, Status, Transaction } from '~/types'
-import { gapPercent } from '~/composables/useMarket'
+import { gapPercent } from '~/utils/market'
 
 export const APPLICATION_STEP_TYPES: readonly ApplicationStepType[] = [
   'candidature',

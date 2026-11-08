@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --build",
+    "db:types": "npx supabase gen types typescript --project-id gdwthgpmctpnwmsxwqea > app/types/database.types.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -36,6 +37,7 @@
     "@nuxt/eslint": "^1.16.0",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^26.1.1",
+    "@types/web-push": "^3.6.4",
     "eslint": "^10.8.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9",

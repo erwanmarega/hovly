@@ -1,5 +1,14 @@
 <script setup lang="ts">
-const features = [
+type Feature = {
+  cle: string
+  tint: string
+  span: string
+  titre: string
+  texte: string
+  badge?: string
+}
+
+const features: Feature[] = [
   {
     cle: 'url',
     tint: 'bg-brand',
@@ -31,7 +40,7 @@ const features = [
     texte:
       'Une synthèse par l’IA sur chaque bien : points forts, points faibles, cohérence du prix.'
   }
-] as const
+]
 
 const columns = [
   { w: 'w-full', score: 'bg-teal' },

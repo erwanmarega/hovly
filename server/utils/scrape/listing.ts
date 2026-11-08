@@ -1,3 +1,6 @@
+// Les callbacks de page.evaluate() s'exécutent dans Chromium, pas dans Node :
+// ils ont besoin des types du DOM, absents de la config TypeScript serveur.
+/// <reference lib="dom" />
 import type { SiteSource } from '~/types'
 import {
   flattenJsonLd,

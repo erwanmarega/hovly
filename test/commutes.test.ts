@@ -10,7 +10,7 @@ import {
   commuteForAnchor,
   selectedCommute,
   propertyCommutes
-} from '../app/composables/useCommutes'
+} from '../app/utils/commutes'
 import {
   durationFromItineraries,
   batches,

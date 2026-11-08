@@ -14,7 +14,7 @@ import {
   actualCost,
   monthlyLoanPayment,
   optionsFromPreferences
-} from '../app/composables/useActualCost'
+} from '../app/utils/actual-cost'
 import { DEFAULT_PREFERENCES } from '../app/composables/useScore'
 
 function bien(over: Partial<Property> = {}): Property {

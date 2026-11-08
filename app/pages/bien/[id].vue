@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Property, Status } from "~/types";
 import { STATUSES } from "~/composables/useProperties";
-import { pricePerSqm as rawPricePerSqm } from "~/composables/useMarket";
+import { pricePerSqm as rawPricePerSqm } from "~/utils/market";
 
 const route = useRoute();
 const id = route.params.id as string;

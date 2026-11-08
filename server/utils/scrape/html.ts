@@ -1,3 +1,6 @@
+// linkedom type le résultat de parseHTML() avec les types du DOM standard,
+// absents de la config TypeScript serveur.
+/// <reference lib="dom" />
 import { parseHTML } from 'linkedom'
 import type { CardLink, PageData } from './extract'
 

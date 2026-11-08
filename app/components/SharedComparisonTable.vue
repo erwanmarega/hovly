@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SharedProperty } from "~/types";
-import { comparePublic } from "~/composables/useComparator";
+import { comparePublic } from "~/utils/comparator";
 
 const props = defineProps<{ biens: SharedProperty[]; token: string }>();
 

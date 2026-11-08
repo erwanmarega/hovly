@@ -1,6 +1,8 @@
 export type PushState = 'unknown' | 'unsupported' | 'not_configured' | 'denied' | 'inactive' | 'active'
 
-export function base64UrlToBytes(base64: string): Uint8Array {
+// Uint8Array<ArrayBuffer> (et non ArrayBufferLike) : pushManager.subscribe()
+// refuse un buffer potentiellement partagé (SharedArrayBuffer).
+export function base64UrlToBytes(base64: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4)
   const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'))
   const bytes = new Uint8Array(raw.length)

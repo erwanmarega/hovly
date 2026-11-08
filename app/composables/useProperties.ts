@@ -1,5 +1,5 @@
 import type { Property, Status, SiteSource } from '~/types'
-import { pricePerSqm as rawPricePerSqm } from './useMarket'
+import { pricePerSqm as rawPricePerSqm } from '~/utils/market'
 
 export const STATUSES: { value: Status; label: string }[] = [
   { value: 'a_visiter', label: 'À visiter' },
@@ -11,10 +11,6 @@ export const STATUSES: { value: Status; label: string }[] = [
   { value: 'refuse', label: 'Refusé' },
   { value: 'elimine', label: 'Éliminé' }
 ]
-
-export function isPurchase(b: Pick<Property, 'transaction'>): boolean {
-  return b.transaction === 'achat'
-}
 
 export function useProperties() {
   const biens = useState<Property[]>('biens', () => [])
