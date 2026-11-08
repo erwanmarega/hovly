@@ -1,4 +1,4 @@
-export type Status = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_coeur'
+export type Status = 'a_visiter' | 'planifie' | 'visite' | 'elimine' | 'coup_de_coeur' | 'en_attente' | 'accepte' | 'refuse'
 
 export type Transaction = 'location' | 'achat'
 
@@ -115,6 +115,18 @@ export interface Property {
   checklist: Partial<Checklist> | null
   rappel_envoye_le: string | null
   actif: boolean
+  created_at: string
+}
+
+export type ApplicationStepType = 'candidature' | 'contre_offre' | 'acceptation' | 'refus'
+
+export interface ApplicationStep {
+  id: string
+  bien_id: string
+  type: ApplicationStepType
+  montant: number | null // centimes, comme biens.prix
+  note: string | null
+  fait_le: string
   created_at: string
 }
 

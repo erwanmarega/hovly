@@ -220,6 +220,7 @@ const upward = (i: number) => props.biens.length > 3 && i >= props.biens.length 
           <div class="hidden shrink-0 sm:block">
             <StatusSelector
               :status="b.statut"
+              :transaction="b.transaction"
               :upward="upward(i)"
               @change="emit('statut', b.id, $event)"
             />

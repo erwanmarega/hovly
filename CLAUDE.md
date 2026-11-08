@@ -102,6 +102,9 @@ de traduction, pour des raisons de risque/coût plutôt que de règle :
   lien copiable). Utilisée depuis le dashboard et `comparer.vue`.
 - `SharedPropertyCard` — carte de bien en lecture seule pour la page de partage
   publique (prop `bien: SharedProperty`, jamais `Property` en entier).
+- `ApplicationTracker` — suivi de la démarche après visite (prop `bien`) : frise des étapes
+  (dossier/offre, contre-proposition, acceptation, refus), ajout/suppression, et analyse
+  de l'offre vs prix affiché / médiane DVF pour un achat. Émet `maj` (nouveau `statut`).
 
 ### Composables
 
@@ -115,6 +118,8 @@ de traduction, pour des raisons de risque/coût plutôt que de règle :
 - `useShares` — CRUD des liens de partage (`create`, `refresh`, `revoke`).
 - `useMapZone` — état partagé de la zone dessinée sur `PropertyMap` (`zone`,
   `inZone(bien)`, `clear`), formule de distance en mètres sans dépendance.
+- `useApplications` — étapes de démarche par bien : `load(bienId)`, `add`, `remove(step)`
+  (`stepsFor(bienId)`). Reporte le `statut` recalculé par le serveur sur le bien de `useProperties`.
 
 ### Veille (recherches sauvegardées)
 

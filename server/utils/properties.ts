@@ -27,7 +27,8 @@ export const EDITABLE_FIELDS = [
 ] as const
 
 export const VALID_STATUSES = [
-  'a_visiter', 'planifie', 'visite', 'elimine', 'coup_de_coeur'
+  'a_visiter', 'planifie', 'visite', 'elimine', 'coup_de_coeur',
+  'en_attente', 'accepte', 'refuse'
 ] as const
 
 export { DEFAULT_PHOTO }

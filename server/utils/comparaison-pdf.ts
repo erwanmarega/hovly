@@ -16,6 +16,9 @@ const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string }> =
   planifie: { label: 'Planifié', bg: '#eef0ff', fg: '#3d5afe' },
   visite: { label: 'Visité', bg: '#d8f5f2', fg: '#187574' },
   coup_de_coeur: { label: 'Coup de cœur', bg: '#fbe3ef', fg: '#9d1d6a' },
+  en_attente: { label: 'En attente de réponse', bg: '#fff0d6', fg: '#8a5a00' },
+  accepte: { label: 'Accepté', bg: '#dff5e3', fg: '#1f6b34' },
+  refuse: { label: 'Refusé', bg: '#eeeef2', fg: '#6b7280' },
   elimine: { label: 'Éliminé', bg: '#eeeef2', fg: '#6b7280' }
 }
 

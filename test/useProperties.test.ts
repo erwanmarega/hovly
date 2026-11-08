@@ -38,12 +38,15 @@ function bien(over: Partial<Property> = {}): Property {
 beforeEach(() => etats.clear())
 
 describe('STATUSES', () => {
-  it('expose les 5 statuts avec un libellé', () => {
+  it('expose les 8 statuts avec un libellé', () => {
     expect(STATUSES.map((s) => s.value)).toEqual([
       'a_visiter',
       'planifie',
       'visite',
       'coup_de_coeur',
+      'en_attente',
+      'accepte',
+      'refuse',
       'elimine'
     ])
     expect(STATUSES.every((s) => s.label.length > 0)).toBe(true)

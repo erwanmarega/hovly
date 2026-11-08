@@ -93,6 +93,7 @@ const emit = defineEmits<{
       <div class="mt-2.5 flex items-center gap-2">
         <StatusSelector
           :status="bien.statut"
+          :transaction="bien.transaction"
           @change="emit('statut', bien.id, $event)"
         />
 

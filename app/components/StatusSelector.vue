@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Status } from "~/types";
+import type { Status, Transaction } from "~/types";
 import { STATUSES } from "~/composables/useProperties";
 
 const props = defineProps<{
   status: Status;
+  transaction?: Transaction;
   upward?: boolean;
 }>();
 
@@ -69,7 +70,7 @@ onBeforeUnmount(() => listen(false));
       aria-label="Changer le statut"
       @click="toggle"
     >
-      <StatusBadge :status="status" />
+      <StatusBadge :status="status" :transaction="transaction" />
     </button>
 
     <Teleport to="body">

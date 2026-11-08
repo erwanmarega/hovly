@@ -6,6 +6,9 @@ export const STATUSES: { value: Status; label: string }[] = [
   { value: 'planifie', label: 'Visite planifiée' },
   { value: 'visite', label: 'Visité' },
   { value: 'coup_de_coeur', label: 'Coup de cœur' },
+  { value: 'en_attente', label: 'En attente de réponse' },
+  { value: 'accepte', label: 'Accepté' },
+  { value: 'refuse', label: 'Refusé' },
   { value: 'elimine', label: 'Éliminé' }
 ]
 

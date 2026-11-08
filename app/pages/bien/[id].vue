@@ -111,6 +111,15 @@ async function setStatus(s: Status) {
 
 const applyVisit = applyPatch;
 
+// Suivi de démarche : pertinent une fois le bien visité, ou dès qu'une étape existe.
+const TRACKED_STATUSES: Status[] = ["visite", "coup_de_coeur", "en_attente", "accepte", "refuse"];
+const { stepsFor } = useApplications();
+const showTracker = computed(
+  () =>
+    !!bien.value &&
+    (TRACKED_STATUSES.includes(bien.value.statut) || stepsFor(bien.value.id).length > 0)
+);
+
 const showChecklist = computed(() => {
   const b = bien.value;
   if (!b) return false;
@@ -245,7 +254,7 @@ async function confirmDeletion() {
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <StatusBadge :status="bien.statut" />
+              <StatusBadge :status="bien.statut" :transaction="bien.transaction" />
               <span class="text-xs font-medium text-stone">
                 {{ sourceLabels[bien.site_source] }} · ajouté le {{ addedDate }}
               </span>
@@ -539,6 +548,8 @@ async function confirmDeletion() {
 
             <VisitScheduler :bien="bien" @maj="applyVisit" />
 
+            <ApplicationTracker v-if="showTracker" :bien="bien" @maj="applyVisit" />
+
             <div class="rounded-2xl border border-hairline bg-white p-5 sm:p-6">
               <h2
                 class="text-sm font-semibold uppercase tracking-wide text-stone"
@@ -550,7 +561,7 @@ async function confirmDeletion() {
                   class="flex w-full items-center justify-between rounded-lg border border-hairline px-4 py-2.5 text-left transition hover:bg-surface"
                   @click="statusMenuOpen = !statusMenuOpen"
                 >
-                  <StatusBadge :status="bien.statut" />
+                  <StatusBadge :status="bien.statut" :transaction="bien.transaction" />
                   <svg
                     class="size-4 text-stone"
                     viewBox="0 0 24 24"
