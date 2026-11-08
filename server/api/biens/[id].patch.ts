@@ -1,4 +1,5 @@
 import { assertBodySize } from '../../utils/validation'
+import type { TablesUpdate } from '~/types/database.types'
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
@@ -31,7 +32,8 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await client
     .from('biens')
-    .update(patch)
+    // Construit depuis la liste blanche EDITABLE_FIELDS et validé plus haut
+    .update(patch as TablesUpdate<'biens'>)
     .eq('id', id)
     .select()
     .single()

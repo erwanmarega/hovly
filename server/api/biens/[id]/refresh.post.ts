@@ -1,4 +1,5 @@
 import type { Property } from '~/types'
+import type { TablesUpdate } from '~/types/database.types'
 import { scrapeUrl } from '../../../utils/scrape'
 import { geocoder } from '../../../utils/geocode'
 import { isPricePlausible } from '../../../utils/check'
@@ -127,7 +128,8 @@ export default defineEventHandler(async (event) => {
 
   const { data: after, error: errUpdate } = await client
     .from('biens')
-    .update(update)
+    // Uniquement des champs de REFRESHED_FIELDS, issus du scraping
+    .update(update as TablesUpdate<'biens'>)
     .eq('id', id)
     .select()
     .single()

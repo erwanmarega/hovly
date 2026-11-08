@@ -1,5 +1,6 @@
 import { assertBodySize } from '../../../utils/validation'
 import { statusAfterStep, validateStep } from '~/utils/applications'
+import type { Transaction } from '~/types'
 
 export default defineEventHandler(async (event) => {
   await requireUser(event)
@@ -20,7 +21,8 @@ export default defineEventHandler(async (event) => {
 
   let payload
   try {
-    payload = validateStep(body, bien.transaction)
+    // Colonne `text` en base, limitée à 'achat' | 'location' par l'application
+    payload = validateStep(body, bien.transaction as Transaction)
   } catch (e) {
     throw createError({ statusCode: 400, statusMessage: (e as Error).message })
   }

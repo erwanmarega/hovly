@@ -1,5 +1,13 @@
 import type { Property, DPE } from '~/types'
 
+/**
+ * Champs d'un bien tels que le scraper les lit : chacun peut manquer (undefined)
+ * ou être explicitement illisible (null). `Property` déclare `prix`, `surface`...
+ * non nuls, mais une annonce dont on n'a pas su lire le prix doit quand même passer
+ * (les colonnes correspondantes sont nullables en base).
+ */
+export type ScrapedFields = { [K in keyof Property]?: Property[K] | null }
+
 export interface CardLink {
   href: string
   /** Texte propre à l'ancre. Vide sur un lien étiré. */
@@ -213,7 +221,7 @@ export function normalizedKey(u: string): string {
     p = p.replace(/\/\d{2,4}x\d{0,4}\//g, '/').replace(/[_-]\d{2,4}x\d{2,4}/g, '')
     return url.hostname + p
   } catch {
-    return u.split('?')[0].toLowerCase()
+    return (u.split('?')[0] ?? u).toLowerCase()
   }
 }
 
@@ -257,7 +265,7 @@ export function leboncoinRooms(attrs: Record<string, string>): number | null {
   return attrs.rooms ? parseInt(attrs.rooms, 10) : null
 }
 
-export function extractLeboncoin(nextData: string | undefined): Partial<Property> {
+export function extractLeboncoin(nextData: string | undefined): ScrapedFields {
   if (!nextData) return {}
   let ad: any
   try {
@@ -285,7 +293,7 @@ export function extractLeboncoin(nextData: string | undefined): Partial<Property
   const dpeRaw = (label.energy_rate || val.energy_rate || '').toUpperCase()
   const dpe = VALID_DPE.includes(dpeRaw) ? (dpeRaw as DPE) : null
 
-  const out: Partial<Property> = {
+  const out: ScrapedFields = {
     titre: (ad.subject || '').slice(0, 200) || null,
     prix,
     surface,
@@ -301,7 +309,7 @@ export function extractLeboncoin(nextData: string | undefined): Partial<Property
   return out
 }
 
-export function extractOrpi(estateData: string | undefined): Partial<Property> {
+export function extractOrpi(estateData: string | undefined): ScrapedFields {
   if (!estateData) return {}
   let e: any
   try {
@@ -317,7 +325,7 @@ export function extractOrpi(estateData: string | undefined): Partial<Property> {
   const ville = e.city?.name || e.locationDescription || null
   const chargesEuros = typeof e.chargeReserve === 'number' ? e.chargeReserve : null
 
-  const out: Partial<Property> = {
+  const out: ScrapedFields = {
     prix: typeof e.price === 'number' ? Math.round(e.price * 100) : undefined,
     charges: chargesEuros != null ? Math.round(chargesEuros * 100) : null,
     surface: typeof e.surface === 'number' ? Math.round(e.surface) : undefined,
@@ -340,9 +348,9 @@ function amountInEuros(text: string, pattern: RegExp): number | null {
   return v == null ? null : Math.round(v)
 }
 
-export function extractCentury21(data: PageData): Partial<Property> {
+export function extractCentury21(data: PageData): ScrapedFields {
   const txt = data.bodyText.replace(/\s+/g, ' ')
-  const out: Partial<Property> = {}
+  const out: ScrapedFields = {}
 
   const rent = amountInEuros(txt, /Loyer de base\s*:\s*([\d\s.,\u00a0\u202f]+)\s*€/i)
   if (rent != null) {
@@ -390,7 +398,7 @@ export function extractCentury21(data: PageData): Partial<Property> {
   return out
 }
 
-export function extract(data: PageData): Partial<Property> {
+export function extract(data: PageData): ScrapedFields {
   const node = findPropertyNode(data.jsonLd)
   const flat = flattenJsonLd(data.jsonLd)
   const txt = data.bodyText
@@ -434,7 +442,8 @@ export function extract(data: PageData): Partial<Property> {
 
   let dpe: DPE | null = null
   const md = txt.match(/DPE\s*:?\s*([A-G])\b/i) || txt.match(/classe\s*énerg\w*\s*:?\s*([A-G])\b/i)
-  if (md && VALID_DPE.includes(md[1].toUpperCase())) dpe = md[1].toUpperCase() as DPE
+  const dpeLetter = md?.[1]?.toUpperCase()
+  if (dpeLetter && VALID_DPE.includes(dpeLetter)) dpe = dpeLetter as DPE
 
   const rue = firstDefined<string>(flat, (n) => n?.address?.streetAddress)
 

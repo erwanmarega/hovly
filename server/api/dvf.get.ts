@@ -1,4 +1,5 @@
 import type { NeighborhoodMarket } from '~/types'
+import type { Json } from '~/types/database.types'
 import type { TypeLocalDvf } from '../utils/dvf'
 
 const DAY_MS = 24 * 3600 * 1000
@@ -36,7 +37,8 @@ export default defineEventHandler(async (event) => {
 
   await client
     .from('marche_quartier')
-    .upsert({ cle: key, donnees: market, calcule_le: new Date().toISOString() })
+    // Colonne jsonb : NeighborhoodMarket est un objet JSON simple (nombres et chaînes)
+    .upsert({ cle: key, donnees: market as unknown as Json, calcule_le: new Date().toISOString() })
 
   return { market }
 })

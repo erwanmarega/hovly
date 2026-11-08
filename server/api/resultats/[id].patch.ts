@@ -61,13 +61,15 @@ export default defineEventHandler(async (event) => {
 
   // La fiche complète vaut mieux que la carte, mais un anti-bot ne doit pas
   // faire perdre l'annonce : on retombe sur ce que le scan avait extrait.
-  let payload = fromResult(r)
+  const fallback = fromResult(r)
+  let payload: Record<string, unknown> = fallback
   try {
     const { data: extracted, indisponible } = await scrapeUrl(r.url)
     if (indisponible) {
       throw createError({ statusCode: 422, statusMessage: "L'annonce n'est plus en ligne." })
     }
-    payload = { ...payload, ...extracted, url_source: r.url }
+    // Un titre illisible sur la fiche ne doit pas écraser celui de la carte
+    payload = { ...fallback, ...extracted, titre: extracted.titre || fallback.titre, url_source: r.url }
   } catch (e: any) {
     if (e?.statusCode === 422) throw e
   }

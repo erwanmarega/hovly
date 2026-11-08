@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
   const bienIds = Array.isArray(body?.bien_ids)
-    ? [...new Set(body.bien_ids.filter((id: unknown): id is string => typeof id === 'string'))]
+    ? [...new Set<string>(body.bien_ids.filter((id: unknown): id is string => typeof id === 'string'))]
     : []
 
   if (!bienIds.length || bienIds.length > MAX_SHARED_PROPERTIES) {

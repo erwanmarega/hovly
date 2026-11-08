@@ -1,7 +1,7 @@
 // Les callbacks de page.evaluate() s'exécutent dans Chromium, pas dans Node :
 // ils ont besoin des types du DOM, absents de la config TypeScript serveur.
 /// <reference lib="dom" />
-import type { Property, SiteSource } from '~/types'
+import type { SiteSource } from '~/types'
 import { getBrowser, pickUserAgent, guardContextAgainstSsrf, randomDelay } from './browser'
 import {
   extract,
@@ -9,7 +9,8 @@ import {
   extractCentury21,
   extractOrpi,
   isSearchPage,
-  type PageData
+  type PageData,
+  type ScrapedFields
 } from './extract'
 import { detecterSource } from './source'
 import { detectTransaction } from './transaction'
@@ -20,7 +21,7 @@ import { assertPublicHostname } from '../validation'
 
 export interface ScrapeResult {
   source: SiteSource
-  data: Partial<Property>
+  data: ScrapedFields
   indisponible: boolean
 }
 
@@ -159,7 +160,7 @@ async function scrapeViaPlaywright(url: string, source: SiteSource): Promise<Scr
           .filter((p) => p[0])
         if (!parts.length) return ''
         parts.sort((a, b) => (parseInt(b[1] || '0', 10) || 0) - (parseInt(a[1] || '0', 10) || 0))
-        return parts[0][0]
+        return parts[0]?.[0] ?? ''
       }
 
       const domImages: string[] = []

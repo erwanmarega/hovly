@@ -1,3 +1,5 @@
+import type { TablesUpdate } from '~/types/database.types'
+
 export default defineEventHandler(async (event) => {
   await requireUser(event)
   const client = await db(event)
@@ -17,7 +19,8 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await client
     .from('recherches')
-    .update(patch)
+    // Construit et validé par watchFields()
+    .update(patch as TablesUpdate<'recherches'>)
     .eq('id', id)
     .select()
     .single()

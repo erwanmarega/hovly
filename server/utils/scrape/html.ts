@@ -13,7 +13,7 @@ function largestSrc(srcset: string): string {
     .filter((p) => p[0])
   if (!parts.length) return ''
   parts.sort((a, b) => (parseInt(b[1] || '0', 10) || 0) - (parseInt(a[1] || '0', 10) || 0))
-  return parts[0][0]
+  return parts[0]?.[0] ?? ''
 }
 
 /**

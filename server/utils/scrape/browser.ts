@@ -34,7 +34,7 @@ const USER_AGENTS = [
 ]
 
 export function pickUserAgent(seed: number): string {
-  return USER_AGENTS[seed % USER_AGENTS.length]
+  return USER_AGENTS[seed % USER_AGENTS.length]!
 }
 
 export function randomDelay(min = 400, max = 1200): Promise<void> {

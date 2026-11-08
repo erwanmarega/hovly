@@ -28,9 +28,11 @@ const priceMax = computed(() => Math.max(...valid.value.map((p) => p.prix)))
 
 const coords = computed(() => {
   const points = valid.value
-  if (points.length === 0) return []
-  const t0 = +new Date(points[0].controle_le)
-  const t1 = +new Date(points[points.length - 1].controle_le)
+  const firstPoint = points[0]
+  const lastPoint = points[points.length - 1]
+  if (!firstPoint || !lastPoint) return []
+  const t0 = +new Date(firstPoint.controle_le)
+  const t1 = +new Date(lastPoint.controle_le)
   const dt = t1 - t0 || 1
   const min = priceMin.value
   const max = priceMax.value
@@ -46,9 +48,16 @@ const coords = computed(() => {
 const linePath = computed(() => coords.value.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' '))
 const areaPath = computed(() => {
   const c = coords.value
-  if (!c.length) return ''
-  return `M${c[0].x},${H - PAD_Y} ${c.map((p) => `L${p.x},${p.y}`).join(' ')} L${c[c.length - 1].x},${H - PAD_Y} Z`
+  const start = c[0]
+  const end = c[c.length - 1]
+  if (!start || !end) return ''
+  return `M${start.x},${H - PAD_Y} ${c.map((p) => `L${p.x},${p.y}`).join(' ')} L${end.x},${H - PAD_Y} Z`
 })
+
+// Libellés sous le graphe (affichés seulement quand il y a au moins deux points)
+const firstDate = computed(() => valid.value[0]?.controle_le ?? '')
+const lastDate = computed(() => valid.value[valid.value.length - 1]?.controle_le ?? '')
+const hoveredPoint = computed(() => (hovered.value === null ? null : coords.value[hovered.value] ?? null))
 
 const first = computed(() => valid.value[0]?.prix ?? 0)
 const last = computed(() => valid.value[valid.value.length - 1]?.prix ?? 0)
@@ -109,12 +118,12 @@ const hovered = ref<number | null>(null)
       <!-- Les trois libellés sont insécables : côte à côte ils débordent sous
            400 px. Le central passe sur sa propre ligne tant qu'on est étroit. -->
       <div class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs">
-        <span class="whitespace-nowrap text-stone">{{ fmtDate(valid[0].controle_le) }}</span>
+        <span class="whitespace-nowrap text-stone">{{ fmtDate(firstDate) }}</span>
         <span
-          v-if="hovered !== null"
+          v-if="hoveredPoint"
           class="order-last w-full whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-center font-semibold text-white sm:order-none sm:w-auto"
         >
-          {{ fmt(coords[hovered].prix) }} € · {{ fmtDate(coords[hovered].date) }}
+          {{ fmt(hoveredPoint.prix) }} € · {{ fmtDate(hoveredPoint.date) }}
         </span>
         <span
           v-else
@@ -122,7 +131,7 @@ const hovered = ref<number | null>(null)
         >
           min {{ fmt(priceMin) }} € · max {{ fmt(priceMax) }} €
         </span>
-        <span class="whitespace-nowrap text-stone">{{ fmtDate(valid[valid.length - 1].controle_le) }}</span>
+        <span class="whitespace-nowrap text-stone">{{ fmtDate(lastDate) }}</span>
       </div>
     </div>
   </div>
