@@ -85,8 +85,11 @@ test:
   needs: [lint, test]
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-    # Driver docker-container : nécessaire pour stocker le cache de build dans le registry
-    - docker buildx create --use --driver docker-container
+    # Driver docker-container : nécessaire pour stocker le cache de build dans le registry.
+    # Avec dind en TLS, buildx refuse de lire la config TLS depuis l'environnement :
+    # il faut passer par un contexte Docker qui la contient.
+    - docker context create ci-context
+    - docker buildx create --use --driver docker-container ci-context
   script:
     - IMAGE="$CI_REGISTRY_IMAGE/$IMAGE_NAME"
     - TAGS="--tag $IMAGE:$CI_COMMIT_SHORT_SHA"
