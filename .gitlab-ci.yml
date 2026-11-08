@@ -1,12 +1,17 @@
 # Pipeline GitLab CI/CD de Hovly
 #
-#   check  : lint, typecheck, tests unitaires (en parallèle)
+#   check  : lint, typecheck, tests unitaires, SAST, détection de secrets (en parallèle)
 #   build  : images Docker web + cron, poussées dans le Container Registry GitLab
-#   deploy : l'image web et cron du commit partent en production sur Railway (manuel)
+#   scan   : CVE de l'image web (Container Scanning), avant le déploiement
+#   deploy : les images web et cron du commit partent en production sur Railway (manuel)
 #
 # Les images ne sont poussées que sur `main` et sur les tags. Sur une merge
 # request, elles sont seulement construites, pour vérifier que le Dockerfile
 # passe sans polluer le registry.
+include:
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
 
 workflow:
   rules:
@@ -20,6 +25,7 @@ workflow:
 stages:
   - check
   - build
+  - scan
   - deploy
 
 variables:
@@ -132,6 +138,30 @@ docker:cron:
     DOCKERFILE: Dockerfile.cron
 
 # ---------------------------------------------------------------------------
+# sécurité : jobs fournis par les templates GitLab (include), adaptés ici
+# ---------------------------------------------------------------------------
+
+# Les templates placent leurs jobs dans un stage `test`, qui n'existe pas chez
+# nous : on les range dans `check`, en parallèle du lint et des tests.
+sast:
+  stage: check
+
+secret_detection:
+  stage: check
+
+# Scanne l'image web exacte qui partira en production (tag = SHA du commit).
+container_scanning:
+  stage: scan
+  needs: [docker:web]
+  variables:
+    CS_IMAGE: $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA
+  # L'image n'est poussée que sur main et les tags (voir .docker) :
+  # ailleurs, il n'y aurait rien à scanner.
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# ---------------------------------------------------------------------------
 # deploy : production sur Railway
 # ---------------------------------------------------------------------------
 #
@@ -158,7 +188,7 @@ docker:cron:
 
 deploy:production:
   extends: .railway-deploy
-  needs: [docker:web]
+  needs: [docker:web, container_scanning]
   environment:
     name: production
     url: https://hovly-production.up.railway.app
